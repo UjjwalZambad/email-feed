@@ -1,0 +1,657 @@
+<div id="iwjt7g" class="row sectionBlockLayout text-start" style="display: flex; flex-wrap: wrap; margin: 0px; min-height: auto; padding: 8px;">
+  <div id="i7mtpj" class="container" style="padding: 0px; display: flex; flex-wrap: wrap; max-width: 100%;"><div class="col-lg-12 columnBlockLayout" style="flex-grow: 1; display: flex; flex-direction: column; min-width: 250px; margin-top: 0;"><h2 class="mpc-header">My Dealership Open Cases</h2>
+<div id="dealerCasesContainer">
+
+{% fetchxml allStatusOptions %}
+<fetch version="1.0" mapping="logical" distinct="true">
+  <entity name="incident">
+    <attribute name="cat_helpcenterstatus"></attribute>
+    <filter type="and">
+      <condition attribute="cat_helpcenterstatus" operator="not-null"></condition>
+    </filter>
+    <order attribute="cat_helpcenterstatus" descending="false"></order>
+  </entity>
+</fetch>
+{% endfetchxml %}
+
+{% fetchxml allDealerCodeOptions %}
+<fetch version="1.0" mapping="logical" distinct="true">
+  <entity name="incident">
+    <attribute name="cat_dealercode"></attribute>
+    <filter type="and">
+      <condition attribute="cat_dealercode" operator="not-null"></condition>
+    </filter>
+    <order attribute="cat_dealercode" descending="false"></order>
+  </entity>
+</fetch>
+{% endfetchxml %}
+
+{% assign productPersonaValue = "" %}
+
+{% if user.roles contains "Cat_Dealer Persona Role" %}
+  {% assign productPersonaValue = "100000001" %}
+{% elsif user.roles contains "Cat_Internal Customer Persona Role" %}
+  {% assign productPersonaValue = "100000003" %}
+{% elsif user.roles contains "Cat_Customer Persona Role" %}
+  {% assign productPersonaValue = "100000000" %}
+{% endif %}
+
+{% fetchxml allProductOptions %}
+<fetch version="1.0" mapping="logical" distinct="true">
+  <entity name="product">
+    <attribute name="productid"></attribute>
+    <attribute name="name"></attribute>
+    <filter type="and">
+        <condition attribute="producttypecode" operator="eq" value="1"/>
+        <condition attribute="statecode" operator="eq" value="0"/>   
+    <condition attribute="cat_persona" operator="contain-values">
+      <value>{{ productPersonaValue }}</value>
+    </condition>
+    </filter>
+    <order attribute="name" descending="false"></order>
+  </entity>
+</fetch>
+{% endfetchxml %}
+
+{% if user.roles contains "Cat_Internal Customer Persona Role" %}
+
+ {% fetchxml testcases11 %}
+    <fetch version="1.0" mapping="logical" distinct="true">
+<entity name="incident">
+ 
+    <attribute name="incidentid" />
+<attribute name="ticketnumber" />
+<attribute name="title" />
+<attribute name="createdon" />
+<attribute name="customerid" />
+<attribute name="cat_requestedfrom" />
+<attribute name="cat_dealername" />
+<attribute name="cat_dealercode" />
+<attribute name="statuscode" />
+<attribute name="statecode" />
+<attribute name="description" />
+<attribute name="cat_subject" />
+<attribute name="cat_helpcenterstatus"/>
+<attribute name="productid" />  
+     <link-entity name="product"
+     from="productid"
+     to="productid"
+     alias="product"
+     link-type="outer">
+    <attribute name="name"
+    alias="producttechnology"/>
+    </link-entity>
+    <order attribute="createdon" descending="true" />
+    <filter>
+        <condition attribute="parentcaseid" operator="null"/>
+        <condition attribute="statecode"
+        operator="eq"
+        value="0"/>
+    </filter>
+ 
+  </entity>
+</fetch>
+    {% endfetchxml %}
+
+<div class="dealer-list-toolbar">
+  
+  <button type="button" id="openCaseFilter" class="filter-icon-btn" title="Filter">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style="margin-bottom: 4px;">  
+      <path d="M3 5H21L14 13V20L10 22V13L3 5Z"
+            stroke="#1A1A1A"
+            stroke-width="1.5"
+            stroke-linejoin="round"/>
+    </svg>
+  </button>
+
+    <button id="viewToggleBtn" class="custom-grid-icon">
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>   
+
+  <button type="button" id="exportDealerCases" class="export-excel-btn">
+    <i class="fa fa-download"></i>
+    Export to Excel
+  </button>
+</div>
+
+<div class="table-wrapper">
+<table class="table table-hover" id="dealerCasesTable">
+<thead>
+<tr>
+<th class="sortable-header" data-sort-key="caseNumber" data-sort-type="text">
+      Case Number <span class="sort-arrow"></span>
+    </th>
+<th class="sortable-header" data-sort-key="dateOpened" data-sort-type="datetime">
+      Date Opened <span class="sort-arrow"></span>
+    </th>
+<th class="sortable-header" data-sort-key="subject" data-sort-type="text">
+      Subject <span class="sort-arrow"></span>
+<th class="sortable-header" data-sort-key="description" data-sort-type="text">
+      Description <span class="sort-arrow"></span>
+</tr>
+</thead>
+ 
+    <tbody>
+    {% if testcases11.results.entities.size > 0 %}
+
+        {% for case in testcases11.results.entities %}
+
+<tr   
+  data-id="{{ case.incidentid }}"
+  data-status-value="{{ case.cat_helpcenterstatus.value | default: case.cat_helpcenterstatus | default: '' | escape }}"
+  data-status-label="{{ case.cat_helpcenterstatus.label | default: case.cat_helpcenterstatus | default: '' | escape }}"
+  data-dealer-code="{{ case.cat_dealercode | default: '' | escape }}"
+  data-product-tech-value="{{ case.productid.id | default: case.productid | default: '' | escape }}"
+  data-product-tech-label="{{ case.productid.name | default: case.producttechnology | default: '' | escape }}"
+  data-created-on="{{ case.createdon | date: 'yyyy-MM-ddTHH:mm:ss' }}"
+
+  data-sort-case-number="{{ case.ticketnumber | default: '' | escape }}"
+  data-sort-date-opened="{{ case.createdon | date: 'yyyy-MM-ddTHH:mm:ss' }}"
+  data-sort-subject="{{ case.title | default: '' | escape}}"
+  data-sort-description="{{ case.description | default: '' | escape }}"
+>
+<td>{{ case.ticketnumber }}</td>
+<td>{{ case.createdon }}</td>
+<td class="truncate-cell subject-cell" data-full="{{ case.title | default: '' | escape }}">
+  {{ case.title }}
+</td>
+<td class="truncate-cell description-cell" data-full="{{ case.description | default: '' | strip_html | escape }}">
+  {{ case.description }}
+</td>
+</tr>
+
+
+{% endfor %}
+
+{% endif %}
+</tbody>
+</table>
+</div>
+
+<div id="emptyListMessageSnippet" style="display: none;">
+   {% include 'snippet' snippet_name: 'CAT List/EmptyMessage' %}
+</div>
+
+{% endif %}
+
+{% if user.roles contains "Cat_Dealer Persona Role" %}
+
+{% fetchxml testcases %}
+    <fetch version="1.0" mapping="logical" distinct="true">
+<entity name="incident">
+ 
+    <attribute name="incidentid" />
+<attribute name="ticketnumber" />
+<attribute name="title" />
+<attribute name="createdon" />
+<attribute name="customerid" />
+<attribute name="cat_requestedfrom" />
+<attribute name="cat_dealername" />
+<attribute name="cat_dealercode" />
+<attribute name="statuscode" />
+<attribute name="description" />
+<attribute name="cat_subject" />
+<attribute name="cat_helpcenterstatus"/>  
+<attribute name="productid" />
+     <link-entity name="product"
+     from="productid"
+     to="productid"
+     alias="product"
+     link-type="outer">
+    <attribute name="name"
+    alias="producttechnology"/>
+    </link-entity>
+ 
+    <order attribute="createdon" descending="true" />
+    <filter type="and">
+       <condition attribute="parentcaseid" operator="null"/> 
+      <condition attribute="statecode"
+      operator="eq"
+      value="0"/>
+    </filter>
+
+    <!--Requested For (Account) / (Contact 's account) = belongs to the logged in users' account hierarchy -->
+    <link-entity name="account"
+ 
+             from="accountid"
+ 
+             to="customerid"
+ 
+             alias="reqForAccount"
+ 
+             link-type="outer">
+ 
+    <filter type="or">
+ 
+        <condition attribute="accountid"
+ 
+                   operator="eq"
+ 
+                   value="{{user.parentcustomerid.id}}" />
+ 
+        <condition attribute="parentaccountid"
+ 
+                   operator="eq"
+ 
+                   value="{{user.parentcustomerid.id}}" />
+ 
+    </filter>
+ 
+</link-entity>
+ 
+<link-entity name="contact"
+ 
+             from="contactid"
+ 
+             to="customerid"
+ 
+             alias="reqForContact"
+ 
+             link-type="outer">
+ 
+    <link-entity name="account"
+ 
+                 from="accountid"
+ 
+                 to="parentcustomerid"
+ 
+                 alias="reqForContactAccount"
+ 
+                 link-type="outer">
+ 
+        <filter type="or">
+ 
+            <condition attribute="accountid"
+ 
+                       operator="eq"
+ 
+                       value="{{user.parentcustomerid.id}}" />
+ 
+            <condition attribute="parentaccountid"
+ 
+                       operator="eq"
+ 
+                       value="{{user.parentcustomerid.id}}" />
+ 
+        </filter>
+ 
+    </link-entity>
+ 
+</link-entity>
+ 
+<filter type="or">
+ 
+    <condition entityname="reqForAccount"
+ 
+               attribute="accountid"
+ 
+               operator="not-null" />
+ 
+    <condition entityname="reqForContactAccount"
+ 
+               attribute="accountid"
+ 
+               operator="not-null" />
+ 
+</filter>
+ 
+  </entity>
+</fetch>
+    {% endfetchxml %}
+
+{% fetchxml requestedForAccount %}
+    <fetch version="1.0" mapping="logical" distinct="true">
+<entity name="incident">
+ 
+    <attribute name="incidentid" />
+<attribute name="ticketnumber" />
+<attribute name="title" />
+<attribute name="createdon" />
+<attribute name="customerid" />
+<attribute name="cat_requestedfrom" />
+<attribute name="cat_dealername" />
+<attribute name="cat_dealercode" />
+<attribute name="statecode"/>
+<attribute name="statuscode" />
+<attribute name="description" />
+<attribute name="cat_subject" />
+<attribute name="cat_helpcenterstatus"/>  
+<attribute name="productid" />
+     <link-entity name="product"
+     from="productid"
+     to="productid"
+     alias="product"
+     link-type="outer">
+    <attribute name="name"
+    alias="producttechnology"/>
+    </link-entity>
+ 
+    <order attribute="createdon" descending="true" />
+    <filter type="and">
+      <condition attribute="parentcaseid" operator="null"/>  
+      <condition attribute="statecode"
+      operator="eq"
+      value="0"/>
+    </filter>
+
+<!--Requested For (Account)= Logged in contact's Account-->
+    <link-entity name="account"
+             from="accountid"
+             to="customerid"
+             alias="reqaccount"
+             link-type="inner">
+ 
+    <filter>
+<condition attribute="accountid"
+                   operator="eq"
+                   value="{{ user.parentcustomerid.id }}" />
+</filter>
+ 
+</link-entity>  
+
+</entity>
+    </fetch>
+    {% endfetchxml %}
+
+{% fetchxml requestedForContact %}
+    <fetch version="1.0" mapping="logical" distinct="true">
+<entity name="incident">
+ 
+    <attribute name="incidentid" />
+<attribute name="ticketnumber" />
+<attribute name="title" />
+<attribute name="createdon" />
+<attribute name="customerid" />
+<attribute name="cat_requestedfrom" />
+<attribute name="cat_dealername" />
+<attribute name="cat_dealercode" />
+<attribute name="statecode"/>
+<attribute name="statuscode" />
+<attribute name="description" />
+<attribute name="cat_subject" />
+<attribute name="cat_helpcenterstatus"/>  
+<attribute name="productid" />
+     <link-entity name="product"
+     from="productid"
+     to="productid"
+     alias="product"
+     link-type="outer">
+    <attribute name="name"
+    alias="producttechnology"/>
+    </link-entity>
+ 
+    <order attribute="createdon" descending="true" />
+    <filter type="and">
+      <condition attribute="parentcaseid" operator="null"/>  
+      <condition attribute="statecode"
+      operator="eq"
+      value="0"/>
+    </filter>
+    
+    <!--Requested For (Contact's account) = Logged in contact's account-->
+ <link-entity name="contact"
+             from="contactid"
+             to="customerid"
+             link-type="inner">
+ 
+    <filter>
+<condition attribute="parentcustomerid"
+                   operator="eq"
+                   value="{{ user.parentcustomerid.id }}" />
+</filter>
+ 
+</link-entity>
+
+</entity>
+    </fetch>
+    {% endfetchxml %}
+
+{% fetchxml requestedBy %}
+    <fetch version="1.0" mapping="logical" distinct="true">
+<entity name="incident">
+ 
+    <attribute name="incidentid" />
+<attribute name="ticketnumber" />
+<attribute name="title" />
+<attribute name="createdon" />
+<attribute name="customerid" />
+<attribute name="cat_requestedfrom" />
+<attribute name="cat_dealername" />
+<attribute name="cat_dealercode" />
+<attribute name="statecode"/>
+<attribute name="statuscode" />
+<attribute name="description" />
+<attribute name="cat_subject" />
+<attribute name="cat_helpcenterstatus"/>  
+<attribute name="productid" />
+     <link-entity name="product"
+     from="productid"
+     to="productid"
+     alias="product"
+     link-type="outer">
+    <attribute name="name"
+    alias="producttechnology"/>
+    </link-entity>
+ 
+    <order attribute="createdon" descending="true" />
+
+    <filter type="and">
+      <condition attribute="parentcaseid" operator="null"/>  
+      <condition attribute="statecode"
+      operator="eq"
+      value="0"/>
+    </filter>
+    
+   
+    <!--Requested By - contact's account = logged in contact's account -->
+<link-entity name="contact"
+ 
+             from="contactid"
+ 
+             to="cat_requestedfrom"
+ 
+             alias="requestedbycontact"
+ 
+             link-type="inner">
+ 
+    <filter>
+<condition attribute="parentcustomerid"
+ 
+                   operator="eq"
+ 
+                   value="{{ user.parentcustomerid.id }}" />
+</filter>
+ 
+</link-entity>
+
+</entity>
+    </fetch>
+    {% endfetchxml %}
+
+
+  {% fetchxml dealerLookup %}
+    <fetch version="1.0" mapping="logical" distinct="true">
+<entity name="incident">
+ 
+    <attribute name="incidentid" />
+<attribute name="ticketnumber" />
+<attribute name="title" />
+<attribute name="createdon" />
+<attribute name="customerid" />
+<attribute name="cat_requestedfrom" />
+<attribute name="cat_dealername" />
+<attribute name="cat_dealercode" />
+<attribute name="statecode"/>
+<attribute name="statuscode" />
+<attribute name="description" />
+<attribute name="cat_subject" />
+<attribute name="cat_helpcenterstatus"/> 
+<attribute name="productid" /> 
+     <link-entity name="product"
+     from="productid"
+     to="productid"
+     alias="product"
+     link-type="outer">
+    <attribute name="name"
+    alias="producttechnology"/>
+    </link-entity>
+ 
+    <order attribute="createdon" descending="true" />
+    <filter type="and">
+      <condition attribute="parentcaseid" operator="null"/>  
+      <condition attribute="statecode"
+      operator="eq"
+      value="0"/>
+    </filter>
+    
+<!-- Dealer Lookup -->
+ <filter>
+<condition attribute="cat_dealername"
+ 
+                 operator="eq"
+ 
+                 value="{{ user.parentcustomerid.id }}" />
+  </filter>
+
+</entity>
+    </fetch>
+    {% endfetchxml %}
+
+
+{% fetchxml requestedByHierarchy %}
+    <fetch version="1.0" mapping="logical" distinct="true">
+<entity name="incident">
+ 
+    <attribute name="incidentid" />
+<attribute name="ticketnumber" />
+<attribute name="title" />
+<attribute name="createdon" />
+<attribute name="customerid" />
+<attribute name="cat_requestedfrom" />
+<attribute name="cat_dealername" />
+<attribute name="cat_dealercode" />
+<attribute name="statecode"/>
+<attribute name="statuscode" />
+<attribute name="description" />
+<attribute name="cat_subject" />
+<attribute name="cat_helpcenterstatus"/>  
+<attribute name="productid" />
+     <link-entity name="product"
+     from="productid"
+     to="productid"
+     alias="product"
+     link-type="outer">
+    <attribute name="name"
+    alias="producttechnology"/>
+    </link-entity>
+ 
+    <order attribute="createdon" descending="true" />
+<filter type="and">
+      <condition attribute="parentcaseid" operator="null"/>
+      <condition attribute="statecode"
+      operator="eq"
+      value="0"/>
+    </filter>
+
+<!--Requested By - contact's account = belongs to the logged in users' account -->
+<link-entity name="contact"
+ 
+             from="contactid"
+ 
+             to="cat_requestedfrom"
+ 
+             alias="reqby">
+ 
+    <link-entity name="account"
+ 
+                 from="accountid"
+ 
+                 to="accountid"
+ 
+                 alias="reqAccount">
+ 
+        <filter type="or">
+<condition attribute="accountid"
+ 
+                       operator="eq"
+ 
+                       value="{{user.parentcustomerid.id}}" />
+ 
+            <condition attribute="parentaccountid"
+ 
+                       operator="eq"
+ 
+                       value="{{user.parentcustomerid.id}}" />
+</filter>
+ 
+    </link-entity>
+</link-entity>
+</entity>
+    </fetch>
+{% endfetchxml %}
+
+ {% fetchxml testcasess %}
+    <fetch version="1.0" mapping="logical" distinct="true">
+<entity name="incident">
+ 
+    <attribute name="incidentid" />
+<attribute name="ticketnumber" />
+<attribute name="title" />
+<attribute name="createdon" />
+<attribute name="customerid" />
+<attribute name="cat_requestedfrom" />
+<attribute name="cat_dealername" />
+<attribute name="statuscode" />
+<attribute name="cat_dealercode" />
+<attribute name="description" />
+<attribute name="cat_subject" />
+<attribute name="cat_helpcenterstatus"/>  
+<attribute name="productid" />
+     <link-entity name="product"
+     from="productid"
+     to="productid"
+     alias="product"
+     link-type="outer">
+    <attribute name="name"
+    alias="producttechnology"/>
+    </link-entity>
+ 
+    <order attribute="createdon" descending="true" />
+
+    <filter type="and">
+      <condition attribute="parentcaseid" operator="null"/>  
+      <condition attribute="statecode"
+      operator="eq"
+      value="0"/>
+    
+    <!--AC1 code-->
+ <filter type="or">
+<condition attribute="customerid"
+operator="eq"
+ 
+value="{{ user.parentcustomerid.id }}" />
+    
+<!--AC2 Code-->
+<condition attribute="cat_requestedfrom"
+operator="eq"
+ 
+value="{{ user.id }}" />
+
+    <!--AC3 code-->
+<filter type="and"> 
+<condition attribute="customerid"
+operator="eq"
+ 
+value="{{ user.parentcustomerid.id }}" />
+<condition attribute="cat_requestedfrom"
+operator="not-null" />
+</filter>
+    </filter>
+
+    </filter>
+  </entity>
+</fetch>
+    {% endfetchxml %}
