@@ -1,0 +1,1028 @@
+{% assign helpArticlesUrl = "/help-articles/" %}
+
+{% if user %}
+
+  {% if user.roles contains "Cat_Dealer Persona Role" %}
+    <script>
+      (function () {
+        localStorage.setItem("portalCurrentState", "dealer");
+      })();
+    </script>
+
+  {% elsif user.roles contains "Cat_Internal Customer Persona Role" %}
+    <script>
+      (function () {
+        localStorage.setItem("portalCurrentState", "internal_customer");
+      })();
+    </script>
+
+  {% elsif user.roles contains "Cat_Customer Persona Role" %}
+    <script>
+      (function () {
+        var currentStateKey = "portalCurrentState";
+        var firstVisitKey = "homeFirstVisitRedirect_cat_customer";
+        var previousState = localStorage.getItem(currentStateKey);
+
+        /*
+          Redirect Customer when:
+          1. Customer logs in and lands on Home, or
+          2. Customer lands on Home for the first time in this browser
+        */
+        if (previousState !== "customer" || !localStorage.getItem(firstVisitKey)) {
+          localStorage.setItem(currentStateKey, "customer");
+          localStorage.setItem(firstVisitKey, "true");
+          window.location.replace("{{ helpArticlesUrl }}");
+          return;
+        }
+
+        localStorage.setItem(currentStateKey, "customer");
+      })();
+    </script>
+
+  {% else %}
+    <script>
+      (function () {
+        localStorage.setItem("portalCurrentState", "authenticated_other");
+      })();
+    </script>
+  {% endif %}
+
+{% else %}
+
+  <script>
+    (function () {
+      var currentStateKey = "portalCurrentState";
+      var guestFirstVisitKey = "homeFirstVisitRedirect_guest";
+      var previousState = localStorage.getItem(currentStateKey);
+
+      /*
+        Redirect Guest when:
+        1. User has just logged out, meaning previous state was not guest, or
+        2. Guest lands on Home for the first time in this browser
+      */
+      if (previousState && previousState !== "guest") {
+        localStorage.setItem(currentStateKey, "guest");
+        localStorage.setItem(guestFirstVisitKey, "true");
+        window.location.replace("{{ helpArticlesUrl }}");
+        return;
+      }
+
+      if (!localStorage.getItem(guestFirstVisitKey)) {
+        localStorage.setItem(currentStateKey, "guest");
+        localStorage.setItem(guestFirstVisitKey, "true");
+        window.location.replace("{{ helpArticlesUrl }}");
+        return;
+      }
+
+      localStorage.setItem(currentStateKey, "guest");
+    })();
+  </script>
+
+{% endif %}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="row sectionBlockLayout text-start"
+   style="display: flex; flex-wrap: wrap; margin: 0px; min-height: auto; padding: 8px;">
+   <div class="container" style="padding: 0px; margin-top: 0px; display: flex; flex-wrap: wrap;">
+      {% assign userRoles = user.roles %}
+      {% fetchxml mycases %}
+      <fetch version="1.0" mapping="logical" aggregate="true" distinct="true">
+         <entity name="incident">
+            <attribute name="incidentid" alias="casecount" aggregate="count" />
+            <filter type="and">
+               <condition attribute="cat_helpcenterstatus" operator="in">
+                  <value>100000001</value>
+                  <value>100000000</value>
+                  <value>100000002</value>
+                  <value>100000003</value>
+                  <value>100000005</value>
+                  <value>100000004</value>
+               </condition>
+               <condition attribute="parentcaseid" operator="null" />
+               <condition attribute="createdon" operator="last-x-years" value="1" />
+               <condition attribute="cat_requestedfrom" operator="eq" value="{{ user.id }}" />
+            </filter>
+         </entity>
+      </fetch>
+      {% endfetchxml %}
+      {% assign caseCount = 0 %}
+      {% if mycases.results.entities.size > 0 %}
+      {% assign caseCount = mycases.results.entities[0].casecount %}
+      {% endif %}
+
+      <div class="cases-section">
+         <b>
+            <h2 class="cases-header">Help Center</h2>
+         </b>
+
+      {% assign alertMessage = snippets["CAT Help Center Home Page Alerts"] %}
+      {% if alertMessage %}
+      <div class="home-alert-wrapper">
+         <div id="home-alert-banner" class="alert-banner collapsed">
+            <div class="alert-body">
+               <img src="/iconalert.png" alt="Alert" class="alert-icon" />
+               <div class="alert-text">
+                  {{ alertMessage }}
+               </div>
+               <span id="toggleArrow" class="arrow">⌄</span>
+            </div>
+         </div>
+      </div>
+      {% endif %}
+
+      {% if user.roles contains "Cat_Customer Persona Role" or user.roles contains "Cat_Dealer Persona Role" or user.roles contains "Cat_Internal Customer Persona Role" %}
+         <div class="row sectionBlockLayout text-start">
+            <div class="col-12">
+               <div class="cases-actions">
+                     <div class="view-toggle-container">
+                        <button id="viewToggleBtn" class="view-toggle-btn">
+                        <i class="fa fa-list"></i>
+                        </button>
+                     </div>
+                     <div class="dealer-list-toolbar">
+  
+  <button type="button" id="openCaseFilter" class="filter-icon-btn" title="Filter">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style="margin-bottom: 4px;">  
+      <path d="M3 5H21L14 13V20L10 22V13L3 5Z"
+            stroke="#1A1A1A"
+            stroke-width="1.5"
+            stroke-linejoin="round"/>
+    </svg>
+  </button>
+</div>
+
+                     
+                  <div id="viewToggleBtn" class="gear-icon" onclick="openTileSettings()" title="Customize Tiles">
+                  <i class="fa fa-cog"></i>
+                  </div>
+               </div>
+                           
+               <div class="cases-tiles">
+                  <a href="/mycases" class="tile-link">
+                     <div class="dashboard-tile">
+                        <div class="tile-header">
+                           Open Cases
+                        </div>
+                        <div class="tile-count" id="openCasesCount">
+                           {{ caseCount }}
+                        </div>
+                        <div class="tile-footer">
+                           <a href="/mycases">View Report</a>
+                        </div>
+                     </div>
+                  </a>
+                  {% endif %}
+                  
+                  {% if user.roles contains "Cat_Dealer Persona Role" or user.roles contains "Cat_Internal Customer Persona Role" %}
+                  <a href="/mycases" class="tile-link">
+                     <div class="dashboard-tile">
+                        <div class="tile-header">
+                           Closed Cases 
+                        </div>
+                        <div class="tile-count">
+                           {{ caseCount }}
+                        </div>
+                        <div class="tile-footer">
+                           <a href="/mycases">View Report</a>
+                        </div>
+                     </div>
+                  </a>
+                  {% endif %}
+
+               {% if user.roles contains 'Cat_Dealer Persona Role' %}
+
+               
+      {% fetchxml dealerAttentionCases %}
+<fetch aggregate="true">
+<entity name="incident">
+<attribute name="incidentid"
+
+               alias="dealercount"
+
+               aggregate="count" />
+</entity>
+</fetch>
+
+{% endfetchxml %}
+{% assign dealerAttentionCount = dealerAttentionCases.results.entities[0].dealercount %}
+
+           <a href="/dealercases" class="tile-link">
+                     <div class="dashboard-tile">
+                        <div class="tile-header">
+                           Cases Requiring Dealer Attention 
+                        </div>
+                        <div class="tile-count">
+                           {{ dealerAttentionCount }}
+                        </div>
+                        <div class="tile-footer">
+                           <a href="/dealercases">View Report</a>
+                        </div>
+                     </div>
+                  </a>
+                  {% endif %}
+
+                 {% if user.roles contains 'Cat_Internal Customer Persona Role' %}
+           <a href="/dealercases" class="tile-link">
+                     <div class="dashboard-tile">
+                        <div class="tile-header">
+                           Internal Persona Cases
+                        </div>
+                        <div class="tile-count">
+                           0
+                        </div>
+                        <div class="tile-footer">
+                           <a href="/dealercases">View Report</a>
+                        </div>
+                     </div>
+                  </a>
+                  {% endif %}
+
+
+                  {% if user.roles contains 'Cat_Dealer Persona Role' or user.roles contains 'Cat_Internal Customer Persona Role' %}
+{% assign dealershipCount = 0 %}
+{% if user.roles contains "Cat_Internal Customer Persona Role" %}
+<!-- Internal Customer sees ALL open cases, unrestricted — matches testcases11 on the list page -->
+ {% fetchxml dealershipCasesCount %}
+<fetch version="1.0" mapping="logical" aggregate="true" distinct="true">
+<entity name="incident">
+<attribute name="incidentid" alias="dealershipcount" aggregate="count" />
+<filter type="and">
+<condition attribute="statecode" operator="eq" value="0" />
+<condition attribute="parentcaseid" operator="null" />
+</filter>
+</entity>
+</fetch>
+ {% endfetchxml %}
+ {% if dealershipCasesCount.results.entities.size > 0 %}
+   {% assign dealershipCount = dealershipCasesCount.results.entities[0].dealershipcount | default: 0 %}
+ {% endif %}
+{% elsif user.roles contains "Cat_Dealer Persona Role" %}
+<!-- Dealer sees hierarchy-scoped cases — matches testcases/requestedFor.../dealerLookup on the list page -->
+ {% fetchxml dealershipCasesCount %}
+<fetch version="1.0" mapping="logical" aggregate="true" distinct="true">
+<entity name="incident">
+<attribute name="incidentid" alias="dealershipcount" aggregate="count" />
+<filter type="and">
+<condition attribute="statecode" operator="eq" value="0" />
+<condition attribute="parentcaseid" operator="null" />
+</filter>
+<link-entity name="account" from="accountid" to="customerid" alias="reqForAccount" link-type="outer">
+<filter type="or">
+<condition attribute="accountid" operator="eq" value="{{ user.parentcustomerid.id }}" />
+<condition attribute="parentaccountid" operator="eq" value="{{ user.parentcustomerid.id }}" />
+</filter>
+</link-entity>
+<link-entity name="contact" from="contactid" to="customerid" alias="reqForContact" link-type="outer">
+<link-entity name="account" from="accountid" to="parentcustomerid" alias="reqForContactAccount" link-type="outer">
+<filter type="or">
+<condition attribute="accountid" operator="eq" value="{{ user.parentcustomerid.id }}" />
+<condition attribute="parentaccountid" operator="eq" value="{{ user.parentcustomerid.id }}" />
+</filter>
+</link-entity>
+</link-entity>
+<link-entity name="contact" from="contactid" to="cat_requestedfrom" alias="reqByContact" link-type="outer">
+<link-entity name="account" from="accountid" to="parentcustomerid" alias="reqByAccount" link-type="outer">
+<filter type="or">
+<condition attribute="accountid" operator="eq" value="{{ user.parentcustomerid.id }}" />
+<condition attribute="parentaccountid" operator="eq" value="{{ user.parentcustomerid.id }}" />
+</filter>
+</link-entity>
+</link-entity>
+<filter type="or">
+<condition entityname="reqForAccount" attribute="accountid" operator="not-null" />
+<condition entityname="reqForContactAccount" attribute="accountid" operator="not-null" />
+<condition entityname="reqByAccount" attribute="accountid" operator="not-null" />
+<condition attribute="cat_dealername" operator="eq" value="{{ user.parentcustomerid.id }}" />
+</filter>
+</entity>
+</fetch>
+ {% endfetchxml %}
+ {% if dealershipCasesCount.results.entities.size > 0 %}
+   {% assign dealershipCount = dealershipCasesCount.results.entities[0].dealershipcount | default: 0 %}
+ {% endif %}
+{% endif %}
+           <a href="/dealershipcases" class="tile-link">
+                     <div class="dashboard-tile">
+                        <div class="tile-header">
+                           Dealership Open Cases
+                        </div>
+                        <div class="tile-count" id="dealershipCasesCount">
+                           {{ dealershipCount }}
+                        </div>
+                        <div class="tile-footer">
+                           <a href="/dealershipcases">View Report</a>
+                        </div>
+                     </div>
+                  </a>
+                  {% endif %}
+
+
+               </div>
+
+
+                  {% if user.roles contains "Cat_Customer Persona Role" or user.roles contains "Cat_Dealer Persona Role" or user.roles contains "Cat_Internal Customer Persona Role" %}
+                  <div id="tile-cases-by-status" class="powerbicase-tile">
+                  <!-- Power BI Tile (NEW ADDITION) -->
+                  <a href="/mycases" class="tile-link">
+                     <div class="dashboard-tile powerbi-tile">
+
+                        <div class="tile-header">
+                           Dealership Cases by Status
+                        </div>
+
+                        <div class="powerbi-container">
+                           <iframe
+                              src="https://app.powerbi.com/groups/me/reports/cbea8911-9e6d-48d5-a58a-4a24390c8473/9676eacb52665fd6d489?ctid=ceb177bf-013b-49ab-8a9c-4abce32afc1e&openReportSource=ReportInvitation&experience=power-bi"
+                              frameborder="0"
+                              allowFullScreen="true">
+                           </iframe>
+                        </div>
+
+                     </div>
+                  </a>               
+                  </div>
+                   {% endif %}
+
+                  <!-- Filter Changes on this Chart-Graph tile -->
+               
+                  {% if user.roles contains "Cat_Customer Persona Role" or user.roles contains "Cat_Dealer Persona Role" or user.roles contains "Cat_Internal Customer Persona Role" %}
+                  <div id="tile-cases-by-status-chart" class="powerbicase-tile">
+                     <!-- Custom Chart (NEW ADDITION) -->
+                  <a href="/allcases" class="tile-link">
+                     <div class="dashboard-tile powerbi-tile">
+
+                        <div class="tile-header">
+                           Cases by Status
+                        </div>
+
+                        <div class="chart-container">
+                           <canvas id="casesStatusChart" style="max-width: 600px; height: 300px;"></canvas>
+                        </div>
+
+                     </div>
+                  </a>               
+                  </div>
+                   {% endif %}
+
+
+            </div>
+         </div>
+      </div>
+
+      <style>
+         /* TILE CONTAINER */
+         .cases-tiles {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 24px;
+         }
+
+         .dashboard-tile {
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+            border-radius: 6px;
+            border: 1px solid var(--border-default, #CCC);
+            background: #FFF;
+            display: flex;
+            padding: 16px;
+            flex-direction: column;
+            gap: 16px;
+            flex: 1 0 0;
+            width: 300px;
+         }
+
+         /* TILE HEADER */
+         .tile-header {
+            height: 25px;
+            align-self: stretch;
+            color: var(--content-default, #3F3F3F);
+            text-align: left;
+            /* label/large */
+            font-family: "Noto Sans";
+            font-size: 16px;
+            font-style: normal;
+            font-weight: 600;
+            line-height: 24px;
+            /* 150% */
+         }
+
+         /* TILE COUNT */
+         .tile-count {
+            align-self: stretch;
+            color: var(--content-default, #3F3F3F);
+            text-align: center;
+
+            /* display/xl */
+            font-family: "Roboto Condensed";
+            font-size: 80px;
+            font-style: normal;
+            font-weight: 700;
+            line-height: 80px;
+            /* 100% */
+         }
+
+         /* TILE SUBTITLE */
+         .tile-subtitle {
+            color: #3F3F3F;
+            font-family: "Noto Sans";
+            font-size: 16px;
+            font-weight: 600;
+            line-height: 24px;
+            text-align: center;
+         }
+
+         /* TILE FOOTER LINK */
+         .tile-footer a {
+            height: 25px;
+            align-self: stretch;
+            color: var(--content-link-default, #0067B8);
+            text-align: left;
+            /* label/large */
+            font-family: "Noto Sans";
+            font-size: 16px;
+            font-style: normal;
+            font-weight: 600;
+            line-height: 24px;
+            /* 150% */
+         }
+
+         /* TILE LINK WRAPPER */
+         .tile-link {
+            text-decoration: none !important;
+            color: inherit !important;
+         }
+
+         .dashboard-tile:hover {
+            transform: translateY(-3px);
+            transition: 0.2s ease;
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
+         }
+
+         .cases-header {
+            font-family: "Roboto Condensed";
+            font-size: 40px;
+            font-weight: 700;
+            color: #0A0A0A;
+            margin-top: 0px;
+            margin-bottom: 20px;
+         }
+
+         .cases-section {
+            padding: 30px 0;
+         }
+
+         .sectionBlockLayout {
+            padding-top: 0px !important;
+         }
+
+         .row {
+            margin-top: 0px !important;
+         }
+
+         .cases-actions {
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+
+}
+
+.view-toggle-btn {
+
+  border: 1px solid #ddd;
+
+  background: #fff;
+
+  padding: 6px 10px;
+
+  border-radius: 6px;
+
+  cursor: pointer;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+  margin-bottom: 30px !important;
+
+}
+
+.view-toggle-btn i {
+
+  font-size: 14px;
+
+}
+ 
+          
+
+         @media (max-width: 768px) {
+            .cases-tiles {
+               display: flex !important;
+               flex-direction: column !important;
+            }
+
+            .tile-link {
+               width: 100% !important;
+            }
+
+            .dashboard-tile {
+               flex: none !important;
+               width: 100% !important
+            }
+         }
+
+                  /* ✅ Power BI tile container */
+         .powerbi-container {
+            width: 100%;
+            height: 250px;
+            overflow: hidden;
+            border-radius: 6px;
+         }
+
+         /* ✅ Power BI iframe */
+         .powerbi-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+
+            /* 🔥 REQUIRED: makes entire tile clickable */
+            pointer-events: none;
+         }
+
+         .powerbicase-tile {
+            padding-top: 40px;
+            padding-left: 24px;
+         }
+
+
+         /* ✅ Make Power BI tile full width */
+         .dashboard-tile.powerbi-tile {
+            width: 100% !important;
+            flex: 1 0 100% !important;
+         }
+
+         .gear-icon{
+            position: absolute;
+            top: 164px;
+            right: 16px;
+            display: flex;
+            justify-content: flex-end;
+            font-size: 16px;
+            color: #5e5a53;
+         }
+
+         .chart-container {
+            width: 100%;
+            height: 350px;   /* increase height */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+         }
+
+
+      </style>
+
+
+   </div>
+   <div class="col-lg-12 columnBlockLayout"
+      style="flex-grow: 1; display: flex; flex-direction: column; min-width: 250px;">
+   </div>
+</div>
+</div>
+
+<!-- Right Side Navigation for checkbox selection -->
+
+<script>
+
+(function(webapi, $) {
+  function safeAjax(ajaxOptions) {
+    var deferredAjax = $.Deferred();
+    shell.getTokenDeferred().done(function(token) {
+      if (!ajaxOptions.headers) {
+        $.extend(ajaxOptions, {
+          headers: {
+            "__RequestVerificationToken": token
+          }
+        });
+      } else {
+        ajaxOptions.headers["__RequestVerificationToken"] = token;
+      }
+      $.ajax(ajaxOptions).done(function(data, textStatus, jqXHR) {
+        validateLoginSession(data, textStatus, jqXHR, deferredAjax.resolve);
+      }).fail(deferredAjax.reject);
+    }).fail(function() {
+      deferredAjax.rejectWith(this, arguments);
+    });
+    return deferredAjax.promise();
+  }
+  webapi.safeAjax = safeAjax;
+})(window.webapi = window.webapi || {}, jQuery);
+
+</script>
+
+<script>
+function refreshOpenCasesCount() {
+   // Current logged-in Power Pages user
+   const userId = "{{ user.id }}".replace(/[{}]/g, "").trim();
+   if (!userId) {
+       console.error("Unable to determine logged-in user ID.");
+       return;
+   }
+   console.log("Refreshing Open Cases for user:", userId);
+   // Calculate date for one year ago
+   const oneYearAgo = new Date();
+   oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+   // Convert to Dataverse UTC date format
+   const createdOnDate = oneYearAgo.toISOString();
+   /*
+    * Match the /mycases FetchXML:
+    *
+    * cat_helpcenterstatus IN:
+    * 100000000
+    * 100000001
+    * 100000002
+    * 100000003
+    * 100000004
+    * 100000005
+    *
+    * parentcaseid = null
+    * createdon = last 1 year
+    * cat_requestedfrom = current user
+    */
+   const filter =
+       "_cat_requestedfrom_value eq " + userId +
+       " and parentcaseid eq null" +
+       " and createdon ge " + createdOnDate +
+       " and (" +
+           "cat_helpcenterstatus eq 100000000" +
+           " or cat_helpcenterstatus eq 100000001" +
+           " or cat_helpcenterstatus eq 100000002" +
+           " or cat_helpcenterstatus eq 100000003" +
+           " or cat_helpcenterstatus eq 100000004" +
+           " or cat_helpcenterstatus eq 100000005" +
+       ")";
+   const url =
+       "/_api/incidents" +
+       "?$select=incidentid" +
+       "&$filter=" + encodeURIComponent(filter) +
+       "&$count=true";
+   webapi.safeAjax({
+       type: "GET",
+       url: url,
+       contentType: "application/json",
+       success: function (result) {
+           console.log("Open Cases API response:", result);
+           let count = 0;
+           /*
+            * Dataverse returns the count as @odata.count
+            */
+           if (result && result["@odata.count"] !== undefined) {
+               count = result["@odata.count"];
+           }
+           /*
+            * Fallback if count is not returned
+            */
+           else if (result && result.value) {
+               count = result.value.length;
+           }
+           const countElement =
+               document.getElementById("openCasesCount");
+           if (countElement) {
+               countElement.textContent = count;
+           }
+           console.log("Open Cases Count:", count);
+       },
+       error: function (xhr) {
+           console.error(
+               "Unable to refresh Open Cases count."
+           );
+           console.error("Status:", xhr.status);
+           console.error("Response:", xhr.responseText);
+       }
+   });
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+   // Load count immediately
+   refreshOpenCasesCount();
+   // Refresh every 30 seconds
+   setInterval(refreshOpenCasesCount, 30000);
+});
+</script>
+ 
+ 
+<div id="tileSettingsPanel" class="tile-settings">
+ 
+  <div class="tile-settings-header">
+    <h4>Customize Tiles</h4>
+    <span class="close-btn" onclick="closeTileSettings()">×</span>
+  </div>
+ 
+  <div class="tile-settings-body">
+    <label>
+      <input type="checkbox"
+             id="chk-cases-by-status"
+             data-tile="tile-cases-by-status"
+             checked>
+      Dealership Cases by Status
+    </label>
+    <label>
+      <input type="checkbox"
+               id="chk-cases-by-status-chart"
+               data-tile="tile-cases-by-status-chart"
+               checked>
+      All Cases by Status 
+      </label>
+
+  </div>
+ 
+  <div class="tile-settings-footer">
+    <button class="btn btn-warning" onclick="saveTileSettings()">Save</button>
+  </div>
+ 
+</div>
+
+<script>
+
+const tilePreferenceColumn = "cat_tilepreferences";
+const tileMappings = [{
+  key: "tile-cases-by-status",
+  tileId: "tile-cases-by-status",
+  checkboxId: "chk-cases-by-status"
+}, {
+  key: "tile-cases-by-status-chart",
+  tileId: "tile-cases-by-status-chart",
+  checkboxId: "chk-cases-by-status-chart"
+}];
+
+function openTileSettings() {
+  document.getElementById("tileSettingsPanel").classList.add("open");
+}
+
+function closeTileSettings() {
+  document.getElementById("tileSettingsPanel").classList.remove("open");
+}
+
+function collectTilePreferences() {
+  const preferences = {};
+  tileMappings.forEach(function(item) {
+    const checkbox = document.getElementById(item.checkboxId);
+    if (checkbox) {
+      preferences[item.key] = checkbox.checked;
+    }
+  });
+  return preferences;
+}
+
+function applyTileVisibilityFromPreferences(preferences) {
+  tileMappings.forEach(function(item) {
+    const tile = document.getElementById(item.tileId);
+    const checkbox = document.getElementById(item.checkboxId);
+    let isVisible = true;
+    if (preferences && Object.prototype.hasOwnProperty.call(preferences, item.key)) {
+      isVisible = preferences[item.key];
+    }
+    if (tile) {
+      tile.style.display = isVisible ? "block" : "none";
+    }
+    if (checkbox) {
+      checkbox.checked = isVisible;
+    }
+  });
+}
+
+function saveTileSettings() {
+  const preferences = collectTilePreferences();
+  const dataToSave = {};
+  dataToSave[tilePreferenceColumn] = JSON.stringify(preferences);
+  webapi.safeAjax({
+    type: "PATCH",
+    url: "/_api/contacts({{ user.id }})",
+    contentType: "application/json",
+    data: JSON.stringify(dataToSave),
+    success: function() {
+      applyTileVisibilityFromPreferences(preferences);
+      closeTileSettings();
+      console.log("Tile preferences saved successfully.");
+    },
+    error: function(xhr) {
+      console.error("Error saving tile preferences:", xhr.responseText);
+      alert("Tile preferences could not be saved. Please check Contact table permission and Web API settings.");
+    }
+  });
+}
+
+function loadTileSettings() {
+  webapi.safeAjax({
+    type: "GET",
+    url: "/_api/contacts({{ user.id }})?$select=" + tilePreferenceColumn,
+    contentType: "application/json",
+    success: function(result) {
+      let preferences = null;
+      if (result && result[tilePreferenceColumn]) {
+        try {
+          preferences = JSON.parse(result[tilePreferenceColumn]);
+        } catch (e) {
+          console.error("Invalid tile preference JSON:", e);
+        }
+      }
+      applyTileVisibilityFromPreferences(preferences);
+    },
+    error: function(xhr) {
+      console.error("Error loading tile preferences:", xhr.responseText);
+      applyTileVisibilityFromPreferences(null);
+    }
+  });
+}
+document.addEventListener("DOMContentLoaded", function() {
+  loadTileSettings();
+});
+
+</script>
+
+
+<style>
+
+.gear-icon:hover {
+  color: #ddd;
+}
+ 
+/* Right slide panel */
+.tile-settings {
+  position: fixed;
+  top: 0;
+  right: -360px;
+  width: 360px;
+  height: 100%;
+  background: #ffffff;
+  box-shadow: -3px 0 10px rgba(0,0,0,0.25);
+  transition: right 0.3s ease;
+  z-index: 1200;
+  display: flex;
+  flex-direction: column;
+}
+ 
+.tile-settings.open {
+  right: 0;
+}
+ 
+.tile-settings-header,
+.tile-settings-footer {
+  padding: 16px;
+  border-bottom: 1px solid #ddd;
+}
+ 
+.tile-settings-footer {
+  border-top: 1px solid #ddd;
+  border-bottom: none;
+  text-align: right;
+}
+ 
+.tile-settings-body {
+  padding: 16px;
+  flex-grow: 1;
+}
+ 
+.close-btn {
+  cursor: pointer;
+  font-size: 22px;
+}
+
+</style>
+
+
+<!-- <script>
+
+function openTileSettings() {
+  document.getElementById('tileSettingsPanel').classList.add('open');
+}
+ 
+function closeTileSettings() {
+  document.getElementById('tileSettingsPanel').classList.remove('open');
+}
+ 
+function saveTileSettings() {
+  const chk1 = document.getElementById('chk-cases-by-status');
+  const chk2 = document.getElementById('chk-cases-by-status-chart');
+
+  localStorage.setItem('tile-cases-by-status', chk1.checked);
+  localStorage.setItem('tile-cases-by-status-chart', chk2.checked);
+
+  applyTileVisibility();
+  closeTileSettings();
+}
+
+ 
+function applyTileVisibility() {
+
+  const tiles = [
+    { key: 'tile-cases-by-status', id: 'tile-cases-by-status' },
+    { key: 'tile-cases-by-status-chart', id: 'tile-cases-by-status-chart' }
+  ];
+
+  tiles.forEach(t => {
+    const isVisible = localStorage.getItem(t.key);
+    const tile = document.getElementById(t.id);
+
+    if (tile) {
+      tile.style.display = (isVisible === 'false') ? 'none' : 'block';
+    }
+  });
+}
+ 
+window.addEventListener('load', function () {
+
+  const mappings = [
+    { key: 'tile-cases-by-status', checkbox: 'chk-cases-by-status' },
+    { key: 'tile-cases-by-status-chart', checkbox: 'chk-cases-by-status-chart' }
+  ];
+
+  mappings.forEach(m => {
+    const saved = localStorage.getItem(m.key);
+    if (saved !== null) {
+      document.getElementById(m.checkbox).checked = (saved === 'true');
+    }
+  });
+
+  applyTileVisibility();
+});
+
+</script> -->
+
+
+{% fetchxml statusData %}
+<fetch aggregate="true">
+  <entity name="incident">
+    
+    <!-- Group by your status field -->
+    <attribute name="cat_helpcenterstatus" groupby="true" alias="status" />
+    
+    <!-- Count all cases -->
+    <attribute name="incidentid" aggregate="count" alias="count" />
+
+  </entity>
+</fetch>
+{% endfetchxml %}
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    let statusCounts = {};
+
+    {% for row in statusData.results.entities %}
+      statusCounts["{{ row.status.label | default: 'Unknown' | escape }}"] = {{ row.count }};
+    {% endfor %}
+
+    console.log("Status Data:", statusCounts);
+
+    const labels = Object.keys(statusCounts);
+    const values = Object.values(statusCounts);
+
+    if (labels.length === 0) {
+        console.error("No data found for chart");
+        return;
+    }
+
+    const ctx = document.getElementById('casesStatusChart');
+
+    if (!ctx) {
+        console.error("Canvas not found");
+        return;
+    }
+
+    new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: values,
+                backgroundColor: [
+                    '#243c8f','#1f77b4','#2ec4b6','#ffb703',
+                    '#ff595e','#6a1b9a','#264653','#1982c4'
+                ]
+            }]
+        },
+      options: {
+         responsive: true,
+         maintainAspectRatio: false,
+         plugins: {
+            legend: {
+                  position: 'right',
+                  labels: {
+                     boxWidth: 20,
+                     padding: 15,
+                     font: {
+                        size: 12
+                     }
+                  }
+            }
+         }
+      }
+    });
+});
+
+
+</script>
