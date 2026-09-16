@@ -1,0 +1,312 @@
+<div id="tileSettingsPanel" class="tile-settings">
+ 
+  <div class="tile-settings-header">
+    <h4>Customize Tiles</h4>
+    <span class="close-btn" onclick="closeTileSettings()">×</span>
+  </div>
+ 
+  <div class="tile-settings-body">
+    <label>
+      <input type="checkbox"
+             id="chk-cases-by-status"
+             data-tile="tile-cases-by-status"
+             checked>
+      Dealership Cases by Status
+    </label>
+    <label>
+      <input type="checkbox"
+               id="chk-cases-by-status-chart"
+               data-tile="tile-cases-by-status-chart"
+               checked>
+      All Cases by Status 
+      </label>
+
+  </div>
+ 
+  <div class="tile-settings-footer">
+    <button class="btn btn-warning" onclick="saveTileSettings()">Save</button>
+  </div>
+ 
+</div>
+
+<script>
+
+const tilePreferenceColumn = "cat_tilepreferences";
+const tileMappings = [{
+  key: "tile-cases-by-status",
+  tileId: "tile-cases-by-status",
+  checkboxId: "chk-cases-by-status"
+}, {
+  key: "tile-cases-by-status-chart",
+  tileId: "tile-cases-by-status-chart",
+  checkboxId: "chk-cases-by-status-chart"
+}];
+
+function openTileSettings() {
+  document.getElementById("tileSettingsPanel").classList.add("open");
+}
+
+function closeTileSettings() {
+  document.getElementById("tileSettingsPanel").classList.remove("open");
+}
+
+function collectTilePreferences() {
+  const preferences = {};
+  tileMappings.forEach(function(item) {
+    const checkbox = document.getElementById(item.checkboxId);
+    if (checkbox) {
+      preferences[item.key] = checkbox.checked;
+    }
+  });
+  return preferences;
+}
+
+function applyTileVisibilityFromPreferences(preferences) {
+  tileMappings.forEach(function(item) {
+    const tile = document.getElementById(item.tileId);
+    const checkbox = document.getElementById(item.checkboxId);
+    let isVisible = true;
+    if (preferences && Object.prototype.hasOwnProperty.call(preferences, item.key)) {
+      isVisible = preferences[item.key];
+    }
+    if (tile) {
+      tile.style.display = isVisible ? "block" : "none";
+    }
+    if (checkbox) {
+      checkbox.checked = isVisible;
+    }
+  });
+}
+
+function saveTileSettings() {
+  const preferences = collectTilePreferences();
+  const dataToSave = {};
+  dataToSave[tilePreferenceColumn] = JSON.stringify(preferences);
+  webapi.safeAjax({
+    type: "PATCH",
+    url: "/_api/contacts({{ user.id }})",
+    contentType: "application/json",
+    data: JSON.stringify(dataToSave),
+    success: function() {
+      applyTileVisibilityFromPreferences(preferences);
+      closeTileSettings();
+      console.log("Tile preferences saved successfully.");
+    },
+    error: function(xhr) {
+      console.error("Error saving tile preferences:", xhr.responseText);
+      alert("Tile preferences could not be saved. Please check Contact table permission and Web API settings.");
+    }
+  });
+}
+
+function loadTileSettings() {
+  webapi.safeAjax({
+    type: "GET",
+    url: "/_api/contacts({{ user.id }})?$select=" + tilePreferenceColumn,
+    contentType: "application/json",
+    success: function(result) {
+      let preferences = null;
+      if (result && result[tilePreferenceColumn]) {
+        try {
+          preferences = JSON.parse(result[tilePreferenceColumn]);
+        } catch (e) {
+          console.error("Invalid tile preference JSON:", e);
+        }
+      }
+      applyTileVisibilityFromPreferences(preferences);
+    },
+    error: function(xhr) {
+      console.error("Error loading tile preferences:", xhr.responseText);
+      applyTileVisibilityFromPreferences(null);
+    }
+  });
+}
+document.addEventListener("DOMContentLoaded", function() {
+  loadTileSettings();
+});
+
+</script>
+
+
+<style>
+
+.gear-icon:hover {
+  color: #ddd;
+}
+ 
+/* Right slide panel */
+.tile-settings {
+  position: fixed;
+  top: 0;
+  right: -360px;
+  width: 360px;
+  height: 100%;
+  background: #ffffff;
+  box-shadow: -3px 0 10px rgba(0,0,0,0.25);
+  transition: right 0.3s ease;
+  z-index: 1200;
+  display: flex;
+  flex-direction: column;
+}
+ 
+.tile-settings.open {
+  right: 0;
+}
+ 
+.tile-settings-header,
+.tile-settings-footer {
+  padding: 16px;
+  border-bottom: 1px solid #ddd;
+}
+ 
+.tile-settings-footer {
+  border-top: 1px solid #ddd;
+  border-bottom: none;
+  text-align: right;
+}
+ 
+.tile-settings-body {
+  padding: 16px;
+  flex-grow: 1;
+}
+ 
+.close-btn {
+  cursor: pointer;
+  font-size: 22px;
+}
+
+</style>
+
+
+<!-- <script>
+
+function openTileSettings() {
+  document.getElementById('tileSettingsPanel').classList.add('open');
+}
+ 
+function closeTileSettings() {
+  document.getElementById('tileSettingsPanel').classList.remove('open');
+}
+ 
+function saveTileSettings() {
+  const chk1 = document.getElementById('chk-cases-by-status');
+  const chk2 = document.getElementById('chk-cases-by-status-chart');
+
+  localStorage.setItem('tile-cases-by-status', chk1.checked);
+  localStorage.setItem('tile-cases-by-status-chart', chk2.checked);
+
+  applyTileVisibility();
+  closeTileSettings();
+}
+
+ 
+function applyTileVisibility() {
+
+  const tiles = [
+    { key: 'tile-cases-by-status', id: 'tile-cases-by-status' },
+    { key: 'tile-cases-by-status-chart', id: 'tile-cases-by-status-chart' }
+  ];
+
+  tiles.forEach(t => {
+    const isVisible = localStorage.getItem(t.key);
+    const tile = document.getElementById(t.id);
+
+    if (tile) {
+      tile.style.display = (isVisible === 'false') ? 'none' : 'block';
+    }
+  });
+}
+ 
+window.addEventListener('load', function () {
+
+  const mappings = [
+    { key: 'tile-cases-by-status', checkbox: 'chk-cases-by-status' },
+    { key: 'tile-cases-by-status-chart', checkbox: 'chk-cases-by-status-chart' }
+  ];
+
+  mappings.forEach(m => {
+    const saved = localStorage.getItem(m.key);
+    if (saved !== null) {
+      document.getElementById(m.checkbox).checked = (saved === 'true');
+    }
+  });
+
+  applyTileVisibility();
+});
+
+</script> -->
+
+
+{% fetchxml statusData %}
+<fetch aggregate="true">
+  <entity name="incident">
+    
+    <!-- Group by your status field -->
+    <attribute name="cat_helpcenterstatus" groupby="true" alias="status" />
+    
+    <!-- Count all cases -->
+    <attribute name="incidentid" aggregate="count" alias="count" />
+
+  </entity>
+</fetch>
+{% endfetchxml %}
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    let statusCounts = {};
+
+    {% for row in statusData.results.entities %}
+      statusCounts["{{ row.status.label | default: 'Unknown' | escape }}"] = {{ row.count }};
+    {% endfor %}
+
+    console.log("Status Data:", statusCounts);
+
+    const labels = Object.keys(statusCounts);
+    const values = Object.values(statusCounts);
+
+    if (labels.length === 0) {
+        console.error("No data found for chart");
+        return;
+    }
+
+    const ctx = document.getElementById('casesStatusChart');
+
+    if (!ctx) {
+        console.error("Canvas not found");
+        return;
+    }
+
+    new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: values,
+                backgroundColor: [
+                    '#243c8f','#1f77b4','#2ec4b6','#ffb703',
+                    '#ff595e','#6a1b9a','#264653','#1982c4'
+                ]
+            }]
+        },
+      options: {
+         responsive: true,
+         maintainAspectRatio: false,
+         plugins: {
+            legend: {
+                  position: 'right',
+                  labels: {
+                     boxWidth: 20,
+                     padding: 15,
+                     font: {
+                        size: 12
+                     }
+                  }
+            }
+         }
+      }
+    });
+});
+
+
+</script>
