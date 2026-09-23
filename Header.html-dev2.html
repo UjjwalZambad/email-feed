@@ -1,0 +1,6539 @@
+<!-- Logged In/Out state by parameters (SSO) with lang parameter -->
+
+<script>
+(function () {
+    var params = new URLSearchParams(window.location.search);
+
+    var userStateValue = "";
+    var languageValue = "";
+    var productValue = "";
+
+    params.forEach(function (value, key) {
+        var normalizedKey = key.toLowerCase();
+
+        if (normalizedKey === "userstate") {
+            userStateValue = value;
+        }
+
+        if (normalizedKey === "language") {
+            languageValue = value;
+        }
+
+        if (normalizedKey === "product") {
+            productValue = value;
+        }
+    });
+
+    console.log("UserState parameter:", userStateValue);
+    console.log("Language parameter:", languageValue);
+    console.log("Product parameter:", productValue);
+
+    /*
+     * Build the supported language list dynamically
+     * from the translated versions of the current webpage.
+     */
+    var supportedLanguages = [
+        {% for language in page.languages %}
+            "{{ language.code | escape }}"
+            {% unless forloop.last %},{% endunless %}
+        {% endfor %}
+    ];
+
+    console.log(
+        "Configured Power Pages languages:",
+        supportedLanguages
+    );
+
+    /*
+     * Convert an external locale such as en_US into en-US.
+     */
+    function normalizeLanguageCode(languageCode) {
+        if (!languageCode) {
+            return "";
+        }
+
+        var languageParts = String(languageCode)
+            .trim()
+            .replace(/_/g, "-")
+            .split("-");
+
+        if (languageParts.length === 1) {
+            return languageParts[0].toLowerCase();
+        }
+
+        return (
+            languageParts[0].toLowerCase() +
+            "-" +
+            languageParts[1].toUpperCase()
+        );
+    }
+
+    function findSupportedLanguage(languageCode) {
+        var normalizedLanguage =
+            normalizeLanguageCode(languageCode).toLowerCase();
+
+        if (!normalizedLanguage) {
+            return null;
+        }
+
+        for (var index = 0; index < supportedLanguages.length; index++) {
+            var supportedLanguage = String(
+                supportedLanguages[index]
+            ).trim();
+
+            if (
+                supportedLanguage.toLowerCase() ===
+                normalizedLanguage
+            ) {
+                return supportedLanguage;
+            }
+        }
+
+        return null;
+    }
+
+    /*
+     * Detect the current Power Pages language from the URL.
+     * Example: /en-US/ returns en-US.
+     */
+    function getCurrentPathLanguage() {
+        var pathSegments = window.location.pathname
+            .split("/")
+            .filter(function (segment) {
+                return segment !== "";
+            });
+
+        if (pathSegments.length === 0) {
+            return "";
+        }
+
+        return pathSegments[0];
+    }
+
+    /*
+     * Replace the language segment without changing the
+     * remaining page path or query-string parameters.
+     */
+    function buildLanguageUrl(targetLanguage) {
+        var pathSegments = window.location.pathname
+            .split("/")
+            .filter(function (segment) {
+                return segment !== "";
+            });
+
+        var currentLanguage = getCurrentPathLanguage();
+
+        var currentPathIsLocalized = supportedLanguages.some(
+            function (languageCode) {
+                return (
+                    String(languageCode).toLowerCase() ===
+                    String(currentLanguage).toLowerCase()
+                );
+            }
+        );
+
+        if (currentPathIsLocalized) {
+            pathSegments[0] = targetLanguage;
+        } else {
+            pathSegments.unshift(targetLanguage);
+        }
+
+        var targetPath = "/" + pathSegments.join("/");
+
+        if (window.location.pathname.endsWith("/")) {
+            targetPath += "/";
+        }
+
+        return (
+            targetPath +
+            window.location.search +
+            window.location.hash
+        );
+    }
+
+    var requestedLanguage =
+        findSupportedLanguage(languageValue);
+
+    var currentPathLanguage =
+        getCurrentPathLanguage();
+
+    /*
+     * This section runs for every user:
+     * authenticated users and anonymous users.
+     */
+    if (
+        requestedLanguage &&
+        requestedLanguage.toLowerCase() !==
+            String(currentPathLanguage).toLowerCase()
+    ) {
+        var languageRedirectUrl =
+            buildLanguageUrl(requestedLanguage);
+
+        console.log(
+            "Redirecting to requested Power Pages language:",
+            languageRedirectUrl
+        );
+
+        window.location.replace(languageRedirectUrl);
+        return;
+    }
+
+    if (languageValue && !requestedLanguage) {
+        console.warn(
+            "The requested language is not configured for this page:",
+            languageValue
+        );
+    }
+
+    /*
+     * Automatic login applies only to anonymous users.
+     * Liquid converts this value to true or false.
+     */
+    var isAuthenticated = {% if user %}true{% else %}false{% endif %};
+
+    if (isAuthenticated) {
+        console.log(
+            "The user is already authenticated. Login is not required."
+        );
+        return;
+    }
+
+    if (
+        String(userStateValue).trim().toLowerCase() !==
+        "loggedin"
+    ) {
+        console.log("Automatic sign-in was not requested.");
+        return;
+    }
+
+    var activeLanguage =
+        requestedLanguage ||
+        findSupportedLanguage(currentPathLanguage) ||
+        "en-US";
+
+    var attemptKey =
+        "pp_userstate_login_attempted_" +
+        activeLanguage.toLowerCase();
+
+    if (sessionStorage.getItem(attemptKey) === "1") {
+        console.log(
+            "Automatic sign-in was already attempted in this tab."
+        );
+        return;
+    }
+
+    sessionStorage.setItem(attemptKey, "1");
+
+    var provider =
+        "https://signin.cat.com/cwslogin.onmicrosoft.com/oauth2/v2.0/authorize?p=b2c_1a_p2_v1_signin_nonprod";
+
+    var returnUrl = "/" + activeLanguage + "/";
+    var returnParams = new URLSearchParams();
+
+    if (productValue) {
+        returnParams.set("product", productValue);
+    }
+
+    if (returnParams.toString()) {
+        returnUrl += "?" + returnParams.toString();
+    }
+
+    var loginUrl =
+        "/" +
+        activeLanguage +
+        "/Account/Login/ExternalLogin" +
+        "?returnUrl=" +
+        encodeURIComponent(returnUrl) +
+        "&provider=" +
+        encodeURIComponent(provider);
+
+    console.log(
+        "Return URL after authentication:",
+        returnUrl
+    );
+
+    console.log(
+        "Redirecting to Power Pages authentication:",
+        loginUrl
+    );
+
+    window.location.replace(loginUrl);
+})();
+</script>
+
+<!--articles-->
+{% assign personaValue = '' %}
+
+{% if user %}
+    {% if user.roles contains "Cat_Customer Persona Role" %}
+        {% assign personaValue = 100000000 %}
+    {% elsif user.roles contains "Cat_Dealer Persona Role" %}
+        {% assign personaValue = 100000001 %}
+    {% elsif user.roles contains "Cat_Internal Customer Persona Role" %}
+        {% assign personaValue = 100000003 %}
+    {% endif %}
+{% else %}
+    {% assign personaValue = 100000002 %}
+{% endif %}
+
+
+{% fetchxml articles %}
+<fetch distinct="true" top="500">
+
+    <entity name="knowledgearticle">
+
+        <attribute name="knowledgearticleid" />
+        <attribute name="title" />
+
+        <filter type="and">
+
+            <condition
+                attribute="statecode"
+                operator="eq"
+                value="3" />
+
+            <condition
+                attribute="cat_ispublicfacing"
+                operator="eq"
+                value="1" />
+
+            <condition
+                attribute="cat_persona"
+                operator="contain-values">
+
+                <value>{{ personaValue }}</value>
+
+            </condition>
+
+        </filter>
+
+    </entity>
+
+</fetch>
+{% endfetchxml %}
+
+
+<div id="hiddenArticles" style="display:none;">
+{% for article in articles.results.entities %}
+
+{% fetchxml articleCategories %}
+<fetch top="1">
+  <entity name="category">
+    <attribute name="title" />
+    <attribute name="categoryid" />
+    <attribute name="parentcategoryid" />
+
+    <link-entity
+      name="knowledgearticlescategories"
+      intersect="true"
+      from="categoryid"
+      to="categoryid">
+
+      <filter>
+        <condition
+          attribute="knowledgearticleid"
+          operator="eq"
+          value="{{ article.knowledgearticleid }}" />
+      </filter>
+
+    </link-entity>
+  </entity>
+</fetch>
+{% endfetchxml %}
+
+<!-- {% assign topCategory = "" %}
+
+{% for cat in articleCategories.results.entities %}
+
+  {% if cat.parentcategoryid == nil %}
+
+      {% assign topCategory = cat.title %}
+
+  {% else %}
+
+      {% fetchxml parentCategory %}
+      <fetch top="1">
+        <entity name="category">
+          <attribute name="title" />
+          <attribute name="parentcategoryid" />
+
+          <filter>
+            <condition
+              attribute="categoryid"
+              operator="eq"
+              value="{{ cat.parentcategoryid.id }}" />
+          </filter>
+        </entity>
+      </fetch>
+      {% endfetchxml %}
+
+      {% assign parent = parentCategory.results.entities[0] %}
+
+      {% if parent.parentcategoryid == nil %}
+          {% assign topCategory = parent.title %}
+      {% else %}
+          {% assign topCategory = parent.title %}
+      {% endif %}
+
+  {% endif %}
+
+{% endfor %}
+ -->
+{% assign topCategory = "" %}
+
+{% for cat in articleCategories.results.entities %}
+
+    {% if cat.parentcategoryid == nil %}
+
+        {% assign topCategory = cat.title %}
+
+    {% else %}
+
+        {% fetchxml parentCategory %}
+        <fetch top="1">
+            <entity name="category">
+                <attribute name="title" />
+                <attribute name="parentcategoryid" />
+                <filter>
+                    <condition
+                        attribute="categoryid"
+                        operator="eq"
+                        value="{{ cat.parentcategoryid.id }}" />
+                </filter>
+            </entity>
+        </fetch>
+        {% endfetchxml %}
+
+        {% assign parent = parentCategory.results.entities[0] %}
+
+        {% if parent.parentcategoryid %}
+
+            {% fetchxml rootCategory %}
+            <fetch top="1">
+                <entity name="category">
+                    <attribute name="title" />
+                    <filter>
+                        <condition
+                            attribute="categoryid"
+                            operator="eq"
+                            value="{{ parent.parentcategoryid.id }}" />
+                    </filter>
+                </entity>
+            </fetch>
+            {% endfetchxml %}
+
+            {% assign root = rootCategory.results.entities[0] %}
+
+            {% if root %}
+                {% assign topCategory = root.title %}
+            {% else %}
+                {% assign topCategory = parent.title %}
+            {% endif %}
+
+        {% else %}
+
+            {% assign topCategory = parent.title %}
+
+        {% endif %}
+
+    {% endif %}
+
+{% endfor %}
+{% assign categoryCount = articleCategories.results.entities.size %}
+{% if categoryCount > 1 %}
+{% assign displayCategory = "Multiple" %}
+{% else %}
+{% assign displayCategory = topCategory %}
+{% endif %} 
+
+<div
+    data-id="{{ article.knowledgearticleid }}"
+    data-title="{{ article.title }}"
+    data-category="{{ displayCategory }}"
+    data-url="/en-US/knowledge-article-details/?articleId={{ article.knowledgearticleid }}&from=search">
+</div>
+
+{% endfor %}
+</div>
+
+{% if user.roles contains "Cat_Internal Customer Persona Role" %}
+
+    {% fetchxml caseResults %}
+        <!-- Internal Fetch -->
+<fetch>
+                    <entity name="incident">
+                         <attribute name="incidentid" />
+                         <attribute name="ticketnumber" />
+                         <attribute name="title" />
+                         <attribute name="createdon" />
+                         <attribute name="productid" />
+                         
+                      
+                 <filter type="and">
+
+                 <condition attribute="statecode" operator="eq" value="0"/>
+                         <filter type="or">
+                              <condition attribute="ticketnumber" operator="like" value="%{{ searchText }}%" />
+                              <condition attribute="title" operator="like" value="%{{ searchText }}%" />
+                  
+                         </filter>
+                          <filter type="and">
+                            <condition attribute="parentcaseid" operator="null"/>
+                          </filter>
+                         </filter>
+                    
+                         
+                       
+                         <order attribute="createdon" descending="true" />
+                    </entity>
+               </fetch>
+
+
+    {% endfetchxml %}
+   {% endif %}
+
+    
+
+        {% if user.roles contains "Cat_Customer Persona Role" %}
+
+    {% fetchxml caseResults %}
+        
+<fetch>
+                    <entity name="incident">
+                         <attribute name="incidentid" />
+                         <attribute name="ticketnumber" />
+                         <attribute name="title" />
+                         <attribute name="createdon" />
+                 <filter type="and">
+                    <condition attribute="statecode" operator="eq" value="0"/>
+                 <!-- <filter type="or">
+                 <condition attribute="customerid" operator="eq" value="{{ user.parentcustomerid.id }}"/>
+                 <condition attribute="customerid" operator="eq" value="{{ user.id }}"/>
+                  </filter> -->
+                    <filter type="and">
+      <condition attribute="cat_helpcenterstatus" operator="in">
+                  <value>100000000</value>
+                  <value>100000001</value>
+                  <value>100000002</value>
+                  <value>100000003</value>
+                  <value>100000004</value>
+                  <value>100000005</value>
+               </condition>
+               <condition attribute="parentcaseid" operator="null"/>
+               <condition attribute="createdon" operator="last-x-years" value="1" />
+               <condition attribute="cat_requestedfrom" operator="eq" value="{{user.id}}"/>
+    </filter>
+                         <filter type="or">
+                              <condition attribute="ticketnumber" operator="like" value="%{{ searchText }}%" />
+                              <condition attribute="title" operator="like" value="%{{ searchText }}%" />
+                  
+                         </filter>
+                         <filter type="and">
+                            <condition attribute="parentcaseid" operator="null"/>
+                          </filter>
+                         </filter>
+                         <order attribute="createdon" descending="true" />
+                    </entity>
+               </fetch>
+
+    {% endfetchxml %}
+    {% endif %}
+
+    {% if user.roles contains "Cat_Dealer Persona Role" %}
+{% fetchxml caseResults %}
+        <!-- Dealer Fetch -->
+               <fetch>
+                    <entity name="incident">
+                         <attribute name="incidentid" />
+                         <attribute name="ticketnumber" />
+                         <attribute name="title" />
+                         <attribute name="createdon" />
+
+                 <filter type="and">
+<condition attribute="statecode" operator="eq" value="0" />
+<filter type="or">
+<condition attribute="ticketnumber" operator="like" value="%{{ searchText }}%" />
+<condition attribute="title" operator="like" value="%{{ searchText }}%" />
+</filter>
+<filter type="and">
+                            <condition attribute="parentcaseid" operator="null"/>
+                          </filter>
+</filter>
+<!-- Requested For Account Hierarchy -->
+<link-entity name="account" from="accountid" to="customerid" alias="reqForAccount" link-type="outer">
+<filter type="or">
+<condition attribute="accountid" operator="eq" value="{{ user.parentcustomerid.id }}" />
+<condition attribute="parentaccountid" operator="eq" value="{{ user.parentcustomerid.id }}" />
+</filter>
+</link-entity>
+<!-- Requested For Contact Hierarchy -->
+<link-entity name="contact" from="contactid" to="customerid" alias="reqForContact" link-type="outer">
+<link-entity name="account" from="accountid" to="parentcustomerid" alias="reqForContactAccount" link-type="outer">
+<filter type="or">
+<condition attribute="accountid" operator="eq" value="{{ user.parentcustomerid.id }}" />
+<condition attribute="parentaccountid" operator="eq" value="{{ user.parentcustomerid.id }}" />
+</filter>
+</link-entity>
+</link-entity>
+<!-- Requested By -->
+<link-entity name="contact" from="contactid" to="cat_requestedfrom" alias="requestedbycontact" link-type="outer">
+<filter type="or">
+<condition attribute="parentcustomerid" operator="eq" value="{{ user.parentcustomerid.id }}" />
+</filter>
+</link-entity>
+<!-- Requested By Hierarchy -->
+<link-entity name="contact" from="contactid" to="cat_requestedfrom" alias="reqby" link-type="outer">
+<link-entity name="account" from="accountid" to="parentcustomerid" alias="reqAccount" link-type="outer">
+<filter type="or">
+<condition attribute="accountid" operator="eq" value="{{ user.parentcustomerid.id }}" />
+<condition attribute="parentaccountid" operator="eq" value="{{ user.parentcustomerid.id }}" />
+</filter>
+</link-entity>
+</link-entity>
+<!-- Final OR -->
+<filter type="or">
+<!-- Requested For Account -->
+<condition entityname="reqForAccount" attribute="accountid" operator="not-null" />
+<!-- Requested For Contact -->
+<!-- <condition entityname="reqForContact" attribute="contactid" operator="not-null" /> -->
+<!-- Requested For Contact Hierarchy -->
+<condition entityname="reqForContactAccount" attribute="accountid"
+                operator="not-null" />
+<!-- Requested By -->
+<condition entityname="requestedbycontact" attribute="contactid" operator="not-null" />
+<!-- Requested By Hierarchy -->
+<condition entityname="reqAccount" attribute="accountid"  operator="not-null" />
+<!-- Dealer Lookup -->
+<condition attribute="cat_dealername" operator="eq" value="{{ user.parentcustomerid.id }}" />
+</filter>
+
+                         <order attribute="createdon" descending="true" />
+                    </entity>
+               </fetch>
+
+               {% endfetchxml %}
+               {% endif %}
+
+
+<div id="hiddenCases" style="display:none;">
+{% for case in caseResults.results.entities %}
+ 
+<div
+    data-id="{{ case.incidentid }}"
+    data-title="{{ case.title }}"
+    data-category="{{ case.productid.name}}"
+    data-number="{{ case.ticketnumber }}"
+    data-type="Case"
+    data-url="/case-details/?id={{ case.incidentid }}&mode=newtab">
+</div>
+ 
+{% endfor %}
+</div>
+ 
+{% comment %}
+  ADDITIVE HANDUP PREDICTIVE SEARCH SUPPORT
+  If a Case is a Handup, predictive search should open Handup Details.
+  Normal Cases and Articles remain unchanged.
+{% endcomment %}
+
+{% fetchxml predictiveHandups %}
+<fetch top="500">
+  <entity name="incident">
+    <attribute name="incidentid" />
+    <attribute name="ticketnumber" />
+    <attribute name="title" />
+    <attribute name="productid" />
+    <attribute name="parentcaseid" />
+    <attribute name="cat_elevationtype" />
+
+    <filter type="and">
+      <condition attribute="parentcaseid" operator="not-null" />
+      <condition attribute="cat_elevationtype" operator="eq" value="100000001" />
+    </filter>
+
+    <order attribute="createdon" descending="true" />
+  </entity>
+</fetch>
+{% endfetchxml %}
+
+<div id="hiddenPredictiveHandups" style="display:none;">
+{% for handup in predictiveHandups.results.entities %}
+  <div
+      data-id="{{ handup.incidentid }}"
+      data-title="{{ handup.title }}"
+      data-category="{{ handup.productid.name }}"
+      data-number="{{ handup.ticketnumber }}"
+      data-type="Handups"
+      data-url="/Handup-Details/?id={{ handup.incidentid }}&type=Handups&status=">
+  </div>
+{% endfor %}
+</div>
+
+{% comment %}
+=========================================================
+PRODUCT TO CATEGORY MAPPING
+
+Important:
+1. FetchXML must run before the Liquid for-loop.
+2. cat_product and cat_category are lookup fields.
+3. Lookup names are read using .name.
+=========================================================
+{% endcomment %}
+
+{% fetchxml productMappings %}
+<fetch distinct="false">
+    <entity name="cat_producttocategorymapping">
+
+        <attribute name="cat_producttocategorymappingid" />
+        <attribute name="cat_name" />
+        <attribute name="cat_product" />
+        <attribute name="cat_category" />
+
+        <filter type="and">
+
+            <condition
+                attribute="statecode"
+                operator="eq"
+                value="0" />
+
+            <condition
+                attribute="cat_product"
+                operator="not-null" />
+
+            <condition
+                attribute="cat_category"
+                operator="not-null" />
+
+        </filter>
+
+        <order
+            attribute="cat_name"
+            descending="false" />
+
+    </entity>
+</fetch>
+{% endfetchxml %}
+
+
+{% assign urlProductParameter = params['product'] | strip %}
+{% assign retrievedProductId = "" %}
+{% assign retrievedCategoryId = "" %}
+
+<script>
+    console.log("Liquid Product:", "{{ urlProductParameter | escape }}");
+    console.log(
+        "Browser Product:",
+        new URLSearchParams(window.location.search).get("product")
+    );
+</script>
+
+{% if urlProductParameter != blank %}
+
+    {% fetchxml matchedProduct %}
+    <fetch top="1">
+        <entity name="product">
+            <attribute name="productid" />
+            <filter type="and">
+                <condition
+                    attribute="cat_sourceurlproductparameter"
+                    operator="eq"
+                    value="{{ urlProductParameter | escape }}" />
+            </filter>
+        </entity>
+    </fetch>
+    {% endfetchxml %}
+
+    {% if matchedProduct.results.entities.size > 0 %}
+
+        {% assign matchedProductRecord = matchedProduct.results.entities[0] %}
+
+        {% assign retrievedProductId = matchedProductRecord.productid %}
+
+    {% endif %}
+
+{% endif %}
+
+
+{% if retrievedProductId != blank %}
+
+    {% fetchxml matchedMapping %}
+    <fetch top="1">
+        <entity name="cat_producttocategorymapping">
+
+            <attribute name="cat_producttocategorymappingid" />
+            <attribute name="cat_product" />
+            <attribute name="cat_category" />
+
+            <filter type="and">
+
+                <condition
+                    attribute="statecode"
+                    operator="eq"
+                    value="0" />
+
+                <condition
+                    attribute="cat_product"
+                    operator="eq"
+                    value="{{ retrievedProductId }}" />
+
+                <condition
+                    attribute="cat_category"
+                    operator="not-null" />
+
+            </filter>
+
+        </entity>
+    </fetch>
+    {% endfetchxml %}
+
+    {% if matchedMapping.results.entities.size > 0 %}
+
+        {% assign matchedMappingRecord = matchedMapping.results.entities[0] %}
+
+        {% assign retrievedCategoryId = matchedMappingRecord.cat_category.id %}
+
+    {% endif %}
+
+{% endif %}
+
+
+<script>
+
+    window.CAT_GA_ProductID = "{{ retrievedProductId | escape }}";
+    window.CAT_GA_CategoryID = "{{ retrievedCategoryId | escape }}";
+
+    console.log(
+        "URL product parameter:",
+        "{{ urlProductParameter | escape }}"
+    );
+
+    console.log(
+        "CAT_GA_ProductID:",
+        window.CAT_GA_ProductID
+    );
+
+    console.log(
+        "CAT_GA_CategoryID:",
+        window.CAT_GA_CategoryID
+    );
+
+</script>
+
+{% comment %}
+Hidden mapping data will be read by JavaScript.
+{% endcomment %}
+
+<div
+    id="hiddenProductMappings"
+    style="display:none;"
+    aria-hidden="true">
+
+    {% for mapping in productMappings.results.entities %}
+
+        {% assign mappingId = mapping.cat_producttocategorymappingid %}
+        {% assign mappingName = mapping.cat_name %}
+
+        {% assign productName = mapping.cat_product.name %}
+        {% assign productId = mapping.cat_product.id %}
+
+        {% assign categoryName = mapping.cat_category.name %}
+        {% assign categoryId = mapping.cat_category.id %}
+
+        <div
+            data-mapping-id="{{ mappingId }}"
+            data-mapping-name="{{ mappingName | escape }}"
+            data-product="{{ productName | escape }}"
+            data-product-id="{{ productId }}"
+            data-category="{{ categoryName | escape }}"
+            data-category-id="{{ categoryId }}">
+        </div>
+
+    {% endfor %}
+</div>
+
+ 
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    function applyHandupPredictiveRouting() {
+        var hiddenCases = document.getElementById("hiddenCases");
+        var hiddenHandups = document.getElementById("hiddenPredictiveHandups");
+
+        if (!hiddenCases || !hiddenHandups) {
+            return;
+        }
+
+        hiddenHandups.querySelectorAll("div[data-id]").forEach(function (handupItem) {
+            var handupId = handupItem.getAttribute("data-id");
+
+            if (!handupId) {
+                return;
+            }
+
+            var existingCaseItem =
+                hiddenCases.querySelector('div[data-id="' + handupId + '"]');
+
+            if (existingCaseItem) {
+                existingCaseItem.setAttribute("data-type", "Handups");
+                existingCaseItem.setAttribute(
+                    "data-url",
+                    handupItem.getAttribute("data-url")
+                );
+
+                if (!existingCaseItem.getAttribute("data-category")) {
+                    existingCaseItem.setAttribute(
+                        "data-category",
+                        handupItem.getAttribute("data-category") || ""
+                    );
+                }
+            } else {
+                var clone = document.createElement("div");
+
+                clone.setAttribute("data-id", handupId);
+                clone.setAttribute("data-title", handupItem.getAttribute("data-title") || "");
+                clone.setAttribute("data-category", handupItem.getAttribute("data-category") || "");
+                clone.setAttribute("data-number", handupItem.getAttribute("data-number") || "");
+                clone.setAttribute("data-type", "Handups");
+                clone.setAttribute("data-url", handupItem.getAttribute("data-url") || "");
+
+                hiddenCases.appendChild(clone);
+            }
+        });
+    }
+
+    applyHandupPredictiveRouting();
+
+    $(document).on("click", "a.predictive-link", function () {
+        var href = $(this).attr("href") || "";
+
+        if (href.toLowerCase().indexOf("/handup-details/") === -1) {
+            return;
+        }
+
+        var searchBox =
+            document.getElementById("search") ||
+            document.getElementById("search_mobile");
+
+        var keyword = searchBox ? searchBox.value || "" : "";
+
+        sessionStorage.setItem(
+            "handupSearchReturnUrl",
+            "/search-results?search=" +
+                encodeURIComponent(keyword) +
+                "&types=Handups&mode=viewAll&activeType=Handups"
+        );
+
+        sessionStorage.setItem("handupSearchScroll", "0");
+    });
+
+});
+</script>
+
+
+
+<!-- URL reference for more Icons availability -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+<!--Browser Title-->
+
+<span id="browser-title-snippet" style="display:none;">
+  {{ snippets['CAT Browser Title'] | default: 'Help Center' }}
+</span>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    var snippetEl = document.getElementById("browser-title-snippet");
+
+    if (snippetEl) {
+      var titleText = snippetEl.textContent || snippetEl.innerText;
+
+      if (titleText && titleText.trim().length > 0) {
+        document.title = titleText.trim();
+      }
+    }
+  });
+</script>
+
+<!--Favicon Icon-->
+
+<link rel="icon" href="~/favicon.ico">
+
+
+{% assign defaultlang = settings['LanguageLocale/Code'] | default: 'en-us' %}
+{% assign homeurl = website.adx_partialurl %}
+
+<!--Adding for Web Role based visibility of quicklinks-->
+{% comment %}-----------------------------------------
+ Resolve role priority & snippet
+------------------------------------------{% endcomment %}
+
+{% assign roleKey = 'Anonymous Users' %}
+{% assign isAdmin = false %}
+
+{% if user %}
+  {% if user.roles contains 'Cat_Customer Persona Role' %}
+    {% assign roleKey = 'Cat_Customer Persona Role' %}
+  {% elsif user.roles contains 'Cat_Dealer Persona Role' %}
+    {% assign roleKey = 'Cat_Dealer Persona Role' %}
+  {% elsif user.roles contains 'Cat_Internal Customer Persona Role' %}
+    {% assign roleKey = 'Cat_Internal Customer Persona Role' %}
+  {% endif %}
+{% endif %}
+
+{% assign snippetName = 'QuickLinks.VisibleLinks.' | append: roleKey %}
+{% assign visibleLinksCsv = snippets[snippetName] | default: '' %}
+{% assign visibleLinks = visibleLinksCsv | split: ',' %}
+
+{% if user.roles contains 'Administrators' %}
+  {% assign isAdmin = true %}
+{% endif %}
+
+{% if  isAdmin == true %}
+  {% assign visibleLinks = childlinks | map: 'name' %}
+{% endif %}
+
+
+<!--OOB Navigation-->
+
+<div class=' navbar-expand-xl navbar navbar-dark static-top' style="flex-wrap:wrap;" role='banner'>
+  <div class='skip-to-content'>
+    <a href='#mainContent'>{{ resx.Skip_To_Content | default: 'Skip to main content' }}</a>
+  </div>
+  <div class='container  custom-container'>
+    <!--
+      div class=" d-xs-block d-sm-none d-md-none d-lg-none  ">
+        {% editable snippets 'Mobile Header' type: 'html' %}
+      </div
+    -->
+    <div class="header-content" style="display: flex; align-items: center;">
+      <button id="nav-toggle" type="button" >
+      <i class="fa fa-bars"></i>
+      </button>
+    </div>
+
+    <button type='button' class='navbar-toggler collapsed custom-navbar-toggler' title='{{ snippets["Header/Toggle Navigation"] | default: resx['Toggle_Navigation'] | h }}' data-bs-toggle='collapse' data-bs-target='#navbar' aria-expanded='false' onclick='setHeight();'>
+      <span class='visually-hidden'>{{ snippets['Header/Toggle Navigation'] | default: resx.Toggle_Navigation | h }}</span>
+      <span class='navbar-toggler-icon'></span>
+    </button>
+
+    <div class=' d-xs-block d-sm-block d-md-block d-lg-block navbar-brand navbar-header' style= " vertical-align: unset !important;">
+      {% editable snippets 'Mobile Header' type: 'html' %}
+    </div>
+
+      {% assign search_enabled = settings['Search/Enabled'] | boolean | default: true %}
+      {% if search_enabled %}
+      <div class="mobile-header-search-wrapper">
+        <div class="header-search mobile-header-search">
+          {% include 'Search', search_id: 'search_mobile' %}
+
+ 
+    <div id="predictiveResultsMobile"></div>
+
+        </div>
+      </div>
+  {% endif %}
+    
+    <div id='navbar' class='navbar-collapse collapse' style="width: min-content;">
+      {% assign primary_nav = weblinks['CAT Navigation Link Set'] %}
+      {% if primary_nav %}
+        <nav aria-label='{{ resx.Main_Navigation | default: "Main Navigation" }}' class='ms-auto menu-bar {% if primary_nav.editable %}xrm-entity xrm-editable-adx_weblinkset{% endif %}' data-weblinks-maxdepth='2'>
+          <ul class='nav navbar-nav weblinks'>
+           
+ <!--   Hiding the Horizontal option    -->
+             {% for link in primary_nav.weblinks %}
+              {% unless forloop.first %}
+                <li class=' nav-item divider-vertical' aria-hidden='true'></li>
+              {% endunless %}
+              {% if link.display_page_child_links %}
+                {% if link.url != null %}
+                  {% assign sublinks = sitemap[link.url].children %}
+                {% endif %}
+              {% else %}
+                {% assign sublinks = link.weblinks %}
+              {% endif %}
+              <li class=' nav-item weblink {% if sublinks.size > 0 %} dropdown{% endif %} '>
+                <a
+                  aria-label='{{ link.name | escape }}'
+                  {% if sublinks.size > 0 -%}
+                    href='#' role='button' class='dropdown-toggle' data-bs-toggle='dropdown'
+                  {%- else -%}
+                    href='{{ link.url | escape }}' aria-roledescription='link'
+                  {%- endif -%}
+                  {%- if link.Open_In_New_Window %}
+                    target='_blank'
+                  {% endif -%}
+                  {%- if link.nofollow %}
+                    rel='nofollow'
+                  {% endif -%}
+                  {%- if link.tooltip %}
+                    title='{{ link.tooltip | escape }}'
+                  {% endif %}
+                >
+                  {%- if link.image -%}
+                    {%- if link.image.url -%}
+                      {%- if link.image.url.first == '.' -%}
+                        <span class='{{ link.image.url | split:'.' | join }}' aria-hidden='true'></span>
+                      {%- endif -%}
+                    {%- else -%}
+                      <img
+                        src='{{ link.image.url | escape }}'
+                        alt='{{ link.image.alternate_text | default:link.tooltip | escape }}'
+                        {% if link.image.width %}
+                          width='{{ link.image.width | escape }}'
+                        {% endif %}
+                        {% if link.image.height %}
+                          height='{{ link.image.height | escape }}'
+                        {% endif %}
+                      >
+                    {%- endif -%}
+                  {%- endif -%}
+                    {%- unless link.display_image_only -%}
+
+                      {% assign icon = "" %}
+                      {% if link.name == "Home" %}
+                        {% assign icon = "/home.png" %}
+                      {% elsif link.name == "Help Articles" %}
+                        {% assign icon = "/helparticle.png" %}
+                        {% elsif link.name == "Cat AI Assistant" %}
+                            {% assign icon = "/CatAILogo.png" %}
+                      {% elsif link.name == "Call Us" %}
+                        {% assign icon = "/callus.png" %}
+                      {% elsif link.name == "Submit Request" %}
+                        {% assign icon = "/submitrequest.png" %}
+                      {% elsif link.name == "News & Updates" %}
+                        {% assign icon = "/newsupdates.png" %}
+                      {% elsif link.name == "Give Feedback" %}
+                        {% assign icon = "/givefeedback.png" %}
+                      {% elsif link.name == "Quick Links" %}
+                        {% assign icon = "/quicklinks.png" %}
+                      {% endif %}
+
+                      {% if icon != "" %}
+                        <img src="{{ icon }}" class="menu-icon" alt="icon"
+                          width="14" height="14" />
+                      {% endif %}
+
+                      <span class="nav-text">{{ link.name | escape }}</span>
+
+                    {%- endunless -%}
+
+                  {%- if sublinks.size > 0 -%}
+                    <span class='caret'></span>
+                  {%- endif -%}
+                </a>
+                
+
+                <!--read more logic start from here-->
+                {% if sublinks.size > 0 %}
+                {% assign childlinks = sublinks %}
+                {% assign total = childlinks | size %}
+
+                <ul class="dropdown-menu" id="quick-links-menu">
+                  {% unless link.name == "Quick Links" %}
+                    <li>
+                      <a class="dropdown-item" href="{{ link.url }}">{{ link.name }}</a>
+                    </li>
+                    <div class="dropdown-divider"></div>
+                  {% endunless %}
+
+                    {% assign visibleCount = 0 %}
+
+                    {% for sublink in childlinks %}
+                      {% if isAdmin or visibleLinks contains sublink.name %}
+                        {% assign visibleCount = visibleCount | plus: 1 %}
+
+                        {% if visibleCount <= 7 %}
+                          <li>
+                            <a class="dropdown-item" href="{{ sublink.url }}"
+                              target="_blank"
+                              rel="noopener noreferrer">
+                              {{ sublink.name }}
+                            </a>
+                          </li>
+                        {% else %}
+                          <li class="extra-item" style="display:none;">
+                            <a class="dropdown-item" href="{{ sublink.url }}"
+                              target="_blank"
+                              rel="noopener noreferrer">
+                              {{ sublink.name }}
+                            </a>
+                          </li>
+                        {% endif %}
+                      {% endif %}
+                    {% endfor %} 
+                 
+                 {% if visibleCount > 7 %}
+                 <li>
+                  <a id="read-more" style="cursor:pointer;" class="dropdown-item" href="#">
+                 Read More..
+                  </a>
+                 </li>
+                 {% endif %}
+                </ul>
+
+                {% else %}
+                <ul class="dropdown-menu">
+                  {% if link.name %}
+                  <li>
+                    <a class="dropdown-item" href="{{ link.url }}">{{ link.name }}</a>
+                  </li>
+                  <div class="dropdown-divider"></div>
+                  {% endif %}
+
+                  {% for sublink in sublinks %}
+                  <li>
+                    <a class="dropdown-item" href="{{ sublink.url }}">
+                      {{ sublink.url }}
+                    </a>
+                  </li>
+                  {% endfor %}
+                </ul>
+                {% endif %}
+                <!--ended-->
+              </li>
+            {% endfor %} 
+
+
+            {% assign search_enabled = settings['Search/Enabled'] | boolean | default: true %}
+            {% if search_enabled %}
+              <li class='nav-item divider-vertical desktop-search-divider' aria-hidden='true'></li>
+              <li class='nav-item nav-search-global desktop-search-item'>
+              <div class='header-search'>
+               {% if user %}
+<input type="hidden" id="currentUserName" value="{{ user.fullname }}">
+{% endif %}
+
+              {% include 'Search', search_id: 'search' %}
+              <!-- =============================================
+     PRODUCT FILTER DROPDOWN
+     ============================================= -->
+
+<div
+    class="cat-product-filter"
+    id="productFilterWrapper">
+
+    <button
+        type="button"
+        id="productFilterBtn"
+        class="cat-product-filter__button"
+        aria-label="Select product"
+        aria-haspopup="listbox"
+        aria-controls="productFilterList"
+        aria-expanded="false">
+
+        <span id="productFilterLabel">
+            All
+        </span>
+
+        <i
+            id="productFilterArrow"
+            class="fa fa-chevron-down"
+            aria-hidden="true">
+        </i>
+
+    </button>
+
+    <ul
+        id="productFilterList"
+        class="cat-product-filter__list"
+        role="listbox"
+        aria-label="Products">
+
+        <li
+            class="active"
+            data-product="all"
+            role="option"
+            tabindex="0"
+            aria-selected="true">
+            All
+        </li>
+
+    </ul>
+
+</div>
+ 
+
+ 
+              
+    <div id="predictiveResultsDesktop"></div>
+
+              </div>
+              </li>
+            {% endif %}
+            <li class=' nav-item divider-vertical' aria-hidden='true'></li>
+            {% if website.languages.size > 1 %}
+              <li class=' nav-item dropdown'>
+                <a class=' nav-link dropdown-toggle'  style="display: none;"aria-roledescription='link' href='#' data-bs-toggle='dropdown' aria-label='{{ website.selected_language.name | escape }}' aria-haspopup='true' aria-expanded='false' title='{{ website.selected_language.name | escape }}'>
+                  <span class='drop_language'>{{ website.selected_language.name | escape }}</span>
+                  <span class='caret'></span>
+                </a>
+                {% include 'Languages Dropdown' %}
+              </li>
+              <li class=' nav-item divider-vertical' aria-hidden='true'></li>
+            {% endif %}
+            {% if user %}
+              <li class=' nav-item dropdown'>
+               {% assign username = user.fullname | escape %}
+{% assign first_name = user.firstname | default: username | split: ' ' | first | escape %}
+{% assign last_name = user.lastname | escape %}
+{% if first_name.size > 6 %}
+  {% assign short_first = first_name | truncate: 9 %}
+{% else %}
+  {% assign short_first = first_name %}
+{% endif %}
+{% assign display_name = short_first | append: ' ' | append: last_name | strip %}
+<a href='#' class=' nav-link dropdown-toggle' aria-roledescription='link' title='{{username | default: resx['Default_Profile_name'] }}' data-bs-toggle='dropdown' role='button' aria-expanded='false'>
+  <span class='username'>{{ display_name | default: username | default: resx.Default_Profile_name }}</span>
+ 
+                  <span class='caret'></span>
+                </a>
+                <ul class='dropdown-menu dropdown-menu-end'>
+                  {% assign show_profile_nav = settings['Header/ShowAllProfileNavigationLinks'] | boolean | default: true %}
+                  {% if show_profile_nav %}
+                    {% assign profile_nav = weblinks['Profile Navigation'] %}
+                    {% if profile_nav %}
+                      {% for link in profile_nav.weblinks %}
+                        <li>
+                          <a class="dropdown-item"  aria-label='{{ link.name | escape }}' aria-roledescription='link' href='{{ link.url | escape }}' title='{{ link.name | escape }}'>{{ link.name | escape }}</a>
+                        </li>
+                      {% endfor %}
+                    {% endif %}
+                  {% else %}
+                    <li>
+                      <a class="dropdown-item"  aria-label='{{ snippets["Profile Link Text"] | default:resx["Profile_Text"] | escape }}' aria-roledescription='link' href='{{ sitemarkers['Profile'].url | escape }}'>{{ snippets['Profile Link Text'] | default: resx.Profile_Text | escape }}</a>
+                    </li>
+                  {% endif %}
+                  <li class='dropdown-divider' role='separator' aria-hidden='true'></li>
+                  <li>
+                    <a class="dropdown-item"  aria-label='{{ snippets["links/logout"] | default:resx["Sign_Out"] | escape }}' aria-roledescription='link' href='{% if homeurl%}/{{ homeurl }}{% endif %}{{ website.sign_out_url_substitution }}' title='{{ snippets["links/logout"] | default:resx["Sign_Out"] | escape }}'>
+                      {{ snippets['links/logout'] | default: resx.Sign_Out | escape }}
+                    </a>
+                  </li>
+                </ul>
+              </li>
+            {% else %}
+              <li class="nav-item">
+                <a class="nav-link" aria-label='{{ snippets["links/login"] | default:resx["Sign_In"] | escape }}' aria-roledescription='link' href='{% if homeurl%}/{{ homeurl }}{% endif %}{{ website.sign_in_url_substitution }}'>
+                  {{ snippets['links/login'] | default: resx.Sign_In | escape }}
+                </a>
+              </li>
+            {% endif %}
+          </ul>
+          {% editable primary_nav %}
+        </nav>
+      {% endif %}
+    </div>
+
+
+     <!-- Feedback Popup -->
+ <div id="feedbackOverlay" class="feedback-overlay"></div>
+<div id="feedbackPopup" class="feedback-popup" aria-hidden="true">
+  <div class="feedback-header">
+    <span class="feedback-title">Give Feedback</span>
+    <button
+      type="button"
+      class="feedback-close"
+      aria-label="Close"
+      onclick="closeFeedbackPopup()">×</button>
+  </div>
+ 
+  <div class="feedback-body">
+   <div class="feedback-description">
+ {% editable snippets 'CAT Website Feedback Verbiage' type: 'html' liquid: true %}
+  </div>
+
+<!-- Star Rating -->
+<span class = "StarRating-title">Choose a rating (required) </span>
+  <div class="star-rating">
+  <i class="fa fa-star star" data-value="1" ></i>
+  <i class="fa fa-star star" data-value="2" ></i>
+  <i class="fa fa-star star" data-value="3" ></i>
+  <i class="fa fa-star star" data-value="4" ></i>
+  <i class="fa fa-star star" data-value="5" ></i>
+  </div>
+<style>
+  
+    
+
+    /* ===========================
+   MOBILE FULL SCREEN MENU
+   =========================== */
+
+@media (max-width: 768px) {
+    body.mobile-menu-open .cat-search-clear-btn {
+    display: none !important;
+}
+
+    /* Hide search when menu is open */
+    .navbar-collapse.show ~ .mobile-header-search-wrapper,
+    .navbar-collapse.collapsing ~ .mobile-header-search-wrapper {
+        display: none !important;
+    }
+
+    /* Full screen menu */
+    #navbar.show,
+    #navbar.collapsing {
+
+        position: fixed !important;
+
+        top: 0 !important;
+        left: 0 !important;
+
+        width: 100vw !important;
+        height: 100vh !important;
+        min-height: 100vh !important;
+
+        background: #000 !important;
+
+        z-index: 99999 !important;
+
+        overflow-y: auto !important;
+
+        padding-top: 70px;
+    }
+
+    body.mobile-menu-open .footer,
+    body.mobile-menu-open .footer-bottom {
+    display: none !important;
+    }
+
+    /* Keep logo visible */
+    .navbar-brand.navbar-header {
+        position: relative;
+        z-index: 100000;
+    }
+
+    .custom-navbar-toggler {
+        position: relative;
+        z-index: 100001;
+    }
+
+    /* Menu rows */
+    #navbar.show .nav-item.weblink {
+        display: block !important;
+        border-bottom: 1px solid #222;
+    }
+
+    #navbar.show .nav-item.weblink > a {
+
+        display: flex !important;
+        align-items: center;
+        width: 100%;
+
+        min-height: 36px;
+
+        padding: 8px 20px !important;
+
+        color: #fff !important;
+
+        text-decoration: none !important;
+        background: #000 !important;
+    }
+
+    /* Icons */
+    #navbar.show .menu-icon {
+
+        width: 16px;
+        height: 16px;
+
+        margin-right: 12px;
+
+        object-fit: contain;
+
+        filter: brightness(0) invert(1);
+    }
+
+    /* Text */
+    #navbar.show .nav-text {
+
+        color: #fff;
+        font-size: 14px;
+        font-weight: 600;
+        font-family: 'NotoSans', sans-serif;
+    }
+
+    /* Active link */
+    #navbar.show .active > a,
+    #navbar.show .active .nav-text {
+
+        color: #FFCD00 !important;
+    }
+
+    /* Dropdown */
+    #navbar.show .dropdown-menu {
+
+        background: #000 !important;
+        border: none !important;
+        margin: 0 !important;
+    }
+
+    #navbar.show .dropdown-item {
+
+        color: #fff !important;
+
+        padding: 12px 20px 12px 48px;
+
+        border-bottom: 1px solid #222;
+    }
+
+    #navbar.show .dropdown-item:hover {
+        background: #111 !important;
+    }
+
+    /* Remove dividers */
+    #navbar.show .divider-vertical {
+        display: none !important;
+    }
+    /* Hover on menu links */
+#navbar.show .nav-item.weblink > a:hover,
+#navbar.show .nav-item.weblink > a:focus {
+    color: #FFCD00 !important;
+}
+
+/* Hover on menu text */
+#navbar.show .nav-item.weblink > a:hover .nav-text,
+#navbar.show .nav-item.weblink > a:focus .nav-text {
+    color: #FFCD00 !important;
+}
+
+/* Hover on menu icons */
+#navbar.show .nav-item.weblink > a:hover .menu-icon,
+#navbar.show .nav-item.weblink > a:focus .menu-icon {
+    filter: brightness(0) saturate(100%)
+            invert(77%) sepia(87%)
+            saturate(350%)
+            hue-rotate(2deg) !important;
+}
+
+/* Hover on child links */
+#navbar.show .dropdown-item:hover,
+#navbar.show .dropdown-item:focus {
+    color: #FFCD00 !important;
+    background-color: #111 !important;
+}
+
+/* Hover on caret */
+#navbar.show .dropdown-toggle:hover .caret,
+#navbar.show .dropdown-toggle:focus .caret {
+    color: #FFCD00 !important;
+}
+}
+/* =========================================================
+   PRODUCT FILTER FROM SCRATCH
+   Keep this CSS after all other header and search CSS.
+   ========================================================= */
+
+
+/* Allow the dropdown to extend outside header containers. */
+
+.desktop-search-item,
+.nav-search-global,
+.nav-search-global .header-search,
+#productFilterWrapper {
+    overflow: visible !important;
+}
+
+
+/* Main filter wrapper */
+
+#productFilterWrapper.cat-product-filter {
+    position: absolute !important;
+    top: 0 !important;
+    right: 48px !important;
+
+    display: block !important;
+
+    width: auto !important;
+    height: 40px !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    overflow: visible !important;
+
+    pointer-events: auto !important;
+
+    z-index: 100020 !important;
+}
+
+
+/* Product Filter button */
+
+.header-search #productFilterBtn.cat-product-filter__button {
+    position: relative !important;
+
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    width: 119px !important;
+    min-width: 120px !important;
+    max-width: 230px !important;
+    height: 40px !important;
+    min-height: 40px !important;
+
+    padding: 0 16px !important;
+    margin: 0 !important;
+
+    background-color: white!important;
+    color: #555555 !important;
+
+    border: 0 !important;
+    /* border-left: 1px solid #d8ad00 !important; */
+    border-radius: 0 !important;
+
+    box-shadow: none !important;
+    outline: none !important;
+
+    font-family: "NotoSans", Arial, sans-serif !important;
+    font-size: 14px !important;
+    font-weight: 400 !important;
+    line-height: 40px !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+
+    cursor: pointer !important;
+    pointer-events: auto !important;
+
+    z-index: 100021 !important;
+}
+
+
+/* Product label */
+
+#productFilterLabel {
+    display: block !important;
+
+    max-width: 80px !important;
+
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+
+    pointer-events: none !important;
+}
+
+
+/* Product arrow */
+
+#productFilterArrow {
+    display: inline-block !important;
+
+    margin-left: 7px !important;
+
+    color: #555555 !important;
+
+    font-size: 11px !important;
+    line-height: 1 !important;
+
+    filter: none !important;
+
+    pointer-events: none !important;
+}
+
+
+/* Hover and focus */
+
+.header-search #productFilterBtn:hover,
+.header-search #productFilterBtn:focus,
+.header-search #productFilterBtn:active {
+    /* background-color: #e6b800 !important; */
+    color: #555555 !important;
+
+    /* border-color: #d8ad00 !important; */
+
+    outline: 2px solid transparent !important;
+    box-shadow: none !important;
+}
+
+
+/* Dropdown list */
+
+#productFilterList.cat-product-filter__list {
+    display: none !important;
+
+    position: absolute !important;
+    top: 42px !important;
+    right: -20px !important;
+
+    width: 142px !important;
+    
+    max-width: 350px !important;
+    max-height: 180px !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+
+    background-color: #ffffff !important;
+    color: #333333 !important;
+
+    border: 1px solid #d9d9d9 !important;
+    border-radius: 3px !important;
+
+    box-shadow:
+        0 6px 18px rgba(0, 0, 0, 0.20) !important;
+
+    list-style: none !important;
+
+    opacity: 1 !important;
+    visibility: visible !important;
+
+    pointer-events: auto !important;
+
+    z-index: 9999999 !important;
+}
+
+
+/* Show dropdown */
+
+#productFilterList.cat-product-filter__list.open {
+    display: block !important;
+}
+
+
+/* Dropdown options */
+
+#productFilterList.cat-product-filter__list li {
+    display: block !important;
+
+    width: 100% !important;
+
+    margin: 0 !important;
+    padding: 8px 14px !important;
+
+    background-color: #ffffff !important;
+    color: #333333 !important;
+
+    border: 0 !important;
+    border-bottom: 1px solid #eeeeee !important;
+
+    box-sizing: border-box !important;
+
+    font-family: "NotoSans", Arial, sans-serif !important;
+    font-size: 14px !important;
+    font-weight: 400 !important;
+    line-height: 20px !important;
+    text-align: left !important;
+
+    cursor: pointer !important;
+    pointer-events: auto !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+
+    list-style: none !important;
+}
+
+
+/* Remove final divider */
+
+#productFilterList.cat-product-filter__list li:last-child {
+    border-bottom: 0 !important;
+}
+
+
+/* Hover option */
+
+#productFilterList.cat-product-filter__list li:hover,
+#productFilterList.cat-product-filter__list li:focus {
+    background-color: #f2f2f2 !important;
+    color: #000000 !important;
+
+    outline: none !important;
+}
+
+
+/* Selected option */
+
+#productFilterList.cat-product-filter__list li.active {
+    background-color: white !important;
+    color: #000000 !important;
+
+    font-weight: 600 !important;
+}
+
+
+/* Filter-generated no-results row */
+
+#predictiveResultsDesktop .pf-no-results {
+    display: flex !important;
+    align-items: center !important;
+
+    min-height: 56px !important;
+
+    padding: 12px 16px !important;
+
+    background-color: #ffffff !important;
+    color: #555555 !important;
+}
+
+
+/* Desktop only */
+
+
+
+    #navbar .desktop-search-item {
+        display: list-item !important;
+
+        position: relative !important;
+
+        overflow: visible !important;
+    }
+
+    #navbar .desktop-search-divider {
+        display: list-item !important;
+    }
+
+    .nav-search-global {
+        position: relative !important;
+
+        overflow: visible !important;
+
+        z-index: 100010 !important;
+    }
+
+    .nav-search-global .header-search {
+        position: relative !important;
+
+        overflow: visible !important;
+
+        z-index: 100010 !important;
+    }
+
+
+</style>
+<style>
+  /* prod */
+ 
+  #search {
+    font-size: 16px;
+    color: #666;
+}
+
+input#search::placeholder {
+    color: #666666 !important;
+    opacity: 1 !important;
+    font-family: "NotoSans";
+ 
+ 
+}
+  /* Predictive serach */
+  /* .header-search{
+    position:relative !important;
+}
+
+#predictiveResultsDesktop,
+#predictiveResultsMobile{
+    position:absolute;
+    top:100%;
+    left:0;
+    width:100%;
+    background:#fff;
+    border:1px solid #ddd;
+    z-index:999999;
+    display:none;
+    max-height:350px;
+    overflow-y:auto;
+    box-shadow:0 4px 10px rgba(0,0,0,.15);
+}
+
+.predictive-item{
+    padding:12px;
+    border-bottom:1px solid #eee;
+    cursor:pointer;
+    color:#333;
+}
+
+.predictive-item:hover{
+    background:#f5f5f5;
+}
+
+.predictive-item:last-child{
+    border-bottom:none;
+} */
+.predictive-icon.case-icon {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.case-png-icon {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    opacity: 1 !important;
+    filter: none !important;
+}
+.article-png-icon {
+   width: 24px;
+    height: 24px;
+    object-fit: contain;
+    opacity: 1 !important;
+    filter: none !important;
+
+}
+.header-search{
+    position:relative;
+}
+
+.clear-search-btn{
+    position:absolute;
+    right:45px;
+    top:50%;
+    transform:translateY(-50%);
+    border:none;
+    background:transparent;
+    font-size:22px;
+    cursor:pointer;
+    color:#666;
+    z-index:9999;
+    padding:0;
+    line-height:1;
+}
+
+.clear-search-btn:hover{
+    color:#000;
+} 
+
+.cat-search-clear-btn {
+    position: fixed !important;
+    z-index: 1001 !important;
+
+    width: 24px !important;
+    height: 24px !important;
+    min-width: 24px !important;
+
+    border: none !important;
+    background: transparent !important;
+    color: #666 !important;
+
+    font-size: 24px !important;
+    line-height: 24px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+
+    cursor: pointer !important;
+    pointer-events: auto !important;
+
+    display: none;
+    align-items: center;
+    justify-content: center;
+
+}
+
+.cat-search-clear-btn:hover {
+    color: #000 !important;
+}
+ 
+ .predictive-section-title{
+    padding:8px 12px;
+    font-weight:600;
+    font-size:13px;
+    color:#666;
+    background:#f5f5f5;
+}
+ 
+
+ 
+.predictive-link{
+    text-decoration:none;
+    color:inherit;
+    display:flex;
+    justify-content:space-between;
+    cursor:pointer;
+}
+ 
+
+.predictive-item{
+    cursor:pointer;
+}
+
+#predictiveResultsDesktop{
+    position:absolute;
+    z-index:99999 !important;
+}
+.predictive-item-link{
+    text-decoration:none;
+    color:inherit;
+    display:block;
+}
+ #predictiveResultsDesktop{
+    position:absolute;
+    top:100%;
+    left:0;
+    width:100%;
+    background:#fff;
+    border:1px solid #d9d9d9;
+    border-radius:4px;
+    z-index:999999;
+    display:none;
+    max-height:420px;
+    overflow-y:auto;
+    box-shadow:0 6px 20px rgba(0,0,0,.12);
+}
+
+
+.predictive-item{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    padding:12px 16px;
+    border-bottom:1px solid #ececec;
+    cursor:pointer;
+    min-height:56px;
+}
+
+.predictive-item:hover{
+    background:#f7f7f7;
+}
+
+.predictive-left{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    flex:1;
+    min-width:0;
+}
+
+/* .predictive-icon{
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #000;
+    font-size: 18px;
+    font-weight: 600;
+    background: #f2f2f2;
+    border-radius: 50%;
+} */
+
+.predictive-title{
+    color:#3f3f3f;
+    font-size:15px;
+    line-height:20px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+
+.predictive-category{
+    background:#e6e6e6;
+    color:#585858;
+    border-radius:20px;
+    padding:6px 14px;
+    font-size:12px;
+    font-weight:600;
+    white-space:nowrap;
+    flex-shrink:0;
+}
+    /* Predictive serach */
+.star{
+   font-size: 24px;
+   width: 21.73px;
+   height: 20.9px;
+   margin-right: 2px;
+   color: #FFFFFF !important;
+   Text-shadow: 0 0 1px black;
+   cursor: pointer;
+}
+.star-rating{
+  display: flex;
+  gap: 5px;
+  font-size: 24px;
+  cursor: pointer;
+  margin-bottom: 20px;
+}
+.StarRating-title{
+  display: block;
+  font-weight:bold;
+font-family: "NotoSans";
+  font-size: 16px;
+  font-style: normal;
+}
+.star.selected{
+  color: gold !important;
+}
+
+</style>
+<!-- Star Rating Ends -->
+    <iframe
+      src="/CAT-website-feedback"
+      title="Website Feedback"
+      frameborder="0"
+      scrolling="no">
+    </iframe>
+  </div>
+</div>
+<div id="customSuccessMessage" class="custom-alert">
+    <img src="/CAT_Success.png" alt="Success" class="success-icon">
+
+    <div class="alert-text">
+       Success! Thank you for your feedback!
+    </div>
+
+    <button class="close-btn" onclick="closeAlert()">×</button>
+</div>
+ 
+<script>
+
+   window.catCloseHeaderPopups = function () {
+    var list  = document.getElementById("productFilterList");
+    var btn   = document.getElementById("productFilterBtn");
+    var arrow = document.getElementById("productFilterArrow");
+ 
+    if (list)  { list.classList.remove("open"); }
+    if (btn)   { btn.setAttribute("aria-expanded", "false"); }
+    if (arrow) {
+        arrow.classList.remove("fa-chevron-up");
+        arrow.classList.add("fa-chevron-down");
+    }
+ 
+    ["predictiveResultsMobile", "predictiveResultsDesktop"].forEach(function (id) {
+        var box = document.getElementById(id);
+        if (box) { box.style.display = "none"; }
+    });
+};
+ 
+document.addEventListener("DOMContentLoaded", function () {
+ 
+    const navBtn = document.querySelector(".custom-navbar-toggler");
+    const navbar = document.getElementById("navbar");
+ 
+    if (!navBtn || !navbar) return;
+ 
+    // "show" fires at the START of the animation, so search hides instantly
+    navbar.addEventListener("show.bs.collapse", function () {
+        document.body.classList.add("mobile-menu-open");
+        window.catCloseHeaderPopups();
+        navBtn.innerHTML = '<span class="mobile-menu-close">×</span>';
+    });
+ 
+    // "hidden" fires AFTER the menu is fully closed, so search reappears cleanly
+    navbar.addEventListener("hidden.bs.collapse", function () {
+        document.body.classList.remove("mobile-menu-open");
+        navBtn.innerHTML = '<span class="navbar-toggler-icon"></span>';
+    });
+});
+ 
+  //pred search
+  //pred search end
+document.addEventListener("DOMContentLoaded", function () {
+  document.querySelectorAll("a").forEach(function (link) {
+    if (link.textContent.trim() === "Give Feedback") {
+        link.addEventListener("click", function(e){
+            const isMobile = window.innerWidth <= 768;
+            if (isMobile) {
+                e.preventDefault();
+                // Close mobile navigation first
+                closeMobileNav();
+                openFeedbackPopup();
+            }
+            else {
+                e.preventDefault();
+                // Use popup for desktop
+                openFeedbackPopup();
+                  }
+        });
+    }
+    // if (link.textContent.trim() === "Give Feedback") {
+    //   link.addEventListener("click", function (e) {
+        
+    //     e.preventDefault();
+    //     openFeedbackPopup();
+    //   });
+    // }
+  });
+});
+
+let isPopupOpenedOnce = false;
+
+function openFeedbackPopup() {
+    if (window.catCloseHeaderPopups) { window.catCloseHeaderPopups(); }
+ 
+  
+  resetStarRating(); // Calling ressetStarRating on Iframe  (Defined at the end)
+  const popup = document.getElementById("feedbackPopup");
+  const overlay = document.getElementById("feedbackOverlay");
+  const iframe = popup.querySelector("iframe");
+
+  const src = iframe.getAttribute("src");
+
+  if (isPopupOpenedOnce) {
+    // ✅ Hide popup completely before refresh
+    popup.style.display = "none";
+
+    // ✅ Create smooth background reload
+    iframe.style.visibility = "hidden"; // fully hide iframe
+
+    iframe.setAttribute("src", "about:blank");
+
+    setTimeout(() => {
+      iframe.setAttribute("src", src);
+
+      // Wait slightly so reload starts, then show
+      setTimeout(() => {
+        iframe.style.visibility = "visible";
+
+        popup.style.display = "block";
+        overlay.style.display = "block";
+      }, 200);
+    }, 50);
+  } else {
+    // ✅ First time → normal open
+    popup.style.display = "block";
+    overlay.style.display = "block";
+
+  }
+  isPopupOpenedOnce = true;
+
+  document.body.classList.add("modal-open");
+  document.getElementById("customSuccessMessage").style.display = "none";
+}
+
+function closeFeedbackPopup() {
+  document.getElementById("feedbackPopup").style.display = "none";
+  document.getElementById("feedbackOverlay").style.display = "none";
+  document.body.classList.remove("modal-open");
+}
+
+
+function closeAlert() {
+    document.getElementById("customSuccessMessage").style.display = "none";
+}
+ 
+window.addEventListener("message", function (event) {
+ 
+    if (event.data === "feedbackSubmitted") {
+        document.body.classList.remove("modal-open");
+ 
+        document.getElementById("feedbackPopup").style.display = "none";
+        document.getElementById("feedbackOverlay").style.display = "none";
+
+        const alertBox = document.getElementById("customSuccessMessage");
+        alertBox.style.display = "flex";
+        // Auto hide after 5 sec
+        setTimeout(function () {
+            alertBox.style.display = "none";
+        }, 5000);
+    }
+ 
+});
+
+function closePopupImmediately() {
+  document.getElementById("feedbackPopup").style.display = "none";
+  document.getElementById("feedbackOverlay").style.display = "none";
+  document.body.classList.remove("modal-open");
+}
+
+function updateShellOffsets() {
+  const root = document.documentElement;
+
+  const header = document.querySelector('.navbar');
+  const footer = document.querySelector('.footer, .footer-bottom');
+
+  if (header) {
+    const headerHeight = Math.ceil(header.getBoundingClientRect().height);
+    root.style.setProperty('--header-h', headerHeight + 'px');
+  }
+
+  if (footer) {
+    const footerHeight = Math.ceil(footer.getBoundingClientRect().height);
+    root.style.setProperty('--footer-h', footerHeight + 'px');
+  }
+}
+
+/* Run after page loads */
+document.addEventListener('DOMContentLoaded', function () {
+  // small delay allows header/search/footer to fully render first
+  setTimeout(updateShellOffsets, 100);
+});
+
+window.addEventListener('load', function () {
+  setTimeout(updateShellOffsets, 100);
+});
+
+window.addEventListener('resize', function () {
+  updateShellOffsets();
+});
+
+/* Optional: if orientation changes on mobile */
+window.addEventListener('orientationchange', function () {
+  setTimeout(updateShellOffsets, 150);
+});
+
+document.addEventListener(
+  "DOMContentLoaded", function(){
+    document.querySelectorAll("a.dropdown-item").forEach(function(link)
+  {
+    if(link.textContent.trim()=== "Sign out"){
+      link.addEventListener("click", function (e){
+        e.preventDefault();
+            sessionStorage.removeItem("currentProduct");
+                sessionStorage.removeItem("currentDcn");
+                 sessionStorage.removeItem("currentSn");
+
+      const currentPage= window.location.pathname;
+      const logoutUrl= new URL(link.href,window.location.origin);
+      //logoutUrl.searchParams.set("returnUrl", currentPage);
+      logoutUrl.searchParams.set("returnUrl", "/");
+      window.location.replace(logoutUrl.toString());
+
+      });
+    }
+  });
+  });
+</script>
+
+<style>
+    .mobile-menu-close{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    color:#fff;
+
+    font-size:24px;
+    font-weight:400;
+
+    line-height:1;
+}
+
+    /*Search bar inside header start*/
+    .nav-search-global{
+    display:flex;
+    align-items:center;
+    margin-left:20px;
+    }
+
+    .header-search{
+    display:block !important;
+    position:relative !important;
+    width: 420px !important;
+    height:40px !important;
+    }
+
+    .header-search form{
+    display:flex;
+    align-items:center;
+    }
+
+    .header-search input{
+    width:350px;
+    height:40px;
+    border-radius:0;
+    }
+
+    .header-search button:not(#productFilterBtn) {
+    height: 40px;
+    width: 48px;
+    z-index: 0 !important;
+}
+
+    .input-group-btn.align-top{
+      width:5px !important;
+    }
+ 
+  /*Search bar inside header end*/
+
+ .feedback-popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90vw;
+  max-width: 680px;
+  height: auto;
+  max-height: 80vh;
+  background: white;
+  backdrop-filter: blur(6px);
+  border-radius: 8px;
+  box-shadow: 0 12px 30px rgba(0,0,0,.25);
+  display: none;
+}
+ 
+.feedback-header {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 9px;
+  font-weight: 600;
+  padding-bottom: 0px;
+  height: 28px;
+}
+
+.feedback-title {
+  font-size: 16px;
+  font-family: var(--bs-body-font-family, "NotoSans");
+
+}
+.feedback-body {
+  width: 100%;
+  flex-direction: column;
+  display: flex;
+  padding: 0 10px 15px;
+  height: auto;
+  flex: 1;
+  box-sizing: border-box;
+}
+/* .feedback-body p{
+  color: black;
+  margin-top: -68px;
+}  */
+
+ 
+.feedback-close {
+  background: none;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+}
+.feedback-description {
+  color: var(--Content-Strong, #000);
+  font-family: var(--Body-Small-Family, "NotoSans");
+  font-size: var(--Body-Small-Size, 14px);
+  font-style: normal;
+  font-weight: 400;
+  line-height: var(--Body-Small-Line-Height, 20px);
+  margin: 12px 0 9px 0;
+  height: auto;
+  width:  616.59021px;
+}
+/* .xrm-editable-html.xrm-attribute {
+  font-family: 'NotoSans';
+  font-size: 14px;
+  padding-bottom: 16px;
+  padding-top: 10px;
+} */
+
+.feedback-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(1px);
+  display: none;
+}
+body.modal-open {
+  overflow: hidden;
+  height: 100vh;
+}
+.crmEntityFormView .actions {
+  
+    padding-top: 10px !important;
+}
+
+.custom-alert {
+    position: fixed;
+    top: 70px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 628px;              
+    min-height: 56px;              
+    padding: 16px;
+    display: none;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg-utility-success, #E6F3E5);
+    border-top: 1px solid var(--border-utility-success, #0F992F);
+    border-right: 1px solid var(--border-utility-success, #0F992F);
+    border-bottom: 1px solid var(--border-utility-success, #0F992F);
+    border-left: 4px solid var(--border-utility-success, #0F992F);
+
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    box-sizing: border-box;
+}
+.success-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    display: flex;
+align-items: center;
+}
+.alert-text {
+    color: var(--content-default, #3F3F3F);
+    font-family: var(--Label-Default-Family, "NotoSans");
+    font-size: var(--Label-Default-Size, 14px);
+    font-style: normal;
+    font-weight: 600;
+    line-height: var(--Label-Default-Line-Hieght, 20px);
+    flex: 1;
+}
+.custom-alert .close-btn {
+  background: none;
+  border: none;
+  width: 12px;
+  height: 12px;
+  justify-content: center;
+  align-items: center;
+  outline: none;           
+  box-shadow: none;           
+  padding: 0;               
+  margin-left: 12px;
+  font-size: 20px;            
+  font-weight: normal;
+  cursor: pointer;
+  line-height: 1;
+  margin-bottom: auto;
+
+}
+
+.feedback-body iframe {
+  width: 100%;
+  border: 0;
+  min-height: 230px;
+  flex-grow: 1;
+  display: block;
+
+}
+.feedback-title {
+  color: var(--Content-Strong, #000);
+font-family: var(--Title-Small-Family, "RobotoCondensed");
+font-size: var(--Title-Small-Size, 20px);
+font-style: normal;
+font-weight: 700;
+line-height: var(--Title-Small-Line-Height, 28px);
+}
+
+/* MOBILE RESPONSIVE FIX */
+@media (max-width: 768px) {
+
+  .feedback-popup {
+    width: 99vw;
+    max-width: 375px;
+    height: auto;
+    z-index: 9999;
+  }
+
+  .feedback-description {
+    width: 343px;
+    height: auto;
+  }
+
+  .feedback-body iframe {
+    width: 343px;
+  }
+  
+ .feedback-overlay {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    z-index: 9998;
+  }
+  .custom-alert {
+    position: fixed;
+    top: 70px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 343px;              
+    min-height: 72px;              
+    padding: 16px;
+    display: none;
+    align-items: center;
+    gap: 8px;
+
+    background: var(--bg-utility-success, #E6F3E5);
+
+    border-top: 1px solid var(--border-utility-success, #0F992F);
+    border-right: 1px solid var(--border-utility-success, #0F992F);
+    border-bottom: 1px solid var(--border-utility-success, #0F992F);
+    border-left: 4px solid var(--border-utility-success, #0F992F);
+
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    box-sizing: border-box;
+}
+.success-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+.alert-text {
+    color: var(--content-default, #3F3F3F);
+
+    font-family: var(--Label-Default-Family, "NotoSans");
+    font-size: var(--Label-Default-Size, 14px);
+    font-style: normal;
+    font-weight: 600;
+    line-height: var(--Label-Default-Line-Hieght, 20px);
+
+    flex: 1;
+}
+.custom-alert .close-btn {
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    color: #3F3F3F;
+    padding: 0;
+    line-height: 1;
+}
+.star{
+   font-size: 24px;
+   width: 21.73px;
+   height: 20.9px;
+   margin-right: 5px;
+   color: #FFFFFF;
+   text-shadow: 0 0 1px black;
+   cursor: pointer;
+   transition: color .2s ease;
+}
+
+.star-rating{
+  display: flex;
+  gap: 5px;
+  font-size: 24px;
+  cursor: pointer;
+  margin-top: 0 !important;
+  margin-bottom: 20px;
+}
+.StarRating-title{
+  display: block;
+  font-weight:bold;
+  font-family: var(--Body-Small-Family, "NotoSans");
+  font-size: 16px;
+  font-style: normal;
+}
+.star.selected,
+.star.hover{
+  color: gold !important;
+}
+
+/* Search bar  */
+    .header-search{
+    display:block !important;
+    position:relative !important;
+    width: 100% !important;
+    height:40px !important;
+    }
+}
+
+/* MOBILE HEADER SEARCH FIX */
+
+.mobile-header-search-wrapper {
+  display: none;
+}
+
+.desktop-search-item,
+.desktop-search-divider {
+  display: list-item;
+}
+
+/* Desktop behavior stays unchanged */
+@media (min-width: 769px) {
+  .mobile-header-search-wrapper {
+    display: none !important;
+  }
+}
+
+/* Mobile layout */
+@media (max-width: 768px) {
+
+  /* Increase fixed header height to allow search row */
+  :root {
+    --header-h: 122px;
+  }
+
+  /* Allow header contents to wrap into 2 rows */
+  .container.custom-container {
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    width: 100% !important;
+  }
+
+  /* First row: hamburger + logo */
+  .header-content,
+  .custom-navbar-toggler,
+  .navbar-brand.navbar-header {
+    flex-shrink: 0;
+  }
+
+  .navbar-brand.navbar-header {
+    margin-right: auto;
+  }
+
+  /* Second row: search */
+  .mobile-header-search-wrapper {
+    display: block !important;
+    width: 100%;
+    background: #000;
+    padding: 8px 12px 12px;
+    order: 99;
+  }
+
+  .mobile-header-search-wrapper .header-search {
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    display: block !important;
+  }
+
+  .mobile-header-search-wrapper .header-search form {
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .mobile-header-search-wrapper .input-group {
+    width: 100%;
+  }
+
+  .mobile-header-search-wrapper input,
+  .mobile-header-search-wrapper select,
+  .mobile-header-search-wrapper button {
+    height: 40px !important;
+  }
+
+  .mobile-header-search-wrapper input,
+  .mobile-header-search-wrapper select {
+    min-width: 0;
+  }
+
+  /* Hide desktop search from collapsed nav on mobile */
+  .desktop-search-item,
+  .desktop-search-divider,
+  .nav-search-global {
+    display: none !important;
+  }
+
+  /* Keep fixed header height aligned with 2-row layout */
+  .header,
+  .navbar {
+    height: var(--header-h) !important;
+  }
+}
+
+ /* ==========================================
+   HIDE DESKTOP SEARCH INSIDE HAMBURGER MENU
+   ON MOBILE ONLY
+   ========================================== */
+
+@media (max-width: 768px) {
+  #navbar .desktop-search-item,
+  #navbar .desktop-search-divider {
+    display: none !important;
+  }
+}
+
+@media (min-width: 769px) {
+  #navbar .desktop-search-item,
+  #navbar .desktop-search-divider {
+    display: contents !important;
+  }
+}
+
+@media (max-width: 768px) {
+
+  .container.custom-container {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    width: 100% !important;
+  }
+
+  .header-content {
+    order: 1;
+  }
+
+  .custom-navbar-toggler {
+    order: 2;
+  }
+
+  .navbar-brand.navbar-header {
+    order: 3;
+    margin-right: auto;
+  }
+
+  .mobile-header-search-wrapper {
+    display: block !important;
+    width: 100%;
+    background: #000;
+    padding: 8px 12px 12px;
+    order: 4;
+    flex-basis: 100%;
+  }
+
+  #navbar {
+    order: 5;
+    flex-basis: 100%;
+    width: 100% !important;
+  }
+
+  #navbar .desktop-search-item,
+  #navbar .desktop-search-divider,
+  #navbar .nav-search-global {
+    display: none !important;
+  }
+}
+
+
+
+</style>
+
+<!--ended feedback popup-->
+  </div>
+</div>
+
+<!-- CALL US POPUP START -->
+ 
+<div id="callUsOverlay" class="callus-overlay"></div>
+<div id="callUsPopup" class="callus-popup"> 
+    <div class="callus-header">
+        <span>Call Us</span>
+        <button onclick="closeCallUsPopup()" class="callus-close">
+            ✕
+        </button>
+    </div>
+ 
+    <div class="callus-body">
+      <div class="search-wrapper">
+        <input
+                type="text"
+                id="callusSearchBox"
+                placeholder="Search product">
+ 
+            <span id="callusToggleArrow">
+             <i class="fa fa-chevron-down child-arrow"></i>
+            </span>
+          
+          <div class="callus-displaytext" style="padding-top: 1.34px; font-family: 'Noto Sans';">
+              <p><small>Phone number may vary based on product</small></p>
+          </div>
+
+      </div>
+ 
+        <div id="callusDropdown" class="callus-dropdown"></div>
+ 
+        {% fetchxml products %}
+        <fetch> 
+          <entity name="product">
+            <attribute name="productid" />
+            <attribute name="name" />
+            <attribute name="cat_portalcallingdetails" />
+            <!-- <attribute name="cat_phoneno" /> -->
+            <filter>
+              <condition
+                attribute="cat_displayonportal"
+                operator="eq"
+                value="1"/>
+              <condition attribute="statecode" operator="eq" value="0"/>
+            </filter>
+          </entity>
+        </fetch>
+        {% endfetchxml %}
+ 
+        <div id="hiddenProducts" style="display:none;">
+            {% for item in products.results.entities %}
+            <div data-name="{{ item.name }}" data-desc="{{ item.cat_portalcallingdetails | escape }}"></div>
+            {% endfor %} 
+        </div>
+ 
+        <div id="callResult" style="display:none;"></div>
+ 
+    </div>
+ 
+</div>
+ 
+<style>
+ 
+.callus-overlay{
+    display:none;
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,0.5);
+    z-index:9998;
+}
+ 
+.callus-popup{
+    display:none;
+    position:fixed;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    width:448px;
+    max-width:95%;
+    background:#fff;
+    border-radius:10px;
+    z-index:9999;
+    overflow:hidden;
+    box-shadow:0 10px 30px rgba(0,0,0,0.2);
+}
+ 
+.callus-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:16px;
+    padding-bottom:0px;
+    font-size:24px;
+    font-family: "RobotoCondensed";
+    font-weight:700;
+    line-height:28px;
+}
+ 
+.callus-close{
+    border:none;
+    background:none;
+    font-size:24px;
+    cursor:pointer;
+    line-height:1;
+}
+ 
+.callus-body{
+    padding:16px;
+    padding-bottom:7px;
+}
+ 
+.search-wrapper{
+    position:relative;
+}
+ 
+#callusSearchBox{
+    width:100%;
+    padding:8px 40px 8px 12px;
+    border:1px solid #dcdcdc;
+    border-radius:6px;
+    font-size:16px;
+    outline:none;
+    box-sizing:border-box;
+    height:40px;
+    font-family: "NotoSans";   
+    color: #3F3F3F;
+}
+ 
+
+#callusSearchBox::placeholder {
+    color: #3F3F3F;
+}
+
+#callusToggleArrow{
+    position:absolute;
+    right:14px;
+    top:20px;
+    transform:translateY(-50%);
+    cursor:pointer;
+    font-size:14px;
+    user-select:none;
+}
+ 
+.callus-dropdown{
+    display:none;
+    border:1px solid #dcdcdc;
+    border-radius:6px;
+    margin-top:6px;
+    max-height:200px;
+    overflow-y:auto;
+    background:#fff;
+}
+ 
+.callus-dropdown div{
+    padding:12px;
+    cursor:pointer;
+    border-bottom:1px solid #f2f2f2;
+}
+ 
+.callus-dropdown div:last-child{
+    border-bottom:none;
+}
+ 
+.callus-dropdown div:hover{
+    background:#f5f5f5;
+}
+ 
+#callResult{
+    border-radius:6px;
+    min-height:70px;
+    font-size:15px;
+    line-height:1.5;
+    word-break:break-word;
+    white-space: pre-wrap;
+}
+ 
+/* MOBILE RESPONSIVE */
+ 
+@media(max-width:768px){
+ 
+    .callus-popup{
+        width:92%;
+        z-index: 9999;
+    }
+ 
+    .callus-header{
+        font-size:24px;
+        padding:14px;
+    }
+ 
+    .callus-body{
+        padding:14px;
+    }
+ 
+    #callusSearchBox{
+        font-size:14px;
+    }
+ 
+    #callResult{
+        font-size:14px;
+    }
+}
+ 
+
+</style>
+ 
+<script>
+
+// For clearing out the filter conditions on logout
+(function () {
+    const FILTER_KEY = "HC_SHARED_FILTERS";
+
+    function clearHelpCenterFilters() {
+        sessionStorage.removeItem(FILTER_KEY);
+
+        // Optional old/testing key cleanup
+        sessionStorage.removeItem("CAT_HELP_CENTER_SHARED_FILTERS");
+    }
+
+    // Manual logout
+    $(document).on(
+        "click",
+        "a[href*='LogOff'], a[href*='SignOut'], a[href*='signout'], a[href*='logout'], a[href*='Account/Login/LogOff']",
+        function () {
+            clearHelpCenterFilters();
+        }
+    );
+
+    // Expired session / unauthorized Web API response
+    $(document).ajaxError(function (event, jqxhr) {
+        if (jqxhr.status === 401 || jqxhr.status === 403) {
+            clearHelpCenterFilters();
+        }
+    });
+
+    // Login page / sign-in page fallback
+    const path = window.location.pathname.toLowerCase();
+
+    if (
+        path.includes("signin") ||
+        path.includes("login") ||
+        path.includes("account/login")
+    ) {
+        clearHelpCenterFilters();
+    }
+})();
+
+// ========================================================================================
+
+
+
+
+document.addEventListener("DOMContentLoaded", function () {
+ 
+  const phoneRegex = /\b\d{8,15}\b/g; // supports Indian & intl numbers
+ 
+  document.querySelectorAll(".product-desc").forEach(function (container) {
+ 
+    let html = container.innerHTML;
+ 
+    html = html.replace(phoneRegex, function (number) {
+      return `
+        <span class="phone-wrapper">
+          <a href="tel:${number}" class="phone-linkn class="copy-phone"
+                title="Copy number"
+                onclick="copyPhone('${number}')">📋</span>
+        </span>
+      `;
+    });
+ 
+    container.innerHTML = html;
+  });
+});
+ 
+function copyPhone(number) {
+  navigator.clipboard.writeText(number).then(() => {
+    alert("Number copied: " + number);
+  });
+}
+</script>
+ 
+
+<script>
+ 
+function openCallUsPopup(){
+
+    document.getElementById("callUsOverlay").style.display = "block"; 
+    document.getElementById("callUsPopup").style.display = "block";
+
+    document.getElementById("callusSearchBox").value = "";
+
+    const result = document.getElementById("callResult");
+    result.style.display = "none";
+    result.innerHTML = "";
+
+    document.getElementById("callusDropdown").style.display = "none";
+
+    document.getElementById("callusToggleArrow").innerHTML =
+        '<i class="fa fa-chevron-down"></i>';
+
+    // Auto populate product from session
+    autoSelectProductFromSession();
+}
+
+ 
+function closeCallUsPopup(){
+ 
+    document.getElementById("callUsOverlay").style.display = "none";
+ 
+    document.getElementById("callUsPopup").style.display = "none";
+}
+ 
+function closeMobileNav(){
+
+    const toggleBtn = document.querySelector(".navbar-toggler");
+
+    if(toggleBtn){
+        toggleBtn.click(); // simulates closing
+    }
+}
+
+function autoSelectProductFromSession() {
+
+    const savedProduct = sessionStorage.getItem("currentProduct");
+
+    if (!savedProduct) return;
+
+    const searchBox = document.getElementById("callusSearchBox");
+    const result = document.getElementById("callResult");
+    const dropdown = document.getElementById("callusDropdown");
+    const displayText = document.querySelector(".callus-displaytext");
+    const arrow = document.getElementById("callusToggleArrow");
+
+    const matchedProduct = products.find(p =>
+        p.name.trim().toLowerCase() ===
+        savedProduct.trim().toLowerCase()
+    );
+
+    if (matchedProduct) {
+        searchBox.value = matchedProduct.name;
+        dropdown.style.display = "none";
+        arrow.innerHTML = '<i class="fa fa-chevron-down"></i>';
+
+        result.style.display = "block";
+        displayText.style.display = "block";
+
+        result.innerHTML = formatPhoneNumbers(matchedProduct.desc);
+    }
+}
+
+ let products = [];
+
+document.addEventListener("DOMContentLoaded", function(){
+ 
+    /* AUTO ATTACH TO EXISTING CALL US LINK */
+    const displayText = document.querySelector(".callus-displaytext");
+    const allLinks = document.querySelectorAll("a");
+ 
+      allLinks.forEach(link => {
+          if (link.innerText.trim() === "Call Us") {
+              link.addEventListener("click", function(e){
+                  const isMobile = window.innerWidth <= 768;
+                  if (isMobile) {
+                      e.preventDefault();
+                      // Close mobile navigation first
+                      closeMobileNav();
+                      // Redirect to Call Us page
+                      setTimeout(() => {
+                          window.location.href = "/call-us"; //  webpage URL
+                      }, 300);
+                  } 
+                  else {
+                      e.preventDefault();
+                      // Use popup for desktop
+                      openCallUsPopup();
+                        }
+              });
+          }
+      });
+ 
+    const arrow =
+    document.getElementById("callusToggleArrow");
+ 
+    const dropdown =
+    document.getElementById("callusDropdown");
+ 
+    const searchBox =
+    document.getElementById("callusSearchBox");
+ 
+    const result =
+    document.getElementById("callResult");
+ 
+    const hidden =
+    document.querySelectorAll("#hiddenProducts div");
+ 
+ 
+    let opened = false;
+ 
+    hidden.forEach(item => {
+ 
+        products.push({
+ 
+            name:item.dataset.name || "",
+ 
+            desc:item.dataset.desc || ""
+ 
+            /* phone:item.dataset.phone || "" */
+ 
+        });
+ 
+    });
+
+        window.formatPhoneNumbers = function(text){
+
+        if(!text) return "";
+
+        // Regex to capture phone numbers (basic)
+        const phoneRegex = /(\+?\d[\d\s\-\(\)]{7,}\d)/g;
+
+        const isMobile = window.innerWidth <= 768;
+
+        return text.replace(phoneRegex, function(number){
+
+            const cleanNumber = number.replace(/\s/g, "");
+
+            if(isMobile){
+                // ✅ Mobile → Click to Call
+                return `<a href="tel:${cleanNumber}" style="color:#0a66c2; font-weight:600;">${number}</a>`;
+            } else {
+                // ✅ Desktop → Click to Copy
+                return `<span class="copy-number" data-number="${cleanNumber}" style="color:#0a66c2; text-decoration:underline; font-weight:600; cursor:pointer;">${number}</span>`;
+            }
+        });
+    }
+
+    document.addEventListener("click", function(e){
+
+        if(e.target.classList.contains("copy-number")){
+
+            const number = e.target.dataset.number;
+
+            navigator.clipboard.writeText(number);
+
+            // ✅ Optional UI feedback
+            const original = e.target.innerText;
+
+            e.target.innerText = " Copied ! ";
+            e.target.style.color = "#28a745";
+            e.target.style.textDecoration = "none";
+
+            
+            setTimeout(()=>{
+                e.target.innerText = original;
+                e.target.style.color = "#0a66c2";
+                e.target.style.textDecoration = "underline";
+
+            }, 1500);
+        }
+    });
+ 
+    function render(list){
+ 
+        dropdown.innerHTML = "";
+ 
+        if(list.length === 0){
+ 
+            dropdown.innerHTML =
+            "<div>No product found</div>";
+ 
+            return;
+        }
+ 
+        list.forEach(p => {
+ 
+            const div =
+            document.createElement("div");
+ 
+            div.innerHTML = p.name;
+ 
+            div.onclick = function(){ 
+                searchBox.value = p.name;
+                dropdown.style.display = "none";
+                arrow.innerHTML = '<i class="fa fa-chevron-down"></i>';
+                opened = false;
+                result.style.display = "block";   // ✅ SHOW
+                displayText.style.display = "block";
+                result.innerHTML = formatPhoneNumbers(p.desc);
+            };
+ 
+            dropdown.appendChild(div);
+ 
+        });
+ 
+    }
+ 
+    arrow.onclick = function(){
+ 
+        if(!opened){
+ 
+            render(products);
+ 
+            dropdown.style.display = "block";
+            displayText.style.display = "none";         
+            // HIDE RESULT
+            result.style.display = "none";
+            arrow.innerHTML = '<i class="fa fa-chevron-up"></i>';
+ 
+            opened = true;
+ 
+        }else{
+ 
+            dropdown.style.display = "none";
+            displayText.style.display = "block";
+            if (result.innerHTML.trim() !== "") {
+                result.style.display = "block";
+            }
+            arrow.innerHTML = '<i class="fa fa-chevron-down"></i>'; 
+            opened = false;
+        }
+    };
+ 
+    searchBox.addEventListener("input", function(){
+ 
+        const value =
+        this.value.toLowerCase();
+ 
+        const filtered =
+        products.filter(p =>
+            p.name.toLowerCase().includes(value)
+        );
+ 
+        render(filtered);
+      
+        dropdown.style.display = "block";       
+        // HIDE RESULT
+        result.style.display = "none";
+        displayText.style.display = "none";
+        arrow.innerHTML = '<i class="fa fa-chevron-up"></i>';
+        opened = true;
+ 
+    });
+ 
+    /* CLOSE POPUP ON OVERLAY CLICK */
+ 
+    document.getElementById("callUsOverlay")
+    .addEventListener("click", function(){
+ 
+        closeCallUsPopup();
+ 
+    });
+ 
+});
+ 
+</script>
+ 
+<!-- CALL US POPUP END -->
+
+
+
+{% substitution %}
+{% assign current_page = page.id %}
+{% assign sr_page = sitemarkers.Search.id %}
+{% assign forum_page = sitemarkers.Forums.id %}
+{% if current_page %}
+  {% if current_page == sr_page or current_page == forum_page %}
+    {% assign section_class = 'section-landing-search' %}
+    {% if current_page == forum_page %}
+      {% assign section_class = 'section-landing-forums' %}
+    {% endif %}
+    <section class='page_section {{ section_class | h }} color-inverse'>
+      <div class='row sectionBlockLayout sectionFixedStyle' style='display: flex; flex-wrap: wrap; text-align: center;'>
+        <div class='container' style='display: flex; flex-wrap: wrap;'>
+          <div class='col-lg-12 columnBlockLayout' style='display: flex; flex-direction: column; justify-content: center;'>
+            {% if current_page == sr_page %}
+              <h1 id='mainContent'>{% editable snippets 'Search/Title' default: resx["Discover_Contoso"] %}</h1>
+              {% include 'Search', search_id: 'search_control' %}
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </section>
+  {% endif %}
+{% endif %}
+{% endsubstitution %}
+
+<script type='text/javascript'>
+  window.onload = function () {
+    if (window.navigator.appName == 'Microsoft Internet Explorer' || window.navigator.userAgent.indexOf('Trident') > 0) {
+      var searchElement = document.getElementById('search');
+      if (searchElement != null) searchElement.setAttribute('href', '');
+    }
+    updateShellOffsets();
+  };
+  function setHeight() {
+    var navbar = document.getElementById('navbar');
+    if (!navbar) return;
+
+    var rootStyles = getComputedStyle(document.documentElement);
+    var headerH = parseInt(rootStyles.getPropertyValue('--header-h')) || 0;
+    var footerH = parseInt(rootStyles.getPropertyValue('--footer-h')) || 0;
+
+    var windowHeight = window.innerHeight - headerH - footerH;
+    navbar.style.maxHeight = windowHeight + 'px';
+  }
+
+  window.addEventListener('resize', function () {
+    updateShellOffsets();
+    setHeight();
+  });
+</script>
+<!--script fr readmore-->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const readMore = document.getElementById("read-more");
+    if (!readMore) return;
+
+    readMore.addEventListener("click", function (e) {
+      e.stopPropagation();
+      e.preventDefault();
+
+      document.querySelectorAll(".extra-item").forEach(item => {
+        item.style.display = "block";
+      });
+      readMore.style.display = "none";
+    });
+  });
+</script>
+
+
+{% unless user %}
+<script>
+    sessionStorage.removeItem("HC_SHARED_FILTERS");
+    sessionStorage.removeItem("CAT_HELP_CENTER_SHARED_FILTERS");
+</script>
+{% endunless %}
+
+<!-- Vertical Nav -->
+
+
+{% assign primary_nav = weblinks["CAT Navigation Link Set"] %}
+
+<script>
+(function () {
+    var isExpanded = true;
+
+    try {
+        var isInitialized =
+            localStorage.getItem('navInitialized') === 'true';
+
+        if (!isInitialized) {
+            /*
+             * First portal visit:
+             * Default the navigation to expanded.
+             */
+            isExpanded = true;
+
+            localStorage.setItem(
+                'navInitialized',
+                'true'
+            );
+
+            localStorage.setItem(
+                'navExpanded',
+                'true'
+            );
+        } else {
+            /*
+             * Returning visit:
+             * Restore the user's last selected state.
+             */
+            isExpanded =
+                localStorage.getItem('navExpanded') === 'true';
+        }
+    } catch (error) {
+        /*
+         * Default to expanded if localStorage is unavailable.
+         */
+        isExpanded = true;
+    }
+
+    document.documentElement.setAttribute(
+        'data-nav-state',
+        isExpanded ? 'expanded' : 'collapsed'
+    );
+})();
+</script>
+
+<nav id="vertical-nav" class="side-nav">
+<ul class="nav-list">
+       {% for link in primary_nav.weblinks %}
+           {% assign has_children = false %}
+           {% if link.weblinks.size > 0 %}
+               {% assign has_children = true %}
+           {% endif %}
+          <li class="nav-item {% if link.active %}active{% endif %} {% if has_children %}has-children{% endif %}">
+          <a href="{% if has_children %}#{% else %}{{ link.url }}{% endif %}"
+                            class="nav-link {% if has_children %}parent-toggle{% endif %}"
+                            title="{{ link.name }}">
+          
+            {% assign icon = "" %}
+
+            {% if link.image and link.image.url %}
+              {% assign icon = link.image.url %}
+            {% endif %}
+
+            {% if icon == "" %}
+              {% if link.name == "Home" %}
+                {% assign icon = "/home.png" %}
+              {% elsif link.name == "Help Articles" %}
+                {% assign icon = "/helparticle.png" %}
+            {% elsif link.name == "Cat AI Assistant" %}
+                {% assign icon = "/CatAILogo.png" %}
+              {% elsif link.name == "Call Us" %}
+                {% assign icon = "/callus.png" %}
+              {% elsif link.name == "Submit Request" %}
+                {% assign icon = "/submitrequest.png" %}
+              {% elsif link.name == "News & Updates" %}
+                {% assign icon = "/newsupdates.png" %}
+              {% elsif link.name == "Give Feedback" %}
+                {% assign icon = "/givefeedback.png" %}
+              {% elsif link.name == "Quick Links" %}
+                {% assign icon = "/quicklinks.png" %}
+              {% endif %}
+            {% endif %}
+
+            <span class="nav-icon">
+              {% if icon != "" %}
+                <img src="{{ icon }}"
+                    alt="{{ link.name }}"
+                    class="nav-webfile-icon" />
+              {% else %}
+                <i class="fa fa-external-link" aria-hidden="true"></i>
+              {% endif %}
+            </span>
+
+          <span class="nav-label">{{ link.name }}</span>
+                            {% if has_children %}
+          <i class="fa fa-chevron-down child-arrow"></i>
+                            {% endif %}
+          </a>
+              {% if has_children %}
+              {% assign children = link.weblinks %}
+              {% assign total = children | size %}
+
+              <ul class="child-list">
+
+  {% assign visibleCount = 0 %}
+
+  {% for child in link.weblinks %}
+  {% if isAdmin or visibleLinks contains child.name %}
+  {% assign visibleCount = visibleCount | plus: 1 %}
+
+      <li class="child-item {% if visibleCount > 7 %}extra-child{% endif %}"
+          {% if visibleCount > 7 %}style="display:none;"{% endif %}>
+        <a href="{{ child.url }}" target="_blank" rel="noopener noreferrer">
+          <span class="nav-label">{{ child.name }}</span>
+        </a>
+      </li>
+    {% endif %}
+  {% endfor %}
+
+  {% if visibleCount > 7 %}
+    <li class="child-item read-more-item">
+      <a href="#" class="read-more-link">Read more…</a>
+    </li>
+  {% endif %}
+
+</ul>
+
+                        {% endif %}
+          </li>
+       {% endfor %}
+</ul>
+</nav>
+
+<style>
+
+:root {
+    --header-h: 70px;
+    --footer-h: 60px;
+    --nav-collapsed: 75px;
+    --nav-expanded: 260px;
+    --cat-yellow: #FFCD00;
+}
+
+@media (min-width: 769px) {
+  /* 1. Force the header to touch the screen edges at all widths */
+  .container.custom-container {
+    max-width: 100% !important;
+    width: 100% !important;
+    display: flex !important;
+    padding-right: 20px;
+    overflow: visible;
+    align-items: center;
+    padding-left: 20px; /* Adjust this to match your sidebar icon alignment */
+  }
+
+  /* 2. Reset the button styles */
+  #nav-toggle {
+    margin: 0 !important;
+    float: none !important;
+    background: #000;
+    border: none;
+    color: white;
+    width: 40px;
+    height: 38px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0; /* Prevents button from squishing */
+  }
+
+  /* 3. Position the Logo next to the button */
+  .navbar-brand.navbar-header {
+    margin-left: 15px; /* Gap between hamburger and CAT logo */
+    margin-right: auto; /* Pushes the Sign In/Nav items to the far right */
+  }
+
+  /* 4. Ensure the Search/Sign In stays on the right */
+  #navbar {
+    flex-basis: auto;
+    width: auto !important;
+    max-height: none !important;    
+    background: transparent !important;
+    overflow: visible !important;
+  }
+
+  #navbar .nav-item.weblink {
+    display: none !important;
+  }
+
+    .navbar-nav {
+    flex-direction: row !important;
+    align-items: center;
+  }
+
+
+}
+
+
+   .nav-webfile-icon{
+       width: 24px;
+       height: 24px;
+       object-fit: contain;
+       display: block;
+   }
+
+   /* SIDEBAR - Physical boundaries set to ignore header/footer */
+#vertical-nav {
+    position: fixed;
+    top: var(--header-h);
+    bottom: var(--footer-h);
+    left: 0;
+    width: var(--nav-collapsed);
+    background-color: #FFFFFF;
+    border-right: 1px solid #e0e0e0;
+    transition: none !important;
+    z-index: 1000;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+#vertical-nav.expanded,
+html[data-nav-state="expanded"] #vertical-nav {
+    width: var(--nav-expanded);
+}
+
+html[data-nav-state="collapsed"] #vertical-nav {
+    width: var(--nav-collapsed);
+}
+
+#vertical-nav.expanded {
+    width: var(--current-nav-width);
+}
+
+/* Apply saved expanded state before DOMContentLoaded */
+html[data-nav-state="expanded"] #vertical-nav {
+    width: var(--nav-expanded);
+}
+
+/* Apply saved collapsed state before DOMContentLoaded */
+html[data-nav-state="collapsed"] #vertical-nav {
+    width: var(--nav-collapsed);
+}
+
+   /* Match desktop toggle look */
+  .custom-navbar-toggler {
+      background-color: #333; /* same as desktop */
+      border: 1px solid #444;
+      border-radius: 6px;
+      width: 40px;
+      height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+  }
+
+  .custom-navbar-toggler:hover,
+  .custom-navbar-toggler:focus {
+      background-color: #555;
+  }
+
+   .header,
+.navbar {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  z-index: 1001 !important;
+  background-color: #000 !important;
+
+  /* IMPORTANT */
+  height: auto !important;
+  min-height: 70px;
+}
+
+.footer,
+.footer-bottom {
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  z-index: 1000 !important;   /*changes for feedbackpopup*/
+  background-color: #000 !important;
+
+  /* IMPORTANT */
+  height: auto !important;
+}
+   /* NAV LINK APPEARANCE (Icon top, Label bottom) */
+   .nav-list { list-style: none; padding: 0; margin: 0; }
+   .nav-link {
+       display: flex;
+       flex-direction: column;
+       align-items: center;
+       justify-content: center;
+       padding: 15px 5px;
+       color: #555;
+       text-decoration: none;
+       border-left: 4px solid transparent;
+   }
+   .nav-item.active .nav-link {
+       border-left-color: var(--cat-yellow);
+       background: #fcfcfc;
+   }
+   .nav-icon { font-size: 20px; margin-bottom: 5px; color: #444; }
+   .nav-label { font-size: 11px; text-align: center; max-width: 65px; line-height: 1.2; }
+   /* EXPANDED STATE (Icon left, Label right) */
+#vertical-nav.expanded .nav-link,
+html[data-nav-state="expanded"] #vertical-nav .nav-link {
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: center;
+    padding: 12px 20px;
+    text-align: left;
+}
+
+#vertical-nav.expanded .nav-icon,
+html[data-nav-state="expanded"] #vertical-nav .nav-icon {
+    margin-bottom: 0;
+    margin-right: 15px;
+}
+
+#vertical-nav.expanded .nav-label,
+html[data-nav-state="expanded"] #vertical-nav .nav-label {
+    font-size: 16px;
+    max-width: none;
+    text-align: left;
+}
+   /* CHILD LINKS */
+   .child-list { display: none; list-style: none; background: #f9f9f9; padding: 0; }
+   .nav-item.open .child-list { display: block; }
+   .child-list a { padding: 10px 10px 10px 60px; display: block; color: #666; text-decoration: none; font-size: 13px; }
+   /* BODY ADJUSTMENT */
+
+   body {
+    padding-top: var(--header-h) !important;
+    padding-bottom: var(--footer-h) !important;
+    margin-left: var(--nav-collapsed) !important;
+    transition: none !important;
+}
+
+body.nav-expanded,
+html[data-nav-state="expanded"] body {
+    margin-left: var(--nav-expanded) !important;
+}
+
+html[data-nav-state="collapsed"] body {
+    margin-left: var(--nav-collapsed) !important;
+}
+
+  /* Remove underline from ALL navigation links (icons + text) */
+  #vertical-nav a,
+  #vertical-nav a:link,
+  #vertical-nav a:visited,
+  #vertical-nav a:hover,
+  #vertical-nav a:active {
+      text-decoration: none !important;
+  }
+
+/* Parent navigation hover */
+  #vertical-nav .nav-link:hover {
+      background-color: #E1E1E1;
+      text-decoration: none !important;
+  }
+
+  .child-arrow {
+      transition: transform 0.2s ease;
+  }
+
+  .nav-item.open .child-arrow {
+      transform: rotate(180deg);
+  }
+
+  
+  /* Ensure nav-link behaves correctly as flex row in expanded mode */
+#vertical-nav.expanded .nav-link,
+html[data-nav-state="expanded"] #vertical-nav .nav-link {
+    display: flex;
+    align-items: center;
+}
+
+
+  /* Push the arrow to the far right */
+#vertical-nav.expanded .child-arrow,
+html[data-nav-state="expanded"] #vertical-nav .child-arrow {
+    margin-left: auto;
+}
+
+  /* ✅ Remove Bootstrap active/expanded orange styles */
+  .custom-navbar-toggler,
+  .custom-navbar-toggler:hover,
+  .custom-navbar-toggler:focus,
+  .custom-navbar-toggler:active,
+  .custom-navbar-toggler:focus-visible,
+  .custom-navbar-toggler[aria-expanded="true"] {
+      background-color: #000000 !important;   /* keep dark background */
+      border-color: #000000 !important;
+      outline: none !important;
+      box-shadow: none !important;
+  }
+
+  /* OOB Navigation Weblink Item configuration on Mobile */
+
+/* ======================================================
+   OOB NAV — TEXT-ONLY ACTIVE STATE (NO BACKGROUND)
+   ====================================================== */
+
+:root {
+    --cat-black: #000000;
+    --cat-white: #ffffff;
+    --cat-yellow: #FFCD11;
+    --cat-divider: #2a2a2a;
+}
+
+/* ---------- Base background ---------- */
+.navbar-nav,
+.dropdown-menu {
+    background-color: var(--cat-black) !important;
+}
+
+/* ---------- Default link appearance ---------- */
+.navbar-nav .nav-link,
+.dropdown-menu .dropdown-item {
+    color: var(--cat-white) !important;
+    background-color: transparent !important;
+}
+
+/* ---------- KILL ALL BACKGROUND COLORS (critical) ---------- */
+.navbar-nav .nav-link:hover,
+.navbar-nav .nav-link:focus,
+.navbar-nav .nav-link:active,
+.navbar-nav .nav-link.active,
+.navbar-nav .show > .nav-link,
+.dropdown-menu .dropdown-item:hover,
+.dropdown-menu .dropdown-item:focus,
+.dropdown-menu .dropdown-item:active,
+.dropdown-menu .dropdown-item.active {
+    background-color: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
+}
+
+/* ---------- ACTIVE STATE = TEXT ONLY (NO BACKGROUND) ---------- */
+.navbar-nav .nav-link.active,
+.navbar-nav .nav-link[aria-expanded="true"],
+.navbar-nav .show > .nav-link {
+    color: var(--cat-yellow) !important;
+}
+
+/* ---------- ACTIVE DROPDOWN CHILD ---------- */
+.dropdown-menu .dropdown-item.active {
+    color: var(--cat-yellow) !important;
+}
+
+/* ---------- Icons: default white ---------- */
+.navbar-nav img,
+.navbar-nav i,
+.dropdown-menu img,
+.dropdown-menu i {
+    filter: brightness(0) invert(1);
+}
+
+/* ---------- Icons: active = CAT yellow ---------- */
+.navbar-nav .active img,
+.navbar-nav .active i,
+.navbar-nav .show > .nav-link img,
+.navbar-nav .show > .nav-link i,
+.dropdown-menu .dropdown-item.active img,
+.dropdown-menu .dropdown-item.active i {
+    filter: brightness(0) saturate(100%)
+            invert(77%) sepia(87%)
+            saturate(350%) hue-rotate(2deg);
+}
+
+/* ---------- Dividers ---------- */
+.navbar-nav .nav-item {
+    border-bottom: 1px solid var(--cat-divider);
+}
+
+/* ---------- Remove underline everywhere ---------- */
+.navbar-nav a,
+.dropdown-menu a {
+    text-decoration: none !important;
+}
+
+/*Hover action on childlinks*/
+
+/* Child navigation hover (match parent behavior) */
+#vertical-nav .child-list a:hover {
+    background-color: #E1E1E1;
+    color: #000;
+    text-decoration: none;
+}
+
+#vertical-nav .child-list a.active {
+    background-color: #E1E1E1;
+    color: #000;
+    font-weight: 500;
+}
+
+#vertical-nav .child-list a {
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var toggle = document.getElementById('nav-toggle');
+    var nav = document.getElementById('vertical-nav');
+    var body = document.body;
+    var root = document.documentElement;
+
+    if (!nav || !body) {
+        return;
+    }
+
+    function setNavExpanded(isExpanded, saveState) {
+        nav.classList.toggle('expanded', isExpanded);
+        body.classList.toggle('nav-expanded', isExpanded);
+
+        root.setAttribute(
+            'data-nav-state',
+            isExpanded ? 'expanded' : 'collapsed'
+        );
+
+        if (toggle) {
+            toggle.setAttribute(
+                'aria-expanded',
+                isExpanded ? 'true' : 'false'
+            );
+        }
+
+        if (saveState) {
+            try {
+                localStorage.setItem(
+                    'navExpanded',
+                    isExpanded ? 'true' : 'false'
+                );
+
+                localStorage.setItem(
+                    'navInitialized',
+                    'true'
+                );
+            } catch (error) {
+                console.warn(
+                    'Unable to save navigation state.',
+                    error
+                );
+            }
+        }
+
+        if (!isExpanded) {
+            document
+                .querySelectorAll('#vertical-nav .nav-item.open')
+                .forEach(function (item) {
+                    item.classList.remove('open');
+                });
+        }
+    }
+
+    var isExpanded = true;
+
+    try {
+        var isInitialized =
+            localStorage.getItem('navInitialized') === 'true';
+
+        if (!isInitialized) {
+            isExpanded = true;
+
+            localStorage.setItem(
+                'navInitialized',
+                'true'
+            );
+
+            localStorage.setItem(
+                'navExpanded',
+                'true'
+            );
+        } else {
+            isExpanded =
+                localStorage.getItem('navExpanded') === 'true';
+        }
+    } catch (error) {
+        isExpanded = true;
+    }
+
+    setNavExpanded(isExpanded, false);
+
+    if (toggle) {
+        toggle.addEventListener('click', function (event) {
+            event.preventDefault();
+
+            var newState =
+                !nav.classList.contains('expanded');
+
+            setNavExpanded(newState, true);
+        });
+    }
+
+    document
+        .querySelectorAll('#vertical-nav .parent-toggle')
+        .forEach(function (link) {
+            link.addEventListener('click', function (event) {
+                event.preventDefault();
+
+                var parentItem =
+                    this.closest('.nav-item');
+
+                if (!nav.classList.contains('expanded')) {
+                    setNavExpanded(true, true);
+                }
+
+                if (parentItem) {
+                    parentItem.classList.toggle('open');
+                }
+            });
+        });
+});
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('.read-more-link').forEach(function (link) {
+    link.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const parentList = this.closest('.child-list');
+      if (!parentList) return;
+
+      parentList.querySelectorAll('.extra-child').forEach(item => {
+        item.style.display = 'block';
+      });
+
+      this.closest('.read-more-item').style.display = 'none';
+    });
+  });
+});
+</script>
+
+
+<!-- Star Rating -->
+<script>
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    window.selectedRating = 0;
+
+    const stars = document.querySelectorAll(".star");
+    const ratingContainer = document.querySelector(".star-rating");
+
+    stars.forEach(function (star) {
+
+        // Hover Preview
+        star.addEventListener("mouseenter", function () {
+
+            const hoverValue = parseInt(this.dataset.value);
+
+            stars.forEach(function (s) {
+
+                const val = parseInt(s.dataset.value);
+
+                if (val <= hoverValue) {
+                    s.style.setProperty("color", "#FFD700", "important");
+                } else {
+                    s.style.setProperty("color", "#FFFFFF", "important");
+                }
+            });
+        });
+
+        // Save Selected Rating
+        star.addEventListener("click", function (e) {
+
+            e.stopPropagation();
+
+            window.selectedRating = parseInt(this.dataset.value);
+
+            console.log("⭐ Rating selected:", window.selectedRating);
+
+            stars.forEach(function (s) {
+
+                const val = parseInt(s.dataset.value);
+
+                if (val <= window.selectedRating) {
+                    s.style.setProperty("color", "#FFD700", "important");
+                } else {
+                    s.style.setProperty("color", "#FFFFFF", "important");
+                }
+            });
+
+            window.dispatchEvent(new Event("ratingChanged"));
+        });
+    });
+
+    // Restore selected state when mouse leaves
+    if (ratingContainer) {
+
+        ratingContainer.addEventListener("mouseleave", function () {
+
+            stars.forEach(function (s) {
+
+                const val = parseInt(s.dataset.value);
+
+                if (val <= window.selectedRating) {
+                    s.style.setProperty("color", "#FFD700", "important");
+                } else {
+                    s.style.setProperty("color", "#FFFFFF", "important");
+                }
+            });
+        });
+    }
+
+    // Existing outside click logic
+    document.addEventListener("click", function (e) {
+
+        if (ratingContainer && !ratingContainer.contains(e.target)) {
+
+            window.selectedRating = 0;
+
+            stars.forEach(function (s) {
+                s.style.setProperty("color", "#FFFFFF", "important");
+            });
+        }
+    });
+});
+
+function resetStarRating() {
+
+    window.selectedRating = 0;
+
+    document.querySelectorAll(".star").forEach(function (s) {
+        s.style.setProperty("color", "#FFFFFF", "important");
+    });
+}
+
+</script>
+<!--Star Rating Ends-->
+<!-- <script>
+
+console.log("PREDICTIVE LOADED");
+
+var allArticles = [];
+
+setTimeout(function(){
+
+    $("#hiddenArticles div").each(function(){
+
+        allArticles.push({
+            id: this.getAttribute("data-id"),
+            title: this.getAttribute("data-title"),
+            category: this.getAttribute("data-category"),
+            url: this.getAttribute("data-url")
+        });
+
+    });
+
+    console.log("Loaded Articles:", allArticles.length);
+    console.log(allArticles[0]);
+
+},2000);
+
+
+setTimeout(function(){
+
+    var searchBox = document.getElementById("search");
+
+    if(!searchBox) return;
+
+    searchBox.addEventListener("input", function(){
+
+        var keyword = this.value.trim().toLowerCase();
+
+        if(keyword.length < 1){
+
+            $("#predictiveResultsDesktop").hide();
+            return;
+        }
+
+        var filtered = allArticles.filter(function(article){
+
+            return article.title &&
+                   article.title.toLowerCase().includes(keyword);
+
+        });
+
+        var html = "";
+
+        if(filtered.length === 0){
+
+            html =
+            "<div class='predictive-item'>No Results Found</div>";
+
+        } else {
+
+            filtered.slice(0,3).forEach(function(article){
+
+             html += `
+<div class="predictive-item">
+
+    <div class="predictive-left">
+
+        <div class="predictive-icon">
+            <i class="fa fa-newspaper-o"></i>
+        </div>
+
+        <div class="predictive-title">
+            ${article.title}
+        </div>
+
+    </div>
+
+    <div class="predictive-category">
+        ${article.category || ''}
+    </div>
+
+</div>`;
+            });
+            
+
+        }
+
+        $("#predictiveResultsDesktop")
+            .html(html)
+            .show();
+
+    });
+
+},2000);
+
+
+$(document).on("click", function(e){
+
+    if(
+        !$(e.target).closest("#search").length &&
+        !$(e.target).closest("#predictiveResultsDesktop").length
+    ){
+        $("#predictiveResultsDesktop").hide();
+    }
+
+});
+
+</script> -->
+<!-- <script>
+
+console.log("PREDICTIVE LOADED");
+
+
+// var allArticles = [];
+var allArticles = [];
+var allCases = [];
+
+
+
+
+setTimeout(function(){
+
+    $("#hiddenArticles div").each(function(){
+
+        allArticles.push({
+            id: this.getAttribute("data-id"),
+            title: this.getAttribute("data-title"),
+            category: this.getAttribute("data-category"),
+            url: this.getAttribute("data-url")
+        });
+
+    });
+     console.log("Loaded Articles:", allArticles.length);
+    console.log(allArticles[0]);
+
+$("#hiddenCases div").each(function(){
+ 
+    allCases.push({
+        id: this.getAttribute("data-id"),
+        title: this.getAttribute("data-title"),
+        category:this.getAttribute("data-category"),
+        type: this.getAttribute("data-type"),
+        url: this.getAttribute("data-url")
+    });
+ 
+});
+ 
+console.log("Cases Loaded:", allCases.length);
+ 
+   
+},2000);
+
+
+setTimeout(function(){
+
+    var searchBox = document.getElementById("search");
+
+    if(!searchBox) return;
+
+    searchBox.addEventListener("input", function(){
+
+        var keyword = this.value.trim().toLowerCase();
+
+        if(keyword.length < 1){
+
+            $("#predictiveResultsDesktop").hide();
+            return;
+        }
+
+        
+        var allData = allArticles.concat(allCases);
+ 
+var filtered = allData.filter(function(item){
+ 
+    return item.title &&
+           item.title.toLowerCase().includes(keyword);
+ 
+});
+ 
+
+        var html = "";
+
+        if(filtered.length === 0){
+
+            html =
+            "<div class='predictive-item'>No Results Found</div>";
+
+        } else {
+
+
+           filtered.slice(0,3).forEach(function(article){
+ 
+html += `
+<a href="${article.url}" class="predictive-item predictive-link">
+ 
+    <div class="predictive-left">
+        <div class="predictive-icon">
+        
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="color:#4A4A4A">
+
+  <rect x="4" y="6" width="16" height="11" rx="1" stroke="currentColor" stroke-width="1.5"/>
+
+  <path d="M8 20H16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+
+  <path d="M12 17V20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+
+</svg>
+ 
+        </div>
+ 
+        <div class="predictive-title">
+            ${article.title}
+        </div>
+    </div>
+ 
+    <div class="predictive-category">
+        ${article.category || ''}
+    </div>
+ 
+</a>`;
+ 
+});
+  
+
+        }
+
+        $("#predictiveResultsDesktop")
+            .html(html)
+            .show();
+
+    });
+
+},2000);
+ 
+
+$(document).on("click", ".predictive-item", function() {
+ 
+    var url = $(this).attr("data-url");
+ 
+    console.log("Navigating to:", url);
+ 
+    location.href = url;
+ 
+    return false;
+});
+ 
+
+$(document).on("click", function(e){
+
+    if(
+        !$(e.target).closest("#search").length &&
+        !$(e.target).closest("#predictiveResultsDesktop").length
+    ){
+        $("#predictiveResultsDesktop").hide();
+    }
+
+});
+
+</script> -->
+
+<script>
+
+console.log("PREDICTIVE SEARCH LOADED");
+
+var allArticles = [];
+var allCases = [];
+
+// Load hidden data
+setTimeout(function () {
+
+    $("#hiddenArticles div").each(function () {
+
+        allArticles.push({
+            id:       this.getAttribute("data-id"),
+            title:    this.getAttribute("data-title"),
+            category: this.getAttribute("data-category"),
+            url:      this.getAttribute("data-url")
+        });
+
+    });
+
+    console.log("Articles Loaded:", allArticles.length);
+
+    $("#hiddenCases div").each(function () {
+
+        allCases.push({
+            id:       this.getAttribute("data-id"),
+            title:    this.getAttribute("data-title"),
+            number:   $(this).data("number"),
+            category: this.getAttribute("data-category"),
+            type:     this.getAttribute("data-type"),
+            url:      this.getAttribute("data-url")
+        });
+
+    });
+
+    console.log("Cases Loaded:", allCases.length);
+
+}, 2000);
+
+
+/*
+ * -------------------------------------------------------
+ * HELPER: normalize text for case-insensitive comparison
+ * (mirrors the normalizeText function in the product
+ *  filter script so comparisons stay consistent)
+ * -------------------------------------------------------
+ */
+function predictiveNormalize(val) {
+    return String(val || "").replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+
+/*
+ * -------------------------------------------------------
+ * HELPER: return the active product-filter state that was
+ * set by the product-filter script when the user chose a
+ * product from the dropdown.
+ *
+ *   window.selectedMappingId      – "all" or a mapping GUID
+ *   window.selectedProductFilter  – cat_product.name  (used
+ *                                   to match Cases / Handups)
+ *   window.selectedCategoryFilter – cat_category.name (used
+ *                                   to match Help Articles)
+ * -------------------------------------------------------
+ */
+function getActivePredictiveFilter() {
+    return {
+        mappingId: window.selectedMappingId      || "all",
+        product:   window.selectedProductFilter  || "",
+        category:  window.selectedCategoryFilter || ""
+    };
+}
+
+
+// Search
+setTimeout(function () {
+
+    var searchBox = document.getElementById("search");
+
+    if (!searchBox) return;
+
+    searchBox.addEventListener("input", function () {
+
+        var keyword = this.value.trim().toLowerCase();
+
+        if (keyword.length < 3) {
+            $("#predictiveResultsDesktop").hide();
+            return;
+        }
+
+        /*
+         * ---------------------------------------------------
+         * STEP 1 – Pre-filter source pools by the selected
+         * product / category from the Mapping Entity.
+         *
+         * When "All" is selected both pools remain the full
+         * master arrays (existing behaviour unchanged).
+         *
+         * When a specific product is selected:
+         *   • Help Articles  → keep only records whose
+         *     data-category matches cat_category from the
+         *     Mapping Entity  (window.selectedCategoryFilter)
+         *   • Cases & Handups → keep only records whose
+         *     data-category matches cat_product from the
+         *     Mapping Entity  (window.selectedProductFilter)
+         *     (cases store productid.name in data-category)
+         * ---------------------------------------------------
+         */
+        var filter      = getActivePredictiveFilter();
+        var articlePool = allArticles;
+        var casePool    = allCases;
+
+        if (filter.mappingId !== "all") {
+
+            // Help Articles – filter by cat_category (Mapping Entity)
+            var catNorm = predictiveNormalize(filter.category);
+            if (catNorm) {
+                articlePool = allArticles.filter(function (item) {
+                    return predictiveNormalize(item.category) === catNorm;
+                });
+            }
+
+            // Cases & Handups – filter by cat_product (Mapping Entity)
+            var prodNorm = predictiveNormalize(filter.product);
+            if (prodNorm) {
+                casePool = allCases.filter(function (item) {
+                    return predictiveNormalize(item.category) === prodNorm;
+                });
+            }
+
+            console.log(
+                "Predictive pre-filter applied | product:",
+                filter.product,
+                "| category:", filter.category,
+                "| articlePool:", articlePool.length,
+                "| casePool:", casePool.length
+            );
+        }
+
+        /*
+         * ---------------------------------------------------
+         * STEP 2 – Keyword filter on the pre-filtered pools,
+         * then take the top 3 from each.
+         * ---------------------------------------------------
+         */
+
+        // Top 3 Articles
+        var filteredArticles = articlePool.filter(function (item) {
+            return item.title &&
+                item.title.toLowerCase().includes(keyword);
+        }).slice(0, 3);
+
+        // Top 3 Cases / Handups (title OR ticket number)
+        var filteredCases = casePool.filter(function (item) {
+            return (
+                (item.title  && item.title.toLowerCase().includes(keyword)) ||
+                (item.number && item.number.toLowerCase().includes(keyword))
+            );
+        }).slice(0, 3);
+
+        var html = "";
+
+        if (filteredArticles.length === 0 && filteredCases.length === 0) {
+
+            html = "<div class='predictive-item'>No Results Found</div>";
+
+        } else {
+
+            // ---------------- Knowledge Articles ----------------
+            if (filteredArticles.length > 0) {
+
+                filteredArticles.forEach(function (article) {
+
+                    var kw  = document.getElementById("search").value;
+                    var url = article.url +
+                              "&from=search" +
+                              "&search=" + encodeURIComponent(kw);
+
+                    html += `
+    <a href="${url}" class="predictive-item predictive-link">
+                        <div class="predictive-left">
+                            <div class="predictive-icon article-icon">
+                               <img src="/KAPred.png" class="article-png-icon" />
+                            </div>
+                            <div class="predictive-title">
+                                ${article.title}
+                            </div>
+                        </div>
+                        <div class="predictive-category">
+                            ${article.category || ""}
+                        </div>
+                    </a>`;
+                });
+            }
+
+            // ---------------- Cases & Handups ----------------
+            if (filteredCases.length > 0) {
+
+                filteredCases.forEach(function (item) {
+
+                    var kw  = document.getElementById("search").value;
+                    var url = item.url;
+
+                    if (url.indexOf("?") > -1) {
+                        url += "&from=search";
+                        url += "&search=" + encodeURIComponent(kw);
+                    } else {
+                        url += "?from=search";
+                        url += "&search=" + encodeURIComponent(kw);
+                    }
+
+                    html += `
+    <a href="${url}" class="predictive-item predictive-link">
+                        <div class="predictive-left">
+                           <div class="predictive-icon case-icon">
+                               <img src="/CasePred.png" class="case-png-icon" />
+                           </div>
+                           <div class="predictive-title">
+                               ${item.number}: ${item.title}
+                           </div>
+                        </div>
+                        <div class="predictive-category">
+                            ${item.category || ""}
+                        </div>
+                    </a>`;
+                });
+            }
+
+        }
+
+        $("#predictiveResultsDesktop")
+            .html(html)
+            .show();
+
+    });
+
+}, 2000);
+
+
+// Click outside to hide
+$(document).on("click", function (e) {
+
+    if (
+        !$(e.target).closest("#search").length &&
+        !$(e.target).closest("#predictiveResultsDesktop").length
+    ) {
+        $("#predictiveResultsDesktop").hide();
+    }
+
+});
+
+
+</script>
+<!-- Mobile Predictive Search -->
+<script>
+ 
+console.log("PREDICTIVE SEARCH LOADED - MOBILE");
+ 
+// Search (Mobile)
+setTimeout(function () {
+ 
+    var searchBoxMobile = document.getElementById("search_mobile");
+ 
+    if (!searchBoxMobile) return;
+ 
+    searchBoxMobile.addEventListener("input", function () {
+ 
+        var keyword = searchBoxMobile.value.trim().toLowerCase();
+ 
+        if (keyword.length < 3) {
+            $("#predictiveResultsMobile").hide();
+            return;
+        }
+ 
+        var filter      = getActivePredictiveFilter();
+        var articlePool = allArticles;
+        var casePool    = allCases;
+ 
+        if (filter.mappingId !== "all") {
+ 
+            var catNorm = predictiveNormalize(filter.category);
+            if (catNorm) {
+                articlePool = allArticles.filter(function (item) {
+                    return predictiveNormalize(item.category) === catNorm;
+                });
+            }
+ 
+            var prodNorm = predictiveNormalize(filter.product);
+            if (prodNorm) {
+                casePool = allCases.filter(function (item) {
+                    return predictiveNormalize(item.category) === prodNorm;
+                });
+            }
+        }
+ 
+        var filteredArticles = articlePool.filter(function (item) {
+            return item.title &&
+                item.title.toLowerCase().includes(keyword);
+        }).slice(0, 3);
+ 
+        var filteredCases = casePool.filter(function (item) {
+            return (
+                (item.title  && item.title.toLowerCase().includes(keyword)) ||
+                (item.number && item.number.toLowerCase().includes(keyword))
+            );
+        }).slice(0, 3);
+ 
+        var html = "";
+ 
+        if (filteredArticles.length === 0 && filteredCases.length === 0) {
+ 
+            html = "<div class='predictive-item'>No Results Found</div>";
+ 
+        } else {
+ 
+            if (filteredArticles.length > 0) {
+                filteredArticles.forEach(function (article) {
+ 
+                    var kw  = searchBoxMobile.value;
+                    var url = article.url +
+                              "&from=search" +
+                              "&search=" + encodeURIComponent(kw);
+ 
+                    html += `
+    <a href="${url}" class="predictive-item predictive-link">
+                        <div class="predictive-left">
+                            <div class="predictive-icon article-icon">
+                               <img src="/KAPred.png" class="article-png-icon" />
+                            </div>
+                            <div class="predictive-title">
+                                ${article.title}
+                            </div>
+                        </div>
+                        <div class="predictive-category">
+                            ${article.category || ""}
+                        </div>
+                    </a>`;
+                });
+            }
+ 
+            if (filteredCases.length > 0) {
+                filteredCases.forEach(function (item) {
+ 
+                    var kw  = searchBoxMobile.value;
+                    var url = item.url;
+ 
+                    if (url.indexOf("?") > -1) {
+                        url += "&from=search";
+                        url += "&search=" + encodeURIComponent(kw);
+                    } else {
+                        url += "?from=search";
+                        url += "&search=" + encodeURIComponent(kw);
+                    }
+ 
+                    html += `
+    <a href="${url}" class="predictive-item predictive-link">
+                        <div class="predictive-left">
+                           <div class="predictive-icon case-icon">
+                               <img src="/CasePred.png" class="case-png-icon" />
+                           </div>
+                           <div class="predictive-title">
+                               ${item.number}: ${item.title}
+                           </div>
+                        </div>
+                        <div class="predictive-category">
+                            ${item.category || ""}
+                        </div>
+                    </a>`;
+                });
+            }
+        }
+ 
+        $("#predictiveResultsMobile")
+            .html(html)
+            .show();
+ 
+    });
+ 
+}, 2000);
+ 
+ 
+// Click outside to hide (Mobile)
+$(document).on("click", function (e) {
+ 
+    if (
+        !$(e.target).closest("#search_mobile").length &&
+        !$(e.target).closest("#predictiveResultsMobile").length
+    ) {
+        $("#predictiveResultsMobile").hide();
+    }
+ 
+});
+ 
+</script>
+ 
+ 
+
+<!-- prod filter script -->
+<script>
+(function () {
+    "use strict";
+
+    /*
+     * =====================================================
+     * PRODUCT FILTER STATE
+     * =====================================================
+     */
+
+    var productMappings = [];
+var selectedMappingId = "all";
+var selectedProduct = "all";
+var selectedCategory = "";
+var productFilterReady = false;
+
+
+    /*
+     * =====================================================
+     * NORMALIZE TEXT
+     * =====================================================
+     */
+
+    function normalizeText(value) {
+        return String(value || "")
+            .replace(/\s+/g, " ")
+            .trim()
+            .toLowerCase();
+    }
+
+
+    /*
+     * =====================================================
+     * READ PRODUCT-TO-CATEGORY MAPPINGS
+     * =====================================================
+     */
+
+   function readProductMappings() {
+
+    productMappings = [];
+
+    var mappingElements = document.querySelectorAll(
+        "#hiddenProductMappings div[data-mapping-id]"
+    );
+
+    mappingElements.forEach(function (element) {
+
+        var mappingId =
+            element.getAttribute("data-mapping-id") || "";
+
+        var mappingName =
+            element.getAttribute("data-mapping-name") || "";
+
+        var productName =
+            element.getAttribute("data-product") || "";
+
+        var productId =
+            element.getAttribute("data-product-id") || "";
+
+        var categoryName =
+            element.getAttribute("data-category") || "";
+
+        var categoryId =
+            element.getAttribute("data-category-id") || "";
+
+        mappingId = mappingId.trim();
+        mappingName = mappingName.trim();
+        productName = productName.trim();
+        categoryName = categoryName.trim();
+
+        if (mappingId !== "") {
+
+            productMappings.push({
+                mappingId: mappingId,
+                mappingName: mappingName,
+                product: productName,
+                productId: productId,
+                category: categoryName,
+                categoryId: categoryId
+            });
+        }
+    });
+
+    console.log(
+        "Total mapping entity records:",
+        productMappings.length
+    );
+
+    console.table(productMappings);
+}
+   
+    /*
+     * =====================================================
+     * POPULATE PRODUCT DROPDOWN
+     * =====================================================
+     */
+
+   function populateProductDropdown() {
+
+    var productList =
+        document.getElementById("productFilterList");
+
+    if (!productList) {
+        console.error("Product Filter list was not found.");
+        return;
+    }
+
+    /*
+     * All ko preserve karo aur purane generated
+     * mapping options remove karo.
+     */
+    productList
+        .querySelectorAll("li:not([data-product='all'])")
+        .forEach(function (option) {
+            option.remove();
+        });
+
+    /*
+     * Mapping records ko mapping name ke according sort karo.
+     */
+    var sortedMappings = productMappings.slice();
+
+    sortedMappings.sort(function (first, second) {
+
+        var firstLabel =
+            first.mappingName ||
+            first.product ||
+            "";
+
+        var secondLabel =
+            second.mappingName ||
+            second.product ||
+            "";
+
+        return firstLabel.localeCompare(
+            secondLabel,
+            undefined,
+            {
+                sensitivity: "base",
+                numeric: true
+            }
+        );
+    });
+
+    /*
+     * Har mapping entity record ka separate option banao.
+     */
+    sortedMappings.forEach(function (mapping) {
+
+        var option = document.createElement("li");
+
+        option.setAttribute(
+            "data-mapping-id",
+            mapping.mappingId
+        );
+
+        option.setAttribute(
+            "data-product",
+            mapping.product
+        );
+
+        option.setAttribute(
+            "data-product-id",
+            mapping.productId
+        );
+
+        option.setAttribute(
+            "data-category",
+            mapping.category
+        );
+
+        option.setAttribute(
+            "data-category-id",
+            mapping.categoryId
+        );
+
+        option.setAttribute(
+            "role",
+            "option"
+        );
+
+        option.setAttribute(
+            "tabindex",
+            "0"
+        );
+
+        option.setAttribute(
+            "aria-selected",
+            "false"
+        );
+
+        /*
+         * Dropdown mein actual mapping record ka primary name.
+         */
+        option.textContent =
+            mapping.mappingName ||
+            mapping.product ||
+            "Unnamed Mapping";
+
+        productList.appendChild(option);
+    });
+
+    productFilterReady = true;
+
+    console.log(
+        "Mapping records added to dropdown:",
+        sortedMappings.length
+    );
+
+    console.log(
+        "Total dropdown options including All:",
+        productList.querySelectorAll("li").length
+    );
+}
+
+    /*
+     * =====================================================
+     * OPEN DROPDOWN
+     * =====================================================
+     */
+
+    function openProductDropdown() {
+
+        var button =
+            document.getElementById(
+                "productFilterBtn"
+            );
+
+        var list =
+            document.getElementById(
+                "productFilterList"
+            );
+
+        var arrow =
+            document.getElementById(
+                "productFilterArrow"
+            );
+
+        if (!button || !list) {
+            return;
+        }
+
+        if (!productFilterReady) {
+            readProductMappings();
+            populateProductDropdown();
+        }
+
+        list.classList.add("open");
+
+        button.setAttribute(
+            "aria-expanded",
+            "true"
+        );
+
+        if (arrow) {
+
+            arrow.classList.remove(
+                "fa-chevron-down"
+            );
+
+            arrow.classList.add(
+                "fa-chevron-up"
+            );
+        }
+    }
+
+
+    /*
+     * =====================================================
+     * CLOSE DROPDOWN
+     * =====================================================
+     */
+
+    function closeProductDropdown() {
+
+        var button =
+            document.getElementById(
+                "productFilterBtn"
+            );
+
+        var list =
+            document.getElementById(
+                "productFilterList"
+            );
+
+        var arrow =
+            document.getElementById(
+                "productFilterArrow"
+            );
+
+        if (!button || !list) {
+            return;
+        }
+
+        list.classList.remove("open");
+
+        button.setAttribute(
+            "aria-expanded",
+            "false"
+        );
+
+        if (arrow) {
+
+            arrow.classList.remove(
+                "fa-chevron-up"
+            );
+
+            arrow.classList.add(
+                "fa-chevron-down"
+            );
+        }
+    }
+
+
+    /*
+     * =====================================================
+     * TOGGLE DROPDOWN
+     * =====================================================
+     */
+
+    function toggleProductDropdown() {
+
+        var list =
+            document.getElementById(
+                "productFilterList"
+            );
+
+        if (!list) {
+            return;
+        }
+
+        if (list.classList.contains("open")) {
+            closeProductDropdown();
+        } else {
+            openProductDropdown();
+        }
+    }
+
+
+    /*
+     * =====================================================
+     * GET CATEGORIES MAPPED TO SELECTED PRODUCT
+     * =====================================================
+     */
+
+    function getMappedCategories(productName) {
+
+        var selectedProductNormalized =
+            normalizeText(productName);
+
+        var categories = {};
+
+        productMappings.forEach(function (mapping) {
+
+            var mappingProductNormalized =
+                normalizeText(mapping.product);
+
+            var categoryNormalized =
+                normalizeText(mapping.category);
+
+            if (
+                mappingProductNormalized ===
+                    selectedProductNormalized &&
+                categoryNormalized !== ""
+            ) {
+                categories[categoryNormalized] = true;
+            }
+        });
+
+        return Object.keys(categories);
+    }
+
+
+    /*
+     * =====================================================
+     * IDENTIFY THE PREDICTIVE RECORD TYPE
+     * =====================================================
+     */
+
+    function isArticleRecord(record) {
+
+        return Boolean(
+            record.querySelector(".article-icon")
+        );
+    }
+
+
+    function isCaseOrHandupRecord(record) {
+
+        return Boolean(
+            record.querySelector(".case-icon")
+        );
+    }
+
+
+    /*
+     * =====================================================
+     * APPLY PRODUCT FILTER TO PREDICTIVE RESULTS
+     * =====================================================
+     */
+
+    function applyProductFilter() {
+
+        var predictiveContainer =
+            document.getElementById(
+                "predictiveResultsDesktop"
+            );
+
+        if (!predictiveContainer) {
+            return;
+        }
+
+        /*
+         * Remove old filter-generated message.
+         */
+
+        predictiveContainer
+            .querySelectorAll(".pf-no-results")
+            .forEach(function (message) {
+                message.remove();
+            });
+
+        var records =
+            predictiveContainer.querySelectorAll(
+                ".predictive-link"
+            );
+
+        /*
+         * ALL selected:
+         * Show every predictive result.
+         */
+
+       if (selectedMappingId === "all") {
+
+            records.forEach(function (record) {
+                record.style.removeProperty("display");
+            });
+
+            return;
+        }
+
+        var selectedProductNormalized =
+            normalizeText(selectedProduct);
+
+       var selectedProductNormalized =
+    normalizeText(selectedProduct);
+
+var selectedCategoryNormalized =
+    normalizeText(selectedCategory);
+
+        var visibleCount = 0;
+
+        records.forEach(function (record) {
+
+            var categoryElement =
+                record.querySelector(
+                    ".predictive-category"
+                );
+
+            var displayedCategory =
+                normalizeText(
+                    categoryElement
+                        ? categoryElement.textContent
+                        : ""
+                );
+
+            var shouldShow = false;
+
+            /*
+             * Help Article:
+             * The displayed article category must belong
+             * to the selected product in mapping entity.
+             */
+
+          if (isArticleRecord(record)) {
+
+    /*
+     * Selected mapping ke particular Category
+     * ke Articles show honge.
+     */
+    shouldShow =
+        displayedCategory ===
+        selectedCategoryNormalized;
+}
+
+            /*
+             * Case or Handup:
+             * The displayed value is productid.name.
+             * It must match the selected product.
+             */
+
+            else if (isCaseOrHandupRecord(record)) {
+
+                shouldShow =
+                    displayedCategory ===
+                    selectedProductNormalized;
+            }
+
+            if (shouldShow) {
+
+                record.style.removeProperty(
+                    "display"
+                );
+
+                visibleCount++;
+
+            } else {
+
+                record.style.setProperty(
+                    "display",
+                    "none",
+                    "important"
+                );
+            }
+        });
+
+        /*
+         * Show No Results Found only when predictive
+         * records exist but all were filtered out.
+         */
+
+        if (
+            records.length > 0 &&
+            visibleCount === 0
+        ) {
+
+            var noResults =
+                document.createElement("div");
+
+            noResults.className =
+                "predictive-item pf-no-results";
+
+            noResults.textContent =
+                "No Results Found";
+
+            predictiveContainer.appendChild(
+                noResults
+            );
+        }
+    }
+
+
+    /*
+     * =====================================================
+     * SELECT PRODUCT
+     * =====================================================
+     */
+
+   function selectProduct(option) {
+
+    var productList =
+        document.getElementById("productFilterList");
+
+    var productLabel =
+        document.getElementById("productFilterLabel");
+
+    if (!option || !productList) {
+        return;
+    }
+
+    var isAll =
+        option.getAttribute("data-product") === "all";
+
+    if (isAll) {
+
+        selectedMappingId = "all";
+        selectedProduct = "all";
+        selectedCategory = "";
+
+    } else {
+
+        selectedMappingId =
+            option.getAttribute("data-mapping-id") || "";
+
+        selectedProduct =
+            option.getAttribute("data-product") || "";
+
+        selectedCategory =
+            option.getAttribute("data-category") || "";
+    }
+
+    window.selectedMappingId = selectedMappingId;
+    window.selectedProductFilter = selectedProduct;
+    window.selectedCategoryFilter = selectedCategory;
+
+    productList
+        .querySelectorAll("li")
+        .forEach(function (item) {
+
+            item.classList.remove("active");
+
+            item.setAttribute(
+                "aria-selected",
+                "false"
+            );
+        });
+
+    option.classList.add("active");
+
+    option.setAttribute(
+        "aria-selected",
+        "true"
+    );
+
+    if (productLabel) {
+
+        productLabel.textContent =
+            isAll
+                ? "All"
+                : option.textContent.trim();
+    }
+
+    console.log(
+        "Selected mapping ID:",
+        selectedMappingId
+    );
+
+    console.log(
+        "Selected mapping product:",
+        selectedProduct
+    );
+
+    console.log(
+        "Selected mapping category:",
+        selectedCategory
+    );
+
+    closeProductDropdown();
+
+    var searchBox =
+        document.getElementById("search");
+
+    var keyword =
+        searchBox
+            ? searchBox.value.trim()
+            : "";
+
+    if (searchBox && keyword.length >= 3) {
+
+        searchBox.dispatchEvent(
+            new Event("input", {
+                bubbles: true
+            })
+        );
+
+        window.setTimeout(
+            applyProductFilter,
+            100
+        );
+
+    } else {
+
+        applyProductFilter();
+    }
+}
+    /*
+     * =====================================================
+     * INITIALIZE PRODUCT FILTER
+     * =====================================================
+     */
+
+    function initializeProductFilter() {
+
+        var wrapper =
+            document.getElementById(
+                "productFilterWrapper"
+            );
+
+        var button =
+            document.getElementById(
+                "productFilterBtn"
+            );
+
+        var list =
+            document.getElementById(
+                "productFilterList"
+            );
+
+        if (!wrapper || !button || !list) {
+
+            console.error(
+                "Product Filter HTML was not found."
+            );
+
+            return;
+        }
+
+        readProductMappings();
+        populateProductDropdown();
+
+        /*
+         * Product Filter button click.
+         */
+
+        button.addEventListener(
+            "click",
+            function (event) {
+
+                event.preventDefault();
+                event.stopPropagation();
+
+                toggleProductDropdown();
+            }
+        );
+
+        /*
+         * Product option click.
+         */
+
+        list.addEventListener(
+            "click",
+            function (event) {
+
+                var option =
+    event.target.closest(
+        "li[data-product], li[data-mapping-id]"
+    );
+                if (!option) {
+                    return;
+                }
+
+                event.preventDefault();
+                event.stopPropagation();
+
+                selectProduct(option);
+            }
+        );
+
+        /*
+         * Keyboard support.
+         */
+
+        list.addEventListener(
+            "keydown",
+            function (event) {
+
+                if (
+                    event.key !== "Enter" &&
+                    event.key !== " "
+                ) {
+                    return;
+                }
+
+                var option =
+                    event.target.closest(
+                        "li[data-product]"
+                    );
+
+                if (option) {
+
+                    event.preventDefault();
+
+                    selectProduct(option);
+                }
+            }
+        );
+
+        /*
+         * Close dropdown when user clicks outside.
+         */
+
+        document.addEventListener(
+            "click",
+            function (event) {
+
+                if (
+                    !wrapper.contains(
+                        event.target
+                    )
+                ) {
+                    closeProductDropdown();
+                }
+            }
+        );
+
+        /*
+         * Reapply filter whenever existing predictive
+         * search JavaScript rebuilds its result links.
+         */
+
+        var predictiveContainer =
+            document.getElementById(
+                "predictiveResultsDesktop"
+            );
+
+        if (predictiveContainer) {
+
+            var filterTimer = null;
+
+            var observer =
+                new MutationObserver(
+                    function (mutations) {
+
+                        var recordsChanged =
+                            mutations.some(
+                                function (mutation) {
+
+                                    return (
+                                        mutation.addedNodes.length > 0 ||
+                                        mutation.removedNodes.length > 0
+                                    );
+                                }
+                            );
+
+                        if (!recordsChanged) {
+                            return;
+                        }
+
+                        window.clearTimeout(
+                            filterTimer
+                        );
+
+                        filterTimer =
+                            window.setTimeout(
+                                function () {
+
+                                    applyProductFilter();
+
+                                },
+                                50
+                            );
+                    }
+                );
+
+            observer.observe(
+                predictiveContainer,
+                {
+                    childList: true
+                }
+            );
+        }
+
+        console.log(
+            "Product Filter initialization completed."
+        );
+    }
+
+
+    /*
+     * =====================================================
+     * RUN
+     * =====================================================
+     */
+
+    if (
+        document.readyState === "loading"
+    ) {
+
+        document.addEventListener(
+            "DOMContentLoaded",
+            initializeProductFilter
+        );
+
+    } else {
+
+        initializeProductFilter();
+    }
+
+})();
+</script>
+ 
+<script>
+
+
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    // Keep search keyword on search results page
+    const params = new URLSearchParams(window.location.search);
+    const keyword = params.get("search");
+
+    if (keyword) {
+        setTimeout(function () {
+
+            const inputs = document.querySelectorAll(
+                ".header-search input[type='search'], .header-search input[type='text'], .header-search input"
+            );
+
+            inputs.forEach(function (input) {
+                input.value = keyword;
+
+                input.dispatchEvent(
+                    new Event("input", { bubbles: true })
+                );
+
+                input.dispatchEvent(
+                    new Event("change", { bubbles: true })
+                );
+            });
+
+        }, 500);
+    }
+
+    let searchExecuted = false;
+
+    // Detect when search is executed
+    document.addEventListener("click", function (e) {
+        const searchBtn = e.target.closest(
+            ".header-search button[type='submit'], .header-search .btn-search, .header-search .input-group-btn button"
+        );
+
+        if (searchBtn) {
+            searchExecuted = true;
+        }
+    });
+
+    const inputs = document.querySelectorAll(
+        ".header-search input[type='search'], .header-search input[type='text'], .header-search input"
+    );
+
+    inputs.forEach(function (input) {
+
+        if (input.dataset.catClearAttached === "true") return;
+        input.dataset.catClearAttached = "true";
+
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.innerHTML = "×";
+        btn.setAttribute("aria-label", "Clear search");
+        btn.className = "cat-search-clear-btn";
+
+        document.body.appendChild(btn);
+
+        function positionBtn() {
+            const rect = input.getBoundingClientRect();
+
+            if (!rect.width || !rect.height) {
+                btn.style.display = "none";
+                return;
+            }
+
+            btn.style.display = "flex";
+            btn.style.left = (rect.right - 34) + "px";
+            btn.style.top = (rect.top + rect.height / 2 - 14) + "px";
+        }
+
+        function clearInput(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            input.value = "";
+
+            input.dispatchEvent(new Event("input", { bubbles: true }));
+            input.dispatchEvent(new Event("keyup", { bubbles: true }));
+            input.dispatchEvent(new Event("change", { bubbles: true }));
+
+            document
+                .querySelectorAll(
+                    "#predictiveResultsDesktop, #predictiveResultsMobile"
+                )
+                .forEach(function (box) {
+                    box.innerHTML = "";
+                    box.style.display = "none";
+                });
+
+            input.focus();
+            positionBtn();
+        }
+
+        btn.addEventListener("click", clearInput);
+
+        btn.addEventListener("pointerdown", function (e) {
+            e.stopPropagation();
+        });
+
+        input.addEventListener("input", positionBtn);
+        input.addEventListener("keyup", positionBtn);
+        input.addEventListener("focus", positionBtn);
+
+        window.addEventListener("resize", positionBtn);
+        window.addEventListener("scroll", positionBtn, true);
+
+        setInterval(positionBtn, 300);
+
+        positionBtn();
+    });
+
+});
+</script>
+<!--personalisatiom-->
+<script>
+// setTimeout(function () {
+
+//     var searchBox = document.getElementById("search");
+//     if (!searchBox) return;
+
+//     var userName = $("#currentUserName").val();
+
+//     if (userName) {
+
+//         var firstName = userName.trim().split(" ")[0];
+
+//         searchBox.value = "";
+//         searchBox.setAttribute(
+//             "placeholder",
+//             "Hi " + firstName + ", How can we help?"
+//         );
+
+//     } else {
+
+//         searchBox.value = "";
+//         searchBox.setAttribute(
+//             "placeholder",
+//             "Hello, How can we help?"
+//         );
+
+//     }
+
+// }, 2000);
+// setTimeout(function () {
+
+//     var searchBox = document.getElementById("search");
+//     if (!searchBox) return;
+
+//     var params = new URLSearchParams(window.location.search);
+//     var keyword = params.get("search");
+
+//     // Search Results page
+//     if (keyword && keyword.trim() !== "") {
+//         searchBox.value = keyword;
+//         searchBox.removeAttribute("placeholder");
+//         return;
+//     }
+
+//     // Home Page
+//     searchBox.value = "";
+//     searchBox.defaultValue = "";
+
+//     var userName = $("#currentUserName").val();
+
+//     if (userName) {
+//         var firstName = userName.trim().split(" ")[0];
+//         searchBox.placeholder =
+//             "Hi " + firstName + ", How can we help?";
+//     } else {
+//         searchBox.placeholder =
+//             "Hello, How can we help?";
+//     }
+
+// }, 2000);
+setTimeout(function () {
+ 
+    var searchBox = document.getElementById("search");
+    if (!searchBox) return;
+ 
+    var params = new URLSearchParams(window.location.search);
+    var keyword = params.get("search");
+ 
+  var firstName = "";
+ 
+// Read the logged-in user name from the top-right navigation
+// Read the full user name (hidden input first, nav as fallback)
+var userName = ($("#currentUserName").val() || "").trim();
+ 
+if (!userName) {
+    userName = $(".username").text().trim();
+}
+ 
+if (userName) {
+    firstName = userName.split(" ")[0];
+    // Shorten long first names: nitinkumar -> nitink...
+    if (firstName.length > 6 && firstName.indexOf("...") === -1) {
+        firstName = firstName.substring(0, 6) + "...";
+    }
+}
+ 
+ 
+ 
+    // Search Results page
+    if (keyword && keyword.trim() !== "") {
+        searchBox.value = keyword;
+        searchBox.removeAttribute("placeholder");
+    } else {
+        // Home page or no keyword
+        searchBox.value = "";
+        searchBox.defaultValue = "";
+ 
+        if (firstName) {
+            searchBox.placeholder = "Hi " + firstName + ", how can we help?";
+        } else {
+            searchBox.placeholder = "Hello, how can we help?";
+        }
+    }
+ 
+    // While typing / clearing
+    searchBox.addEventListener("input", function () {
+ 
+        if (this.value.trim() === "") {
+ 
+            if (firstName) {
+                this.placeholder = "Hi " + firstName + ", how can we help?";
+            } else {
+                this.placeholder = "Hello, how can we help?";
+            }
+ 
+        } else {
+            this.placeholder = "";
+        }
+ 
+    });
+ 
+}, 2000);
+ 
+
+</script>
+<!-- ==========================================================
+     MOBILE PRODUCT FILTER + MOBILE PREDICTIVE SEARCH  (ADD-ON)
+     Scoped to mobile only. Desktop CSS above is untouched.
+     ========================================================== -->
+<style>
+ 
+/* ---------- 1. MOBILE PREDICTIVE SEARCH COLORS ---------- */
+ 
+#predictiveResultsMobile {
+    position: absolute !important;
+    top: 100% !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+ 
+    margin-top: 6px !important;
+ 
+    background: #ffffff !important;
+    color: #3f3f3f !important;
+ 
+    border: 1px solid #d9d9d9 !important;
+    border-radius: 4px !important;
+ 
+    max-height: 60vh !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+ 
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25) !important;
+ 
+    display: none;
+ 
+    z-index: 1000000 !important;
+}
+ 
+#predictiveResultsMobile .predictive-item {
+    background: #ffffff !important;
+    color: #3f3f3f !important;
+ 
+    padding: 12px 14px !important;
+    min-height: 56px !important;
+ 
+    border-bottom: 1px solid #ececec !important;
+}
+ 
+#predictiveResultsMobile .predictive-item:last-child {
+    border-bottom: 0 !important;
+}
+ 
+#predictiveResultsMobile .predictive-item:hover,
+#predictiveResultsMobile .predictive-item:active {
+    background: #f7f7f7 !important;
+}
+ 
+#predictiveResultsMobile .predictive-link {
+    color: #3f3f3f !important;
+    text-decoration: none !important;
+}
+ 
+#predictiveResultsMobile .predictive-title {
+    color: #3f3f3f !important;
+ 
+    font-size: 14px !important;
+    line-height: 19px !important;
+ 
+    white-space: normal !important;
+    overflow: hidden !important;
+ 
+ 
+}
+ 
+#predictiveResultsMobile .predictive-category {
+    background: #e6e6e6 !important;
+    color: #585858 !important;
+ 
+    font-size: 11px !important;
+    padding: 5px 10px !important;
+ 
+    max-width: 42% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+ 
+#predictiveResultsMobile .pf-no-results {
+    display: flex !important;
+    align-items: center !important;
+ 
+    min-height: 56px !important;
+    padding: 12px 16px !important;
+ 
+    background: #ffffff !important;
+    color: #555555 !important;
+}
+ 
+ 
+/* ---------- 2. MOBILE PRODUCT FILTER LAYOUT ---------- */
+ 
+/* ---------- 2. MOBILE PRODUCT FILTER LAYOUT ---------- */
+ 
+@media (max-width: 768px) {
+ 
+    /* dropdown must be able to escape the header row */
+    .navbar.static-top,
+    .container.custom-container,
+    .mobile-header-search-wrapper,
+    .mobile-header-search-wrapper .header-search,
+    .mobile-header-search-wrapper .header-search form,
+    .mobile-header-search-wrapper .input-group {
+        overflow: visible !important;
+    }
+ 
+    /* one row: [ input ][ All v ][ search btn ] */
+    .mobile-header-search-wrapper .input-group {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        align-items: stretch !important;
+        width: 100% !important;
+    }
+ 
+    .mobile-header-search-wrapper .input-group > input,
+    .mobile-header-search-wrapper .input-group > .form-control {
+        flex: 1 1 auto !important;
+        width: 1% !important;
+        min-width: 0 !important;
+        border-radius: 0 !important;
+    }
+ 
+    /* wrapper sits in flow on the right, before the yellow button */
+    .mobile-header-search #productFilterWrapper.cat-product-filter {
+        position: relative !important;
+ 
+        top: auto !important;
+        right: auto !important;
+        left: auto !important;
+ 
+        flex: 0 0 auto !important;
+        order: 0 !important;
+ 
+        width: auto !important;
+        height: 40px !important;
+ 
+        margin: 0 !important;
+        padding: 0 !important;
+ 
+        z-index: 1000001 !important;
+    }
+ 
+    .mobile-header-search-wrapper .mobile-header-search
+        #productFilterBtn.cat-product-filter__button {
+ 
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+ 
+        width: auto !important;
+        min-width: 86px !important;
+        max-width: 120px !important;
+        height: 40px !important;
+ 
+        padding: 0 8px 0 10px !important;
+ 
+        background-color: #ffffff !important;
+        color: #555555 !important;
+ 
+        border: 0 !important;
+        border-left: 1px solid #d9d9d9 !important;
+        border-radius: 0 !important;
+ 
+        font-size: 14px !important;
+        line-height: 40px !important;
+        text-align: left !important;
+    }
+ 
+    .mobile-header-search #productFilterLabel {
+        max-width: 78px !important;
+ 
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+    }
+ 
+    .mobile-header-search #productFilterArrow {
+        margin-left: 6px !important;
+        color: #555555 !important;
+        font-size: 11px !important;
+    }
+ 
+    /* right-aligned list, still full width of the search row */
+    .mobile-header-search #productFilterList.cat-product-filter__list {
+        top: 44px !important;
+        left: auto !important;
+        right: -48px !important;
+ 
+        width: calc(100vw - 24px) !important;
+        max-width: calc(100vw - 24px) !important;
+        max-height: 50vh !important;
+ 
+        border-radius: 4px !important;
+ 
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.28) !important;
+ 
+        z-index: 1000002 !important;
+    }
+ 
+    .mobile-header-search #productFilterList.cat-product-filter__list li {
+        padding: 12px 14px !important;
+        font-size: 14px !important;
+        line-height: 19px !important;
+        min-height: 44px !important;
+    }
+ 
+    #predictiveResultsDesktop {
+        display: none !important;
+    }
+}
+ 
+</style>
+<!-- ==========================================================
+     MOBILE PRODUCT FILTER BRIDGE (ADD-ON)
+     Moves the single #productFilterWrapper between the desktop
+     header and the mobile search row, and re-runs the mobile
+     predictive search after a product is selected.
+     Nothing in the existing scripts is modified.
+     ========================================================== -->
+<script>
+(function () {
+    "use strict";
+ 
+    var MOBILE_MAX    = 768;
+    var MOBILE_CLASS  = "cat-product-filter--mobile";
+ 
+    function isMobile() {
+        return window.innerWidth <= MOBILE_MAX;
+    }
+ 
+    function wrapperEl()       { return document.getElementById("productFilterWrapper"); }
+    function listEl()          { return document.getElementById("productFilterList"); }
+    function btnEl()           { return document.getElementById("productFilterBtn"); }
+    function arrowEl()         { return document.getElementById("productFilterArrow"); }
+    function mobileInputEl()   { return document.getElementById("search_mobile"); }
+    function mobileResultsEl() { return document.getElementById("predictiveResultsMobile"); }
+ 
+  
+ 
+    function desktopHostEl() {
+        return document.querySelector(
+            ".nav-search-global .header-search"
+        );
+    }
+ 
+    /* ------------------------------------------------------
+     * Close the filter list (mirrors closeProductDropdown)
+     * ------------------------------------------------------ */
+    function closeFilterList() {
+ 
+        var list  = listEl();
+        var btn   = btnEl();
+        var arrow = arrowEl();
+ 
+        if (list)  { list.classList.remove("open"); }
+        if (btn)   { btn.setAttribute("aria-expanded", "false"); }
+ 
+        if (arrow) {
+            arrow.classList.remove("fa-chevron-up");
+            arrow.classList.add("fa-chevron-down");
+        }
+    }
+ 
+    /* ------------------------------------------------------
+     * Move the filter node between desktop and mobile hosts.
+     * Moving the node keeps all existing event listeners.
+     * ------------------------------------------------------ */
+  function mobileHostEl() {
+        return document.querySelector(
+            ".mobile-header-search-wrapper .header-search"
+        );
+    }
+ 
+    /* ------------------------------------------------------
+     * Insert point on mobile = inside the input-group, right
+     * before the yellow search button.
+     * ------------------------------------------------------ */
+    function mobileAnchorEl() {
+ 
+        var host = mobileHostEl();
+        if (!host) { return null; }
+ 
+        /* Bootstrap 3 / 5 button holder */
+        var btnGroup = host.querySelector(
+            ".input-group-btn, .input-group-append"
+        );
+        if (btnGroup) { return btnGroup; }
+ 
+        /* fallback: the submit button itself */
+        var submitBtn = host.querySelector(
+            "button[type='submit']:not(#productFilterBtn)"
+        );
+        if (submitBtn) { return submitBtn; }
+ 
+        /* last resort: end of the search row */
+        return document.getElementById("predictiveResultsMobile");
+    }
+ 
+    function relocateFilter() {
+ 
+        var wrapper = wrapperEl();
+        if (!wrapper) { return; }
+ 
+        if (isMobile()) {
+ 
+            var anchor = mobileAnchorEl();
+            if (!anchor || !anchor.parentElement) { return; }
+ 
+            var alreadyPlaced =
+                wrapper.parentElement === anchor.parentElement &&
+                wrapper.nextElementSibling === anchor;
+ 
+            if (!alreadyPlaced) {
+                anchor.parentElement.insertBefore(wrapper, anchor);
+                closeFilterList();
+            }
+ 
+            wrapper.classList.add(MOBILE_CLASS);
+ 
+        } else {
+ 
+            var desktopHost = desktopHostEl();
+            if (!desktopHost) { return; }
+ 
+            if (wrapper.parentElement !== desktopHost) {
+ 
+                var desktopResults =
+                    document.getElementById("predictiveResultsDesktop");
+ 
+                /* restore original order: form -> filter -> results */
+                if (desktopResults &&
+                    desktopResults.parentElement === desktopHost) {
+                    desktopHost.insertBefore(wrapper, desktopResults);
+                } else {
+                    desktopHost.appendChild(wrapper);
+                }
+ 
+                closeFilterList();
+            }
+ 
+            wrapper.classList.remove(MOBILE_CLASS);
+        }
+    }
+ 
+    /* ------------------------------------------------------
+     * After a product is picked, re-fire the mobile input so
+     * the mobile predictive script re-runs with the new
+     * window.selectedMappingId / ProductFilter / CategoryFilter
+     * ------------------------------------------------------ */
+    function refreshMobilePredictive() {
+ 
+        var input = mobileInputEl();
+        var box   = mobileResultsEl();
+ 
+        if (!input) { return; }
+ 
+        var keyword = (input.value || "").trim();
+ 
+        if (keyword.length < 3) {
+            if (box) {
+                box.innerHTML = "";
+                box.style.display = "none";
+            }
+            return;
+        }
+ 
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+ 
+    /* ------------------------------------------------------
+     * Capture phase, so the existing stopPropagation() calls
+     * on the button and the list do not block us.
+     * ------------------------------------------------------ */
+    document.addEventListener("click", function (event) {
+ 
+        if (!isMobile()) { return; }
+ 
+        var target = event.target;
+        if (!target || !target.closest) { return; }
+ 
+        /* opening the filter: hide results so they do not overlap */
+        if (target.closest("#productFilterBtn")) {
+ 
+            var box = mobileResultsEl();
+            if (box) { box.style.display = "none"; }
+ 
+            return;
+        }
+ 
+        /* a product was chosen */
+        if (target.closest("#productFilterList li")) {
+            window.setTimeout(refreshMobilePredictive, 180);
+        }
+ 
+    }, true);
+ 
+    /* ------------------------------------------------------
+     * Re-place on rotate / resize
+     * ------------------------------------------------------ */
+    var resizeTimer = null;
+ 
+    window.addEventListener("resize", function () {
+        window.clearTimeout(resizeTimer);
+        resizeTimer = window.setTimeout(relocateFilter, 150);
+    });
+ 
+    /* ------------------------------------------------------
+     * Boot (retries cover Power Pages late rendering)
+     * ------------------------------------------------------ */
+    function boot() {
+        relocateFilter();
+        window.setTimeout(relocateFilter, 400);
+        window.setTimeout(relocateFilter, 1200);
+        window.setTimeout(relocateFilter, 2500);
+    }
+ 
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", boot);
+    } else {
+        boot();
+    }
+ 
+})();
+</script>
+  <!-- ==========================================================
+     MOBILE SEARCH ROW WIDTH FIX (ADD-ON, mobile only)
+     Forces input / filter / search button to share one row
+     without overflowing the viewport.
+     ========================================================== -->
+<style>
+@media (max-width: 768px) {
+ 
+    .mobile-header-search-wrapper .header-search,
+    .mobile-header-search-wrapper .header-search form,
+    .mobile-header-search-wrapper .input-group {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+ 
+    .mobile-header-search-wrapper .input-group {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        align-items: stretch !important;
+    }
+ 
+    /* text input absorbs the leftover space instead of holding 350px */
+    .mobile-header-search-wrapper .header-search input {
+        flex: 1 1 0 !important;
+ 
+        width: 1% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+ 
+        box-sizing: border-box !important;
+    }
+ 
+    /* desktop sets this holder to 5px — give it the real button width */
+    .mobile-header-search-wrapper .input-group-btn,
+    .mobile-header-search-wrapper .input-group-append,
+    .mobile-header-search-wrapper .input-group-btn.align-top {
+        flex: 0 0 48px !important;
+ 
+        width: 48px !important;
+        min-width: 48px !important;
+        max-width: 48px !important;
+ 
+        box-sizing: border-box !important;
+    }
+ 
+    .mobile-header-search-wrapper .header-search
+        button:not(#productFilterBtn) {
+        width: 48px !important;
+        min-width: 48px !important;
+        height: 40px !important;
+ 
+        box-sizing: border-box !important;
+    }
+ 
+    /* filter keeps a fixed slot and never pushes the button out */
+    .mobile-header-search #productFilterWrapper.cat-product-filter {
+        flex: 0 0 84px !important;
+ 
+        width: 84px !important;
+        min-width: 0 !important;
+        max-width: 84px !important;
+    }
+ 
+    .mobile-header-search-wrapper .mobile-header-search
+        #productFilterBtn.cat-product-filter__button {
+ 
+        width: 84px !important;
+        min-width: 0 !important;
+        max-width: 84px !important;
+ 
+        padding: 0 6px 0 8px !important;
+ 
+        box-sizing: border-box !important;
+    }
+ 
+    .mobile-header-search #productFilterLabel {
+        max-width: 52px !important;
+    }
+ 
+    /* keep the dropdown inside the viewport */
+    .mobile-header-search #productFilterList.cat-product-filter__list {
+        right: -48px !important;
+        left: auto !important;
+ 
+        width: calc(100vw - 24px) !important;
+        max-width: calc(100vw - 24px) !important;
+    }
+}
+</style>
+ <!-- ==========================================================
+     MOBILE SEARCH PLACEHOLDER PERSONALISATION (ADD-ON)
+     Mirrors the desktop #search behaviour onto #search_mobile.
+     Desktop script is untouched.
+     ========================================================== -->
+<script>
+setTimeout(function () {
+ 
+    var searchBoxMobile = document.getElementById("search_mobile");
+    if (!searchBoxMobile) { return; }
+ 
+    var params  = new URLSearchParams(window.location.search);
+    var keyword = params.get("search");
+ 
+    var firstName = "";
+ 
+    /* Read the logged-in user name from the navigation */
+    /* Read the full user name (hidden input first, nav as fallback) */
+    var userName = ($("#currentUserName").val() || "").trim();
+ 
+    if (!userName) {
+        userName = $(".username").text().trim();
+    }
+ 
+    if (userName) {
+        firstName = userName.split(" ")[0];
+        /* Shorten long first names: nitinkumar -> nitink... */
+        if (firstName.length > 6 && firstName.indexOf("...") === -1) {
+            firstName = firstName.substring(0, 6) + "...";
+        }
+    }
+ 
+ 
+    function defaultPlaceholder() {
+        return firstName
+            ? "Hi " + firstName + ", how can we help?"
+            : "Hello, how can we help?";
+    }
+ 
+    /* Search Results page */
+    if (keyword && keyword.trim() !== "") {
+ 
+        searchBoxMobile.value = keyword;
+        searchBoxMobile.removeAttribute("placeholder");
+ 
+    } else {
+ 
+        searchBoxMobile.value = "";
+        searchBoxMobile.defaultValue = "";
+ 
+        searchBoxMobile.placeholder = defaultPlaceholder();
+    }
+ 
+    /* While typing / clearing */
+    searchBoxMobile.addEventListener("input", function () {
+ 
+        if (this.value.trim() === "") {
+            this.placeholder = defaultPlaceholder();
+        } else {
+            this.placeholder = "";
+        }
+ 
+    });
+ 
+}, 2000);
+</script>
+ <style>
+/* ===== BUG 1: hide search row + filter while mobile menu is open ===== */
+@media (max-width: 768px) {
+    body.mobile-menu-open .mobile-header-search-wrapper,
+    body.mobile-menu-open #predictiveResultsMobile,
+    body.mobile-menu-open #productFilterList.cat-product-filter__list.open {
+        display: none !important;
+    }
+}
+ 
+/* ===== BUG 2: feedback popup must sit above the header search ===== */
+#feedbackOverlay.feedback-overlay {
+    z-index: 10000000 !important;
+}
+ 
+#feedbackPopup.feedback-popup,
+#customSuccessMessage.custom-alert {
+    z-index: 10000001 !important;
+}
+ 
+body.modal-open .cat-search-clear-btn,
+body.modal-open #predictiveResultsDesktop,
+body.modal-open #predictiveResultsMobile,
+body.modal-open #productFilterList.cat-product-filter__list.open {
+    display: none !important;
+}
+</style>
+ 
