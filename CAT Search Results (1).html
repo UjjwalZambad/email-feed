@@ -1,0 +1,5794 @@
+ <div class="container mt-4">
+     <div class="row search-layout">
+          <!-- <div class="col-lg-12"> -->
+              {% assign selectedMappingIds = request.params['mappingids'] | default: '' | split: ',' %}
+{% assign selectedCategoryIds = request.params['categoryids'] | default: '' | split: ',' %}
+{% assign selectedProductIds = request.params['productids'] | default: '' | split: ',' %}
+
+{% assign selectedCategoryIdText = request.params['categoryids'] | default: '' | strip %}
+{% assign selectedProductIdText = request.params['productids'] | default: '' | strip %}
+
+{% assign hasSelectedCategories = false %}
+{% assign hasSelectedProducts = false %}
+
+{% if selectedCategoryIdText != '' %}
+    {% assign hasSelectedCategories = true %}
+{% endif %}
+
+{% if selectedProductIdText != '' %}
+    {% assign hasSelectedProducts = true %}
+{% endif %}
+               <!-- Selected Categories: {{ selectedCategories | join: ',' }} -->
+                {% assign showCases = request.params['showcases'] | default:'true' %}
+                {% assign showArticles = request.params['showarticles'] | default:'true' %}
+
+                {% assign casesChecked = request.params['showcases'] %}
+                {% assign articlesChecked = request.params['showarticles'] %}
+                {% assign newsUpdatesChecked = request.params['shownewsupdates'] %}
+
+               {% assign searchText = request.params['search'] | default: '' | strip %}
+{% assign safeSearchText = searchText | escape %}
+               {% assign mode = request.params.mode %}
+              {% assign currentPage = request.params['page'] | default: 1 %}
+{% assign currentArticlePage = request.params['articlepage'] | default: 1 %}
+{% assign currentPageNum = currentPage | plus: 0 %}
+{% assign currentArticlePageNum = currentArticlePage | plus: 0 %}
+ 
+               {% if searchText %}
+               
+               {% fetchxml noAccess %}
+               <fetch count="1" no-lock="true">
+                    <entity name="incident">
+                         <attribute name="incidentid" />
+                        
+                 <filter type="and">
+
+                 <condition attribute="statecode" operator="eq" value="0"/>
+                         <!--<filter type="or">-->
+                              <condition attribute="ticketnumber" operator="eq" value="{{ searchText }}" />
+                              <!--<condition attribute="title" operator="like" value="%{{ searchText }}%" />-->
+                  
+                         <!--</filter>-->
+                         </filter>
+                    
+                         
+                         <!-- </filter> -->
+                         <order attribute="createdon" descending="true" />
+                    </entity>
+               </fetch>
+
+               {% endfetchxml %}
+
+
+               <!-- Help Articles Fetch  -->
+               {% assign personaValue = '' %}
+               {% if user %}
+               {% if user.roles contains "Cat_Customer Persona Role" %}
+                    {% assign personaValue = 100000000 %}
+               {% elsif user.roles contains "Cat_Dealer Persona Role" %}
+                    {% assign personaValue = 100000001 %}
+               {% elsif user.roles contains "Cat_Internal Customer Persona Role" %}
+                    {% assign personaValue = 100000003 %}
+               {% endif %}
+               {% else %}
+               {% assign personaValue = 100000002 %}
+               {% endif %}
+
+               {% if mode == 'viewallarticles' and mode != 'viewallcases' %}
+               
+               {% fetchxml helpArticles %}
+               <fetch distinct="true" count="20" page="{{ currentArticlePage }}">
+                    <entity name="knowledgearticle">
+                         <attribute name="knowledgearticleid" />
+                         <attribute name="title" />
+                         <attribute name="articlepublicnumber" />
+                         <attribute name="description" />
+                         <attribute name="content" />
+                         <attribute name="knowledgearticleviews" />
+                         <order attribute="knowledgearticleviews" descending="true" />
+                         <filter type="and">
+                              <condition attribute="statecode" operator="eq" value="3" />
+                              <condition attribute="title" operator="like" value="%{{ searchText }}%" />
+                              <condition attribute="cat_ispublicfacing" operator="eq" value="1" />
+                              <condition attribute="cat_persona" operator="contain-values">
+                              <value>{{ personaValue }}</value>
+                              </condition>
+                              {% if hasSelectedCategories %}
+    <filter type="or">
+
+        {% for categoryId in selectedCategoryIds %}
+            {% assign cleanCategoryId = categoryId | strip %}
+
+            {% if cleanCategoryId != '' %}
+
+                <condition
+                    entityname="directcategory"
+                    attribute="categoryid"
+                    operator="eq"
+                    value="{{ cleanCategoryId | escape }}"
+                />
+
+                <condition
+                    entityname="parentcategory"
+                    attribute="categoryid"
+                    operator="eq"
+                    value="{{ cleanCategoryId | escape }}"
+                />
+
+                <condition
+                    entityname="grandparentcategory"
+                    attribute="categoryid"
+                    operator="eq"
+                    value="{{ cleanCategoryId | escape }}"
+                />
+
+            {% endif %}
+        {% endfor %}
+
+    </filter>
+{% endif %}
+                        </filter>
+<link-entity name="knowledgearticlescategories" from="knowledgearticleid" to="knowledgearticleid" link-type="inner" intersect="true" alias="articlecategorylink">
+    <link-entity name="category" from="categoryid" to="categoryid" link-type="inner" alias="directcategory">
+        <link-entity name="category" from="categoryid" to="parentcategoryid" link-type="outer" alias="parentcategory">
+            <link-entity name="category" from="categoryid" to="parentcategoryid" link-type="outer" alias="grandparentcategory" />
+        </link-entity>
+    </link-entity>
+</link-entity>
+ 
+                    </entity>
+               </fetch>
+               {% endfetchxml %}
+               
+               {% elsif mode != 'viewallcases' %}
+               
+               {% fetchxml helpArticles %}
+               <fetch distinct="true" count="5">
+                    <entity name="knowledgearticle">
+                         <attribute name="knowledgearticleid" />
+                         <attribute name="title" />
+                         <attribute name="articlepublicnumber" />
+                         <attribute name="description" />
+                         <attribute name="content" />
+                         <attribute name="knowledgearticleviews" />
+                         <order attribute="knowledgearticleviews" descending="true" />
+                         <filter type="and">
+                              <condition attribute="statecode" operator="eq" value="3" />
+                              <condition attribute="title" operator="like" value="%{{ searchText }}%" />
+                              <condition attribute="cat_ispublicfacing" operator="eq" value="1" />
+                              <condition attribute="cat_persona" operator="contain-values">
+                              <value>{{ personaValue }}</value>
+                              </condition>
+                              {% if hasSelectedCategories %}
+    <filter type="or">
+
+        {% for categoryId in selectedCategoryIds %}
+            {% assign cleanCategoryId = categoryId | strip %}
+
+            {% if cleanCategoryId != '' %}
+
+                <condition
+                    entityname="directcategory"
+                    attribute="categoryid"
+                    operator="eq"
+                    value="{{ cleanCategoryId | escape }}"
+                />
+
+                <condition
+                    entityname="parentcategory"
+                    attribute="categoryid"
+                    operator="eq"
+                    value="{{ cleanCategoryId | escape }}"
+                />
+
+                <condition
+                    entityname="grandparentcategory"
+                    attribute="categoryid"
+                    operator="eq"
+                    value="{{ cleanCategoryId | escape }}"
+                />
+
+            {% endif %}
+        {% endfor %}
+
+    </filter>
+{% endif %}
+                         </filter>
+<link-entity name="knowledgearticlescategories" from="knowledgearticleid" to="knowledgearticleid" link-type="inner" intersect="true" alias="articlecategorylink">
+    <link-entity name="category" from="categoryid" to="categoryid" link-type="inner" alias="directcategory">
+        <link-entity name="category" from="categoryid" to="parentcategoryid" link-type="outer" alias="parentcategory">
+            <link-entity name="category" from="categoryid" to="parentcategoryid" link-type="outer" alias="grandparentcategory" />
+        </link-entity>
+    </link-entity>
+</link-entity>
+ 
+                    </entity>
+               </fetch>
+               {% endfetchxml %}
+               
+               {% endif %}
+
+               {% assign totalArticles = 0 %}
+               {% if personaValue == "100000002" %}
+               {% fetchxml articleCount %}
+               <fetch aggregate="true">
+                    <entity name="knowledgearticle">
+                         <attribute name="knowledgearticleid" alias="totalArticles" aggregate="countcolumn" distinct="true" />
+                         <filter type="and">
+                              <condition attribute="title" operator="like" value="%{{ searchText }}%" />
+                              <condition attribute="statecode" operator="eq" value="3" />
+                              <condition attribute="cat_ispublicfacing" operator="eq" value="1" />
+                              <condition attribute="cat_persona" operator="contain-values">
+                              <value>{{ personaValue }}</value>
+                              </condition>
+                         </filter>
+                         <link-entity name="knowledgearticlescategories" from="knowledgearticleid" to="knowledgearticleid"
+                              intersect="true">
+                              <link-entity name="category" from="categoryid" to="categoryid">
+                                   {% if selectedCategories.size > 0 and selectedCategories[0] != '' %}
+                                   <filter type="or">
+                                        {% for catId in selectedCategories %}
+                                        <condition attribute="categoryid" operator="eq" value="{{ catId }}" />
+                                        {% endfor %}
+                                   </filter>
+                                   {% endif %}
+                              </link-entity>
+                         </link-entity>
+                    </entity>
+               </fetch>
+               {% endfetchxml %}
+
+
+               
+               {% assign totalArticles = articleCount.results.entities[0].totalArticles | default: 0 %}
+               {% else %}
+
+               {% fetchxml articleCount %}
+               <fetch aggregate="true">
+                    <entity name="knowledgearticle">
+                         <attribute name="knowledgearticleid" alias="totalArticles" aggregate="countcolumn" distinct="true" />
+                         <filter type="and">
+                              <condition attribute="title" operator="like" value="%{{ searchText }}%" />
+                              <condition attribute="statecode" operator="eq" value="3" />
+                              <condition attribute="cat_ispublicfacing" operator="eq" value="1" />
+                              <condition attribute="cat_persona" operator="contain-values">
+                              <value>{{ personaValue }}</value>
+                              </condition>
+                         </filter>
+                         <link-entity name="knowledgearticlescategories" from="knowledgearticleid" to="knowledgearticleid"
+                              intersect="true">
+                              <link-entity name="category" from="categoryid" to="categoryid">
+                                   {% if selectedCategories.size > 0 and selectedCategories[0] != '' %}
+                                   <filter type="or">
+                                        {% for catId in selectedCategories %}
+                                        <condition attribute="categoryid" operator="eq" value="{{ catId }}" />
+                                        {% endfor %}
+                                   </filter>
+                                   {% endif %}
+                              </link-entity>
+                         </link-entity>
+                    </entity>
+               </fetch>
+               {% endfetchxml %}
+
+               {% assign totalArticles = articleCount.results.entities[0].totalArticles | default: 0 %}
+
+               {% endif %}
+
+
+               
+               <!-- {% assign totalArticles = articleCount.results.entities[0].totalArticles | default: 0 %} -->
+
+               <!-- Help Articles: {{ helpArticles.results.entities.size }}<br>
+{% for a in helpArticles.results.entities %}
+   {{ a.knowledgearticleid }} - {{ a.title }}<br>
+{% endfor %} -->
+ <!-- {% endif %} -->
+
+
+
+
+               {% if user.roles contains "Cat_Internal Customer Persona Role" %}
+
+               {% if mode != 'viewallcases' and mode != 'viewallarticles' %}
+
+               {% fetchxml caseResults %}
+               <fetch count="5">
+                    <entity name="incident">
+                         <attribute name="incidentid" />
+                         <attribute name="ticketnumber" />
+                         <attribute name="title" />
+                         <attribute name="createdon" />
+                         <attribute name="cat_requestedfrom" />
+                         <attribute name="cat_helpcenterstatus" />
+                         <attribute name="description" />
+                         <!-- <filter type="and">
+<condition attribute="cat_requestedfrom"
+                 operator="eq"
+                 value="{{ user.id }}" /> -->
+                 <filter type="and">
+
+                 <condition attribute="statecode" operator="eq" value="0"/>
+                         <filter type="or">
+                              <condition attribute="ticketnumber" operator="like" value="%{{ searchText }}%" />
+                              <condition attribute="title" operator="like" value="%{{ searchText }}%" />
+                  
+                         </filter>
+                          <filter type="and">
+                            <condition attribute="parentcaseid" operator="null"/>
+                          </filter>
+                          {% if hasSelectedProducts %}
+    <condition
+        attribute="productid"
+        operator="in"
+    >
+        {% for productId in selectedProductIds %}
+            {% assign cleanProductId = productId | strip %}
+
+            {% if cleanProductId != '' %}
+                <value>{{ cleanProductId | escape }}</value>
+            {% endif %}
+        {% endfor %}
+    </condition>
+{% endif %}
+                         </filter>
+                    
+                         
+                         <!-- </filter> -->
+                         <order attribute="createdon" descending="true" />
+                         {% if selectedProductIds.size > 0 and selectedProductIds[0] != "" %}
+    <filter type="or">
+
+        {% for selectedProductId in selectedProductIds %}
+
+            {% assign cleanProductId = selectedProductId | strip %}
+
+            {% if cleanProductId != "" %}
+                <condition
+                    attribute="productid"
+                    operator="eq"
+                    value="{{ cleanProductId | escape }}">
+                </condition>
+            {% endif %}
+
+        {% endfor %}
+
+    </filter>
+{% endif %}
+                    </entity>
+               </fetch>
+
+               {% endfetchxml %}
+              {% elsif mode == 'viewallcases' and mode != 'viewallarticles' %}
+
+               {% fetchxml caseResults %}
+               <fetch count="20" page="{{ currentPage }}">
+                    <entity name="incident">
+                         <attribute name="incidentid" />
+                         <attribute name="ticketnumber" />
+                         <attribute name="title" />
+                         <attribute name="createdon" />
+                         <attribute name="cat_requestedfrom" />
+                         <attribute name="cat_helpcenterstatus" />
+                         <attribute name="description" />
+                         <!-- <filter type="and">
+                            <condition attribute="cat_requestedfrom" operator="eq" value="{{ user.id }}" /> -->
+                        <filter type="and">
+                            <condition attribute="statecode" operator="eq" value="0"/>
+                            <filter type="or">
+                              <condition attribute="ticketnumber" operator="like" value="%{{ searchText }}%" />
+                              <condition attribute="title" operator="like" value="%{{ searchText }}%" />
+                            </filter>
+                            <condition attribute="parentcaseid" operator="null"/>
+                            {% if hasSelectedProducts %}
+    <condition
+        attribute="productid"
+        operator="in"
+    >
+        {% for productId in selectedProductIds %}
+            {% assign cleanProductId = productId | strip %}
+
+            {% if cleanProductId != '' %}
+                <value>{{ cleanProductId | escape }}</value>
+            {% endif %}
+        {% endfor %}
+    </condition>
+{% endif %}
+                        </filter>
+                        <!-- </filter> -->
+                        <order attribute="createdon" descending="true" />
+                    
+                    {% if selectedProductIds.size > 0 and selectedProductIds[0] != "" %}
+    <filter type="or">
+
+        {% for selectedProductId in selectedProductIds %}
+
+            {% assign cleanProductId = selectedProductId | strip %}
+
+            {% if cleanProductId != "" %}
+                <condition
+                    attribute="productid"
+                    operator="eq"
+                    value="{{ cleanProductId | escape }}">
+                </condition>
+            {% endif %}
+
+        {% endfor %}
+
+    </filter>
+{% endif %}
+</entity>
+               </fetch>
+
+               {% endfetchxml %}
+
+               {% endif %}
+
+               {% fetchxml caseCount %}
+               <fetch aggregate="true">
+                    <entity name="incident">
+                         <attribute name="incidentid" alias="totalcases" aggregate="count" />
+                         <!-- <filter type="and">
+<condition attribute="cat_requestedfrom"
+                operator="eq"
+                value="{{ user.id }}" /> -->
+                   <filter type="and">
+
+                 <condition attribute="statecode" operator="eq" value="0"/>
+                         <filter type="or">
+                              <condition attribute="ticketnumber" operator="like" value="%{{ searchText }}%" />
+                              <condition attribute="title" operator="like" value="%{{ searchText }}%" />
+             </filter>
+             {% if hasSelectedProducts %}
+    <condition
+        attribute="productid"
+        operator="in"
+    >
+        {% for productId in selectedProductIds %}
+            {% assign cleanProductId = productId | strip %}
+
+            {% if cleanProductId != '' %}
+                <value>{{ cleanProductId | escape }}</value>
+            {% endif %}
+        {% endfor %}
+    </condition>
+{% endif %}
+             </filter>
+                         <!-- </filter> -->
+                    </entity>
+               </fetch>
+               {% endfetchxml %}
+               {% endif %}
+          <!--Customer Block Start-->
+            {% if user.roles contains "Cat_Customer Persona Role" %}
+
+               {% if mode != 'viewallcases' %}
+
+               {% fetchxml caseResults %}
+               <fetch count="5">
+                    <entity name="incident">
+                         <attribute name="incidentid" />
+                         <attribute name="ticketnumber" />
+                         <attribute name="title" />
+                         <attribute name="createdon" />
+                         <attribute name="cat_requestedfrom" />
+                         <attribute name="cat_helpcenterstatus" />
+                         <attribute name="description" />
+                        <filter type="and">
+                            <condition attribute="statecode" operator="eq" value="0"/>
+                            <!-- <filter type="or">
+                                <condition attribute="customerid" operator="eq" value="{{ user.parentcustomerid.id }}"/>
+                                <condition attribute="customerid" operator="eq" value="{{ user.id }}"/>
+                            </filter> -->
+                              <filter type="and">
+      <condition attribute="cat_helpcenterstatus" operator="in">
+                  <value>100000000</value>
+                  <value>100000001</value>
+                  <value>100000002</value>
+                  <value>100000003</value>
+                  <value>100000004</value>
+                  <value>100000005</value>
+               </condition>
+               <condition attribute="parentcaseid" operator="null"/>
+               <condition attribute="createdon" operator="last-x-years" value="1" />
+               <condition attribute="cat_requestedfrom" operator="eq" value="{{user.id}}"/>
+    </filter>
+                            <filter type="or">
+                                <condition attribute="ticketnumber" operator="like" value="%{{ searchText }}%" />
+                                <condition attribute="title" operator="like" value="%{{ searchText }}%" />
+                            </filter>  
+                            <condition attribute="parentcaseid" operator="null"/>  
+                            {% if hasSelectedProducts %}
+    <condition
+        attribute="productid"
+        operator="in"
+    >
+        {% for productId in selectedProductIds %}
+            {% assign cleanProductId = productId | strip %}
+
+            {% if cleanProductId != '' %}
+                <value>{{ cleanProductId | escape }}</value>
+            {% endif %}
+        {% endfor %}
+    </condition>
+{% endif %}      
+                         </filter>
+                         <order attribute="createdon" descending="true" />
+                         {% if selectedProductIds.size > 0 and selectedProductIds[0] != "" %}
+    <filter type="or">
+
+        {% for selectedProductId in selectedProductIds %}
+
+            {% assign cleanProductId = selectedProductId | strip %}
+
+            {% if cleanProductId != "" %}
+                <condition
+                    attribute="productid"
+                    operator="eq"
+                    value="{{ cleanProductId | escape }}">
+                </condition>
+            {% endif %}
+
+        {% endfor %}
+
+    </filter>
+{% endif %}
+                    </entity>
+               </fetch>
+
+               {% endfetchxml %}
+
+               {% else %}
+
+               {% fetchxml caseResults %}
+               <fetch count="20" page="{{ currentPage }}">
+                    <entity name="incident">
+                         <attribute name="incidentid" />
+                         <attribute name="ticketnumber" />
+                         <attribute name="title" />
+                         <attribute name="createdon" />
+                         <attribute name="cat_requestedfrom" />
+                         <attribute name="cat_helpcenterstatus" />
+                         <attribute name="description" />
+                         <filter type="and">
+                         <condition attribute="statecode" operator="eq" value="0"/>
+                 <!-- <filter type="or">
+                 <condition attribute="customerid" operator="eq" value="{{ user.parentcustomerid.id }}"/>
+                 <condition attribute="customerid" operator="eq" value="{{ user.id }}"/>
+                  </filter> -->
+                   <filter type="and">
+      <condition attribute="cat_helpcenterstatus" operator="in">
+                  <value>100000000</value>
+                  <value>100000001</value>
+                  <value>100000002</value>
+                  <value>100000003</value>
+                  <value>100000004</value>
+                  <value>100000005</value>
+               </condition>
+               <condition attribute="parentcaseid" operator="null"/>
+               <condition attribute="createdon" operator="last-x-years" value="1" />
+               <condition attribute="cat_requestedfrom" operator="eq" value="{{user.id}}"/>
+    </filter>
+                         <filter type="or">
+                              <condition attribute="ticketnumber" operator="like" value="%{{ searchText }}%" />
+                              <condition attribute="title" operator="like" value="%{{ searchText }}%" />
+                  
+                         </filter>
+                         <condition attribute="parentcaseid" operator="null"/>
+                         {% if hasSelectedProducts %}
+    <condition
+        attribute="productid"
+        operator="in"
+    >
+        {% for productId in selectedProductIds %}
+            {% assign cleanProductId = productId | strip %}
+
+            {% if cleanProductId != '' %}
+                <value>{{ cleanProductId | escape }}</value>
+            {% endif %}
+        {% endfor %}
+    </condition>
+{% endif %}
+                         </filter>
+                         <order attribute="createdon" descending="true" />
+                         {% if selectedProductIds.size > 0 and selectedProductIds[0] != "" %}
+    <filter type="or">
+
+        {% for selectedProductId in selectedProductIds %}
+
+            {% assign cleanProductId = selectedProductId | strip %}
+
+            {% if cleanProductId != "" %}
+                <condition
+                    attribute="productid"
+                    operator="eq"
+                    value="{{ cleanProductId | escape }}">
+                </condition>
+            {% endif %}
+
+        {% endfor %}
+
+    </filter>
+{% endif %}
+                    </entity>
+               </fetch>
+
+               {% endfetchxml %}
+
+               {% endif %}
+
+               {% fetchxml caseCount %}
+               <fetch aggregate="true">
+                    <entity name="incident">
+                         <attribute name="incidentid" alias="totalcases" aggregate="count" />
+                 <filter type="and">
+                    <condition attribute="statecode" operator="eq" value="0"/>
+                 <!-- <filter type="or">
+                 <condition attribute="customerid" operator="eq" value="{{ user.parentcustomerid.id }}"/>
+                 <condition attribute="customerid" operator="eq" value="{{ user.id }}"/>
+                  </filter> -->
+                   <filter type="and">
+      <condition attribute="cat_helpcenterstatus" operator="in">
+                  <value>100000000</value>
+                  <value>100000001</value>
+                  <value>100000002</value>
+                  <value>100000003</value>
+                  <value>100000004</value>
+                  <value>100000005</value>
+               </condition>
+               <condition attribute="parentcaseid" operator="null"/>
+               <condition attribute="createdon" operator="last-x-years" value="1" />
+               <condition attribute="cat_requestedfrom" operator="eq" value="{{user.id}}"/>
+    </filter>
+                         <filter type="or">
+                              <condition attribute="ticketnumber" operator="like" value="%{{ searchText }}%" />
+                              <condition attribute="title" operator="like" value="%{{ searchText }}%" />
+                  
+                         </filter>
+                         {% if hasSelectedProducts %}
+    <condition
+        attribute="productid"
+        operator="in"
+    >
+        {% for productId in selectedProductIds %}
+            {% assign cleanProductId = productId | strip %}
+
+            {% if cleanProductId != '' %}
+                <value>{{ cleanProductId | escape }}</value>
+            {% endif %}
+        {% endfor %}
+    </condition>
+{% endif %}
+                         </filter>
+                    </entity>
+               </fetch>
+               {% endfetchxml %}
+               {% endif %}
+          <!--Customer Block End-->
+
+
+          <!-- Dealer Block Start-->
+
+{% if user.roles contains "Cat_Dealer Persona Role" %}
+
+               {% if mode != 'viewallcases' %}
+
+               {% fetchxml caseResults %}
+               <fetch count="5">
+                    <entity name="incident">
+                         <attribute name="incidentid" />
+                         <attribute name="ticketnumber" />
+                         <attribute name="title" />
+                         <attribute name="createdon" />
+                        <attribute name="cat_requestedfrom" />
+                         <attribute name="cat_helpcenterstatus" />
+                         <attribute name="description" />
+                 <filter type="and">
+<condition attribute="statecode" operator="eq" value="0" />
+<filter type="or">
+<condition attribute="ticketnumber" operator="like" value="%{{ searchText }}%" />
+<condition attribute="title" operator="like" value="%{{ searchText }}%" />
+</filter>
+{% if hasSelectedProducts %}
+    <condition
+        attribute="productid"
+        operator="in"
+    >
+        {% for productId in selectedProductIds %}
+            {% assign cleanProductId = productId | strip %}
+
+            {% if cleanProductId != '' %}
+                <value>{{ cleanProductId | escape }}</value>
+            {% endif %}
+        {% endfor %}
+    </condition>
+{% endif %}
+</filter>
+                         <condition attribute="parentcaseid" operator="null"/>
+                         <!-- </filter>
+</filter> -->
+<!-- Requested For Account Hierarchy -->
+<link-entity name="account" from="accountid" to="customerid" alias="reqForAccount" link-type="outer">
+<filter type="or">
+<condition attribute="accountid" operator="eq" value="{{ user.parentcustomerid.id }}" />
+<condition attribute="parentaccountid" operator="eq" value="{{ user.parentcustomerid.id }}" />
+</filter>
+</link-entity>
+<!-- Requested For Contact Hierarchy -->
+<link-entity name="contact" from="contactid" to="customerid" alias="reqForContact" link-type="outer">
+<link-entity name="account" from="accountid" to="parentcustomerid" alias="reqForContactAccount" link-type="outer">
+<filter type="or">
+<condition attribute="accountid" operator="eq" value="{{ user.parentcustomerid.id }}" />
+<condition attribute="parentaccountid" operator="eq" value="{{ user.parentcustomerid.id }}" />
+</filter>
+</link-entity>
+</link-entity>
+<!-- Requested By -->
+<link-entity name="contact" from="contactid" to="cat_requestedfrom" alias="requestedbycontact" link-type="outer">
+<filter type="or">
+<condition attribute="parentcustomerid" operator="eq" value="{{ user.parentcustomerid.id }}" />
+</filter>
+</link-entity>
+<!-- Requested By Hierarchy -->
+<link-entity name="contact" from="contactid" to="cat_requestedfrom" alias="reqby" link-type="outer">
+<link-entity name="account" from="accountid" to="parentcustomerid" alias="reqAccount" link-type="outer">
+<filter type="or">
+<condition attribute="accountid" operator="eq" value="{{ user.parentcustomerid.id }}" />
+<condition attribute="parentaccountid" operator="eq" value="{{ user.parentcustomerid.id }}" />
+</filter>
+</link-entity>
+</link-entity>
+<!-- Final OR -->
+<filter type="or">
+<!-- Requested For Account -->
+<condition entityname="reqForAccount" attribute="accountid" operator="not-null" />
+<!-- Requested For Contact -->
+<!-- <condition entityname="reqForContact" attribute="contactid" operator="not-null" /> -->
+<!-- Requested For Contact Hierarchy -->
+<condition entityname="reqForContactAccount" attribute="accountid"
+                operator="not-null" />
+<!-- Requested By -->
+<condition entityname="requestedbycontact" attribute="contactid" operator="not-null" />
+<!-- Requested By Hierarchy -->
+<condition entityname="reqAccount" attribute="accountid"  operator="not-null" />
+<!-- Dealer Lookup -->
+<condition attribute="cat_dealername" operator="eq" value="{{ user.parentcustomerid.id }}" />
+</filter>
+
+                         <order attribute="createdon" descending="true" />
+                         {% if selectedProductIds.size > 0 and selectedProductIds[0] != "" %}
+    <filter type="or">
+
+        {% for selectedProductId in selectedProductIds %}
+
+            {% assign cleanProductId = selectedProductId | strip %}
+
+            {% if cleanProductId != "" %}
+                <condition
+                    attribute="productid"
+                    operator="eq"
+                    value="{{ cleanProductId | escape }}">
+                </condition>
+            {% endif %}
+
+        {% endfor %}
+
+    </filter>
+{% endif %}
+                    </entity>
+               </fetch>
+
+               {% endfetchxml %}
+
+               {% else %}
+
+               {% fetchxml caseResults %}
+               <fetch count="20" page="{{ currentPage }}">
+                    <entity name="incident">
+                         <attribute name="incidentid" />
+                         <attribute name="ticketnumber" />
+                         <attribute name="title" />
+                         <attribute name="createdon" />
+                         <attribute name="cat_requestedfrom" />
+                         <attribute name="cat_helpcenterstatus" />
+                         <attribute name="description" />
+                   <filter type="and">
+<condition attribute="statecode" operator="eq" value="0" />
+<filter type="or">
+<condition attribute="ticketnumber" operator="like" value="%{{ searchText }}%" />
+<condition attribute="title" operator="like" value="%{{ searchText }}%" />
+</filter>
+{% if hasSelectedProducts %}
+    <condition
+        attribute="productid"
+        operator="in"
+    >
+        {% for productId in selectedProductIds %}
+            {% assign cleanProductId = productId | strip %}
+
+            {% if cleanProductId != '' %}
+                <value>{{ cleanProductId | escape }}</value>
+            {% endif %}
+        {% endfor %}
+    </condition>
+{% endif %}
+</filter>
+                         <condition attribute="parentcaseid" operator="null"/>
+                         </filter>
+</filter>
+<!-- Requested For Account Hierarchy -->
+<link-entity name="account" from="accountid" to="customerid" alias="reqForAccount" link-type="outer">
+<filter type="or">
+<condition attribute="accountid" operator="eq" value="{{ user.parentcustomerid.id }}" />
+<condition attribute="parentaccountid" operator="eq" value="{{ user.parentcustomerid.id }}" />
+</filter>
+</link-entity>
+<!-- Requested For Contact Hierarchy -->
+<link-entity name="contact" from="contactid" to="customerid" alias="reqForContact" link-type="outer">
+<link-entity name="account" from="accountid" to="parentcustomerid" alias="reqForContactAccount" link-type="outer">
+<filter type="or">
+<condition attribute="accountid" operator="eq" value="{{ user.parentcustomerid.id }}" />
+<condition attribute="parentaccountid" operator="eq" value="{{ user.parentcustomerid.id }}" />
+</filter>
+</link-entity>
+</link-entity>
+<!-- Requested By -->
+<link-entity name="contact" from="contactid" to="cat_requestedfrom" alias="requestedbycontact" link-type="outer">
+<filter type="or">
+<condition attribute="parentcustomerid" operator="eq" value="{{ user.parentcustomerid.id }}" />
+</filter>
+</link-entity>
+<!-- Requested By Hierarchy -->
+<link-entity name="contact" from="contactid" to="cat_requestedfrom" alias="reqby" link-type="outer">
+<link-entity name="account" from="accountid" to="parentcustomerid" alias="reqAccount" link-type="outer">
+<filter type="or">
+<condition attribute="accountid" operator="eq" value="{{ user.parentcustomerid.id }}" />
+<condition attribute="parentaccountid" operator="eq" value="{{ user.parentcustomerid.id }}" />
+</filter>
+</link-entity>
+</link-entity>
+<!-- Final OR -->
+<filter type="or">
+<!-- Requested For Account -->
+<condition entityname="reqForAccount" attribute="accountid" operator="not-null" />
+<!-- Requested For Contact -->
+<!-- <condition entityname="reqForContact" attribute="contactid" operator="not-null" /> -->
+<!-- Requested For Contact Hierarchy -->
+<condition entityname="reqForContactAccount" attribute="accountid"
+                operator="not-null" />
+<!-- Requested By -->
+<condition entityname="requestedbycontact" attribute="contactid" operator="not-null" />
+<!-- Requested By Hierarchy -->
+<condition entityname="reqAccount" attribute="accountid"  operator="not-null" />
+<!-- Dealer Lookup -->
+<condition attribute="cat_dealername" operator="eq" value="{{ user.parentcustomerid.id }}" />
+</filter>
+                         <order attribute="createdon" descending="true" />
+                         {% if selectedProductIds.size > 0 and selectedProductIds[0] != "" %}
+    <filter type="or">
+
+        {% for selectedProductId in selectedProductIds %}
+
+            {% assign cleanProductId = selectedProductId | strip %}
+
+            {% if cleanProductId != "" %}
+                <condition
+                    attribute="productid"
+                    operator="eq"
+                    value="{{ cleanProductId | escape }}">
+                </condition>
+            {% endif %}
+
+        {% endfor %}
+
+    </filter>
+{% endif %}
+                    </entity>
+               </fetch>
+
+               {% endfetchxml %}
+
+               {% endif %}
+
+               {% fetchxml caseCount %}
+               <fetch aggregate="true">
+                    <entity name="incident">
+                         <attribute name="incidentid" alias="totalcases" aggregate="count" />
+                   <filter type="and">
+<condition attribute="statecode" operator="eq" value="0" />
+<filter type="or">
+<condition attribute="ticketnumber" operator="like" value="%{{ searchText }}%" />
+<condition attribute="title" operator="like" value="%{{ searchText }}%" />
+</filter>
+{% if hasSelectedProducts %}
+    <condition
+        attribute="productid"
+        operator="in"
+    >
+        {% for productId in selectedProductIds %}
+            {% assign cleanProductId = productId | strip %}
+
+            {% if cleanProductId != '' %}
+                <value>{{ cleanProductId | escape }}</value>
+            {% endif %}
+        {% endfor %}
+    </condition>
+{% endif %}
+</filter>
+<!-- Requested For Account Hierarchy -->
+<link-entity name="account" from="accountid" to="customerid" alias="reqForAccount" link-type="outer">
+<filter type="or">
+<condition attribute="accountid" operator="eq" value="{{ user.parentcustomerid.id }}" />
+<condition attribute="parentaccountid" operator="eq" value="{{ user.parentcustomerid.id }}" />
+</filter>
+</link-entity>
+<!-- Requested For Contact Hierarchy -->
+<link-entity name="contact" from="contactid" to="customerid" alias="reqForContact" link-type="outer">
+<link-entity name="account" from="accountid" to="parentcustomerid" alias="reqForContactAccount" link-type="outer">
+<filter type="or">
+<condition attribute="accountid" operator="eq" value="{{ user.parentcustomerid.id }}" />
+<condition attribute="parentaccountid" operator="eq" value="{{ user.parentcustomerid.id }}" />
+</filter>
+</link-entity>
+</link-entity>
+<!-- Requested By -->
+<link-entity name="contact" from="contactid" to="cat_requestedfrom" alias="requestedbycontact" link-type="outer">
+<filter type="or">
+<condition attribute="parentcustomerid" operator="eq" value="{{ user.parentcustomerid.id }}" />
+</filter>
+</link-entity>
+<!-- Requested By Hierarchy -->
+<link-entity name="contact" from="contactid" to="cat_requestedfrom" alias="reqby" link-type="outer">
+<link-entity name="account" from="accountid" to="parentcustomerid" alias="reqAccount" link-type="outer">
+<filter type="or">
+<condition attribute="accountid" operator="eq" value="{{ user.parentcustomerid.id }}" />
+<condition attribute="parentaccountid" operator="eq" value="{{ user.parentcustomerid.id }}" />
+</filter>
+</link-entity>
+</link-entity>
+<!-- Final OR -->
+<filter type="or">
+<!-- Requested For Account -->
+<condition entityname="reqForAccount" attribute="accountid" operator="not-null" />
+<!-- Requested For Contact -->
+<!-- <condition entityname="reqForContact" attribute="contactid" operator="not-null" /> -->
+<!-- Requested For Contact Hierarchy -->
+<condition entityname="reqForContactAccount" attribute="accountid"
+                operator="not-null" />
+<!-- Requested By -->
+<condition entityname="requestedbycontact" attribute="contactid" operator="not-null" />
+<!-- Requested By Hierarchy -->
+<condition entityname="reqAccount" attribute="accountid"  operator="not-null" />
+<!-- Dealer Lookup -->
+<condition attribute="cat_dealername" operator="eq" value="{{ user.parentcustomerid.id }}" />
+</filter>
+                    </entity>
+               </fetch>
+               {% endfetchxml %}
+               {% endif %}
+<!-- Dealer Block End-->
+
+
+
+               {% assign totalCases = 0 %}
+               {% if caseCount.results.entities.size > 0 %}
+               {% assign totalCases = caseCount.results.entities[0].totalcases %}
+               {% endif %}
+              
+               
+
+<!-- 1 s-->
+ <!-- Product to Category filter source -->
+{% fetchxml productCategoryMappings %}
+<fetch mapping="logical" no-lock="true" distinct="true">
+    <entity name="cat_producttocategorymapping">
+        <attribute name="cat_producttocategorymappingid"></attribute>
+        <attribute name="cat_name"></attribute>
+        <attribute name="cat_category"></attribute>
+        <attribute name="cat_product"></attribute>
+
+        <filter type="and">
+            <condition
+                attribute="statecode"
+                operator="eq"
+                value="0">
+            </condition>
+        </filter>
+
+        <order
+            attribute="cat_name"
+            descending="false">
+        </order>
+    </entity>
+</fetch>
+{% endfetchxml %}
+
+{% fetchxml filterArticleRecords %}
+<fetch mapping="logical" distinct="true" no-lock="true">
+    <entity name="knowledgearticle">
+
+        <attribute name="knowledgearticleid"></attribute>
+        {% if searchText != '' %}
+<filter type="or">
+    <condition
+        attribute="title"
+        operator="like"
+        value="%{{ safeSearchText }}%">
+    </condition>
+
+    <condition
+        attribute="description"
+        operator="like"
+        value="%{{ safeSearchText }}%">
+    </condition>
+
+    <condition
+        attribute="articlepublicnumber"
+        operator="like"
+        value="%{{ safeSearchText }}%">
+    </condition>
+</filter>
+{% endif %}
+
+        <filter type="and">
+
+            <condition
+                attribute="statecode"
+                operator="eq"
+                value="3">
+            </condition>
+
+            <condition
+                attribute="cat_ispublicfacing"
+                operator="eq"
+                value="1">
+            </condition>
+
+            {% if personaValue != '' %}
+
+                <condition
+                    attribute="cat_persona"
+                    operator="contain-values">
+
+                    <value>{{ personaValue }}</value>
+
+                </condition>
+
+            {% endif %}
+
+        </filter>
+
+        <link-entity
+            name="knowledgearticlescategories"
+            from="knowledgearticleid"
+            to="knowledgearticleid"
+            link-type="inner"
+            intersect="true"
+            alias="articlecategorylink">
+
+            <link-entity
+                name="category"
+                from="categoryid"
+                to="categoryid"
+                link-type="inner"
+                alias="directcategory">
+
+                <attribute
+                    name="categoryid"
+                    alias="filtercategoryid">
+                </attribute>
+
+                <link-entity
+                    name="category"
+                    from="categoryid"
+                    to="parentcategoryid"
+                    link-type="outer"
+                    alias="parentcategory">
+
+                    <attribute
+                        name="categoryid"
+                        alias="filterparentcategoryid">
+                    </attribute>
+
+                    <link-entity
+                        name="category"
+                        from="categoryid"
+                        to="parentcategoryid"
+                        link-type="outer"
+                        alias="grandparentcategory">
+
+                        <attribute
+                            name="categoryid"
+                            alias="filtergrandparentcategoryid">
+                        </attribute>
+
+                    </link-entity>
+
+                </link-entity>
+
+            </link-entity>
+
+        </link-entity>
+
+    </entity>
+</fetch>
+{% endfetchxml %}
+{% comment %}
+Selected Product/Category according distinct Article count
+{% endcomment %}
+
+{% if hasSelectedCategories %}
+
+    {% assign selectedArticleIds = "|" %}
+
+    {% for articleRecord in filterArticleRecords.results.entities %}
+
+        {% assign directCategoryValue = articleRecord.filtercategoryid | default: "" %}
+        {% assign parentCategoryValue = articleRecord.filterparentcategoryid | default: "" %}
+        {% assign grandparentCategoryValue = articleRecord.filtergrandparentcategoryid | default: "" %}
+
+        {% assign directCategoryId = directCategoryValue.id | default: directCategoryValue %}
+        {% assign directCategoryId = directCategoryId | downcase | strip | remove: "{" | remove: "}" %}
+
+        {% assign parentCategoryId = parentCategoryValue.id | default: parentCategoryValue %}
+        {% assign parentCategoryId = parentCategoryId | downcase | strip | remove: "{" | remove: "}" %}
+
+        {% assign grandparentCategoryId = grandparentCategoryValue.id | default: grandparentCategoryValue %}
+        {% assign grandparentCategoryId = grandparentCategoryId | downcase | strip | remove: "{" | remove: "}" %}
+
+        {% assign articleMatchesSelectedCategory = false %}
+
+        {% for selectedCategoryId in selectedCategoryIds %}
+
+            {% assign cleanSelectedCategoryId = selectedCategoryId | downcase | strip | remove: "{" | remove: "}" %}
+
+            {% if cleanSelectedCategoryId != "" %}
+
+                {% if directCategoryId == cleanSelectedCategoryId %}
+                    {% assign articleMatchesSelectedCategory = true %}
+                {% endif %}
+
+                {% if parentCategoryId == cleanSelectedCategoryId %}
+                    {% assign articleMatchesSelectedCategory = true %}
+                {% endif %}
+
+                {% if grandparentCategoryId == cleanSelectedCategoryId %}
+                    {% assign articleMatchesSelectedCategory = true %}
+                {% endif %}
+
+            {% endif %}
+
+        {% endfor %}
+
+        {% if articleMatchesSelectedCategory %}
+
+            {% assign currentArticleValue = articleRecord.knowledgearticleid | default: "" %}
+            {% assign currentArticleId = currentArticleValue.id | default: currentArticleValue %}
+            {% assign currentArticleId = currentArticleId | downcase | strip | remove: "{" | remove: "}" %}
+
+            {% if currentArticleId != "" %}
+
+                {% assign currentArticleKey = "|" | append: currentArticleId | append: "|" %}
+
+                {% unless selectedArticleIds contains currentArticleKey %}
+                    {% assign selectedArticleIds = selectedArticleIds | append: currentArticleId | append: "|" %}
+                {% endunless %}
+
+            {% endif %}
+
+        {% endif %}
+
+    {% endfor %}
+
+    {% assign selectedArticleIdString = selectedArticleIds | remove_first: "|" | remove_last: "|" %}
+
+    {% assign totalArticles = 0 %}
+
+    {% if selectedArticleIdString != "" %}
+        {% assign totalArticles = selectedArticleIdString | split: "|" | size %}
+    {% endif %}
+
+{% endif %}
+
+{% fetchxml filterCaseRecords %}
+<fetch mapping="logical" no-lock="true" distinct="true">
+    <entity name="incident">
+ 
+        <attribute name="incidentid"></attribute>
+        <attribute name="productid"></attribute>
+ 
+        {% if searchText != '' %}
+        <filter type="or">
+            <condition attribute="title" operator="like" value="%{{ safeSearchText }}%"></condition>
+            <condition attribute="ticketnumber" operator="like" value="%{{ safeSearchText }}%"></condition>
+        </filter>
+        {% endif %}
+ 
+        {% if user.roles contains "Cat_Internal Customer Persona Role" %}
+ 
+        <filter type="and">
+            <condition attribute="statecode" operator="eq" value="0"/>
+            <condition attribute="parentcaseid" operator="null"/>
+            <condition attribute="productid" operator="not-null"/>
+        </filter>
+ 
+        {% elsif user.roles contains "Cat_Customer Persona Role" %}
+ 
+        <filter type="and">
+            <condition attribute="statecode" operator="eq" value="0"/>
+            <condition attribute="cat_helpcenterstatus" operator="in">
+                <value>100000000</value>
+                <value>100000001</value>
+                <value>100000002</value>
+                <value>100000003</value>
+                <value>100000004</value>
+                <value>100000005</value>
+            </condition>
+            <condition attribute="parentcaseid" operator="null"/>
+            <condition attribute="createdon" operator="last-x-years" value="1" />
+            <condition attribute="cat_requestedfrom" operator="eq" value="{{ user.id }}"/>
+            <condition attribute="productid" operator="not-null"/>
+        </filter>
+ 
+        {% elsif user.roles contains "Cat_Dealer Persona Role" %}
+ 
+        <filter type="and">
+            <condition attribute="statecode" operator="eq" value="0" />
+            <condition attribute="parentcaseid" operator="null"/>
+            <condition attribute="productid" operator="not-null"/>
+        </filter>
+ 
+        <link-entity name="account" from="accountid" to="customerid" alias="reqForAccount" link-type="outer">
+            <filter type="or">
+                <condition attribute="accountid" operator="eq" value="{{ user.parentcustomerid.id }}" />
+                <condition attribute="parentaccountid" operator="eq" value="{{ user.parentcustomerid.id }}" />
+            </filter>
+        </link-entity>
+ 
+        <link-entity name="contact" from="contactid" to="customerid" alias="reqForContact" link-type="outer">
+            <link-entity name="account" from="accountid" to="parentcustomerid" alias="reqForContactAccount" link-type="outer">
+                <filter type="or">
+                    <condition attribute="accountid" operator="eq" value="{{ user.parentcustomerid.id }}" />
+                    <condition attribute="parentaccountid" operator="eq" value="{{ user.parentcustomerid.id }}" />
+                </filter>
+            </link-entity>
+        </link-entity>
+ 
+        <link-entity name="contact" from="contactid" to="cat_requestedfrom" alias="requestedbycontact" link-type="outer">
+            <filter type="or">
+                <condition attribute="parentcustomerid" operator="eq" value="{{ user.parentcustomerid.id }}" />
+            </filter>
+        </link-entity>
+ 
+        <link-entity name="contact" from="contactid" to="cat_requestedfrom" alias="reqby" link-type="outer">
+            <link-entity name="account" from="accountid" to="parentcustomerid" alias="reqAccount" link-type="outer">
+                <filter type="or">
+                    <condition attribute="accountid" operator="eq" value="{{ user.parentcustomerid.id }}" />
+                    <condition attribute="parentaccountid" operator="eq" value="{{ user.parentcustomerid.id }}" />
+                </filter>
+            </link-entity>
+        </link-entity>
+ 
+        <filter type="or">
+            <condition entityname="reqForAccount" attribute="accountid" operator="not-null" />
+            <condition entityname="reqForContactAccount" attribute="accountid" operator="not-null" />
+            <condition entityname="requestedbycontact" attribute="contactid" operator="not-null" />
+            <condition entityname="reqAccount" attribute="accountid" operator="not-null" />
+            <condition attribute="cat_dealername" operator="eq" value="{{ user.parentcustomerid.id }}" />
+        </filter>
+ 
+        {% else %}
+ 
+        <filter type="and">
+            <condition attribute="incidentid" operator="null"/>
+        </filter>
+ 
+        {% endif %}
+ 
+    </entity>
+</fetch>
+{% endfetchxml %}
+ 
+
+{% fetchxml filterHandupRecords %}
+<fetch mapping="logical" no-lock="true" distinct="true">
+    <entity name="incident">
+ 
+        <attribute name="incidentid"></attribute>
+        <attribute name="productid"></attribute>
+ 
+        {% if searchText != '' %}
+        <filter type="or">
+            <condition attribute="title" operator="like" value="%{{ safeSearchText }}%"></condition>
+            <condition attribute="ticketnumber" operator="like" value="%{{ safeSearchText }}%"></condition>
+            <condition attribute="description" operator="like" value="%{{ safeSearchText }}%"></condition>
+        </filter>
+        {% endif %}
+ 
+        <filter type="and">
+            <condition attribute="productid" operator="not-null"></condition>
+            <condition attribute="parentcaseid" operator="not-null"></condition>
+            <filter type="or">
+              <condition attribute="cat_elevationtype" operator="eq" value="100000003" />
+              <condition attribute="cat_elevationtype" operator="eq" value="100000004" />
+              </filter>
+        </filter>
+ 
+    </entity>
+</fetch>
+{% endfetchxml %}
+ 
+
+{% fetchxml filterNewsRecords %}
+<fetch mapping="logical" no-lock="true" distinct="true">
+    <entity name="cat_newsupdates">
+ 
+        <attribute name="cat_newsupdatesid"></attribute>
+ 
+        {% if searchText != '' %}
+        <filter type="or">
+            <condition attribute="cat_title" operator="like" value="%{{ safeSearchText }}%"></condition>
+            <condition attribute="cat_description" operator="like" value="%{{ safeSearchText }}%"></condition>
+        </filter>
+        {% endif %}
+ 
+        <filter type="and">
+            <condition attribute="statecode" operator="eq" value="0"></condition>
+            <condition attribute="cat_persona" operator="contain-values">
+                <value>{{ personaValue }}</value>
+            </condition>
+        </filter>
+ 
+        <link-entity name="cat_newsupdates_product" from="cat_newsupdatesid" to="cat_newsupdatesid" intersect="true" visible="false" alias="newsproductmapping">
+            <link-entity name="product" from="productid" to="productid" alias="newsproduct">
+                <attribute name="productid" alias="filterproductid"></attribute>
+            </link-entity>
+        </link-entity>
+ 
+    </entity>
+</fetch>
+{% endfetchxml %}
+ 
+<!--news and updates-->
+{% assign personaValue = '' %}
+               {% if user %}
+               {% if user.roles contains "Cat_Customer Persona Role" %}
+                    {% assign personaValue = 100000000 %}
+               {% elsif user.roles contains "Cat_Dealer Persona Role" %}
+                    {% assign personaValue = 100000001 %}
+               {% elsif user.roles contains "Cat_Internal Customer Persona Role" %}
+                    {% assign personaValue = 100000003 %}
+               {% endif %}
+               {% else %}
+               {% assign personaValue = 100000002 %}
+               {% endif %}
+
+              {% fetchxml newsupdates %}
+<fetch distinct="true">
+    <entity name="cat_newsupdates">
+        <attribute name="cat_newsupdatesid" />
+        <attribute name="cat_title" />
+        <attribute name="cat_description" />
+        <attribute name="cat_publisheddate" />
+        <attribute name="cat_expirationdate" />
+        <attribute name="cat_priority" />
+        <attribute name="cat_persona" />
+        <order attribute="cat_publisheddate" descending="true" />
+        <filter type="and">
+            <condition attribute="cat_persona" operator="contain-values">
+                <value>{{ personaValue }}</value>
+            </condition>
+            {% if searchText != '' %}
+            <filter type="or">
+                <condition attribute="cat_title" operator="like" value="%{{ safeSearchText }}%" />
+                <condition attribute="cat_description" operator="like" value="%{{ safeSearchText }}%" />
+            </filter>
+            {% endif %}
+        </filter>
+        {% if hasSelectedProducts %}
+        <link-entity name="cat_newsupdates_product" from="cat_newsupdatesid" to="cat_newsupdatesid" intersect="true">
+            <link-entity name="product" from="productid" to="productid">
+                <filter type="or">
+                    {% for productId in selectedProductIds %}
+                        {% assign cleanProductId = productId | strip %}
+                        {% if cleanProductId != '' %}
+                            <condition attribute="productid" operator="eq" value="{{ cleanProductId | escape }}" />
+                        {% endif %}
+                    {% endfor %}
+                </filter>
+            </link-entity>
+        </link-entity>
+        {% endif %}
+    </entity>
+</fetch>
+{% endfetchxml %}
+ 
+{% fetchxml newsUpdateCount %}
+<fetch aggregate="true" distinct="true">
+    <entity name="cat_newsupdates">
+        <attribute
+            name="cat_newsupdatesid"
+            alias="totalnewsupdates"
+            aggregate="countcolumn"
+            distinct="true"
+        />
+        <filter type="and">
+            <condition attribute="cat_persona" operator="contain-values">
+                <value>{{ personaValue }}</value>
+            </condition>
+            {% if searchText != '' %}
+            <filter type="or">
+                <condition attribute="cat_title" operator="like" value="%{{ safeSearchText }}%" />
+                <condition attribute="cat_description" operator="like" value="%{{ safeSearchText }}%" />
+            </filter>
+            {% endif %}
+        </filter>
+        {% if hasSelectedProducts %}
+        <link-entity name="cat_newsupdates_product" from="cat_newsupdatesid" to="cat_newsupdatesid" intersect="true">
+            <link-entity name="product" from="productid" to="productid">
+                <filter type="or">
+                    {% for productId in selectedProductIds %}
+                        {% assign cleanProductId = productId | strip %}
+                        {% if cleanProductId != '' %}
+                            <condition attribute="productid" operator="eq" value="{{ cleanProductId | escape }}" />
+                        {% endif %}
+                    {% endfor %}
+                </filter>
+            </link-entity>
+        </link-entity>
+        {% endif %}
+    </entity>
+</fetch>
+{% endfetchxml %}
+ 
+{% assign totalNewsUpdates = 0 %}
+
+{% if newsUpdateCount.results.entities.size > 0 %}
+    {% assign totalNewsUpdates = newsUpdateCount.results.entities[0].totalnewsupdates | default: 0 | plus: 0 %}
+{% endif %}
+
+{% comment %}
+Selected Product specific News & Updates count
+{% endcomment %}
+
+{% if hasSelectedProducts %}
+
+    {% assign selectedNewsIds = "|" %}
+
+    {% for newsRecord in filterNewsRecords.results.entities %}
+
+        {% assign newsProductValue = newsRecord.filterproductid | default: newsRecord['newsproduct.filterproductid'] | default: newsRecord['newsproduct.productid'] | default: newsRecord['newsproduct.cat_productid'] | default: newsRecord.cat_product | default: "" %}
+
+        {% assign newsProductId = newsProductValue.id | default: newsProductValue %}
+        {% assign newsProductId = newsProductId | downcase | strip | remove: "{" | remove: "}" %}
+
+        {% assign newsRecordId = newsRecord.cat_newsupdatesid | default: newsRecord['news.cat_newsupdatesid'] | default: newsRecord['newsupdate.cat_newsupdatesid'] | default: "" %}
+        {% assign newsRecordId = newsRecordId.id | default: newsRecordId %}
+        {% assign newsRecordId = newsRecordId | downcase | strip | remove: "{" | remove: "}" %}
+
+        {% assign newsMatchesSelectedProduct = false %}
+
+        {% for selectedProductId in selectedProductIds %}
+
+            {% assign cleanSelectedProductId = selectedProductId | downcase | strip | remove: "{" | remove: "}" %}
+
+            {% if cleanSelectedProductId != "" %}
+
+                {% if newsProductId == cleanSelectedProductId %}
+                    {% assign newsMatchesSelectedProduct = true %}
+                {% endif %}
+
+            {% endif %}
+
+        {% endfor %}
+
+        {% if newsMatchesSelectedProduct %}
+
+            {% if newsRecordId != "" %}
+
+                {% assign currentNewsKey = "|" | append: newsRecordId | append: "|" %}
+
+                {% unless selectedNewsIds contains currentNewsKey %}
+                    {% assign selectedNewsIds = selectedNewsIds | append: newsRecordId | append: "|" %}
+                {% endunless %}
+
+            {% endif %}
+
+        {% endif %}
+
+    {% endfor %}
+
+    {% assign selectedNewsIdString = selectedNewsIds | remove_first: "|" | remove_last: "|" %}
+    {% assign totalNewsUpdates = 0 %}
+
+    {% if selectedNewsIdString != "" %}
+        {% assign totalNewsUpdates = selectedNewsIdString | split: "|" | size %}
+    {% endif %}
+
+{% endif %}
+
+ 
+{% fetchxml handupCount %}
+<fetch aggregate="true">
+  <entity name="incident">
+    <attribute name="incidentid" alias="totalhandups" aggregate="count" />
+
+    <filter type="and">
+      <condition attribute="parentcaseid" operator="not-null" />
+      <filter type="or">
+              <condition attribute="cat_elevationtype" operator="eq" value="100000003" />
+              <condition attribute="cat_elevationtype" operator="eq" value="100000004" />
+              </filter>
+
+      {% if searchText %}
+      <filter type="or">
+        <condition attribute="ticketnumber" operator="like" value="%{{ searchText }}%" />
+        <condition attribute="title" operator="like" value="%{{ searchText }}%" />
+        <condition attribute="description" operator="like" value="%{{ searchText }}%" />
+      </filter>
+      {% endif %}
+      {% if hasSelectedProducts %}
+    <condition
+        attribute="productid"
+        operator="in"
+    >
+        {% for productId in selectedProductIds %}
+            {% assign cleanProductId = productId | strip %}
+
+            {% if cleanProductId != '' %}
+                <value>{{ cleanProductId | escape }}</value>
+            {% endif %}
+        {% endfor %}
+    </condition>
+{% endif %}
+    </filter>
+  </entity>
+</fetch>
+{% endfetchxml %}
+
+{% assign totalHandups = 0 %}
+
+{% if user %}
+    {% if handupCount.results.entities.size > 0 %}
+        {% assign totalHandups = handupCount.results.entities[0].totalhandups | default: 0 | plus: 0 %}
+    {% endif %}
+{% else %}
+    {% assign totalHandups = 0 %}
+{% endif %}
+{% comment %}
+Final selected Product-specific Case and Handup counts.
+This block must remain after the normal handupCount assignment.
+{% endcomment %}
+
+{% if hasSelectedProducts %}
+
+    {% assign selectedCaseIds = "|" %}
+    {% assign selectedHandupIds = "|" %}
+
+    {% for caseRecord in filterCaseRecords.results.entities %}
+
+        {% assign selectedCaseProductValue = caseRecord.productid | default: "" %}
+
+        {% assign selectedCaseProductId = selectedCaseProductValue.id | default: selectedCaseProductValue %}
+        {% assign selectedCaseProductId = selectedCaseProductId | downcase | strip | remove: "{" | remove: "}" %}
+
+        {% assign selectedCaseRecordId = caseRecord.incidentid | default: "" %}
+        {% assign selectedCaseRecordId = selectedCaseRecordId | downcase | strip | remove: "{" | remove: "}" %}
+
+        {% assign caseMatchesSelectedProduct = false %}
+
+        {% for requestedProductId in selectedProductIds %}
+
+            {% assign cleanRequestedProductId = requestedProductId | downcase | strip | remove: "{" | remove: "}" %}
+
+            {% if cleanRequestedProductId != "" and selectedCaseProductId == cleanRequestedProductId %}
+                {% assign caseMatchesSelectedProduct = true %}
+            {% endif %}
+
+        {% endfor %}
+
+        {% if caseMatchesSelectedProduct and selectedCaseRecordId != "" %}
+
+            {% assign selectedCaseKey = "|" | append: selectedCaseRecordId | append: "|" %}
+
+            {% unless selectedCaseIds contains selectedCaseKey %}
+                {% assign selectedCaseIds = selectedCaseIds | append: selectedCaseRecordId | append: "|" %}
+            {% endunless %}
+
+        {% endif %}
+
+    {% endfor %}
+
+    {% for handupRecord in filterHandupRecords.results.entities %}
+
+        {% assign selectedHandupProductValue = handupRecord.productid | default: "" %}
+
+        {% assign selectedHandupProductId = selectedHandupProductValue.id | default: selectedHandupProductValue %}
+        {% assign selectedHandupProductId = selectedHandupProductId | downcase | strip | remove: "{" | remove: "}" %}
+
+        {% assign selectedHandupRecordId = handupRecord.incidentid | default: "" %}
+        {% assign selectedHandupRecordId = selectedHandupRecordId | downcase | strip | remove: "{" | remove: "}" %}
+
+        {% assign handupMatchesSelectedProduct = false %}
+
+        {% for requestedProductId in selectedProductIds %}
+
+            {% assign cleanRequestedProductId = requestedProductId | downcase | strip | remove: "{" | remove: "}" %}
+
+            {% if cleanRequestedProductId != "" and selectedHandupProductId == cleanRequestedProductId %}
+                {% assign handupMatchesSelectedProduct = true %}
+            {% endif %}
+
+        {% endfor %}
+
+        {% if handupMatchesSelectedProduct and selectedHandupRecordId != "" %}
+
+            {% assign selectedHandupKey = "|" | append: selectedHandupRecordId | append: "|" %}
+
+            {% unless selectedHandupIds contains selectedHandupKey %}
+                {% assign selectedHandupIds = selectedHandupIds | append: selectedHandupRecordId | append: "|" %}
+            {% endunless %}
+
+        {% endif %}
+
+    {% endfor %}
+
+    {% assign selectedCaseIdString = selectedCaseIds | remove_first: "|" | remove_last: "|" %}
+    {% assign selectedHandupIdString = selectedHandupIds | remove_first: "|" | remove_last: "|" %}
+    {% assign selectedHandupIdArray = selectedHandupIdString | split: "|" %}
+
+    {% assign totalCases = 0 %}
+    {% assign totalHandups = 0 %}
+
+    {% if selectedCaseIdString != "" %}
+        {% assign totalCases = selectedCaseIdString | split: "|" | size %}
+    {% endif %}
+
+    {% if selectedHandupIdString != "" %}
+        {% assign totalHandups = selectedHandupIdString | split: "|" | size %}
+    {% endif %}
+
+{% endif %}
+
+
+<!-- 1 e -->
+<div class="col-md-3">
+<div id="filterPanel" class="filter-panel">
+<div class="filter-header">
+<strong>Filter By</strong>
+<a href="javascript:void(0)"
+      id="clearFilters"
+      class="clear-filters">
+       Clear All
+</a>
+
+<button id="closeFilterBtn" class="close-filter">
+   ✕
+</button>
+
+</div>
+<details open>
+<summary>
+     <i class="fa fa-chevron-right filter-chevron"></i>
+     Result Types
+</summary>
+<div class="filter-item">
+<input type="checkbox"
+       class="result-type-checkbox"
+       value="cases"
+           {% if casesChecked == "true" %}
+    checked
+{% endif %}> 
+<label>Cases</label>
+<span class="filter-count">
+                       {{ totalCases }}
+</span>
+</div>
+
+<div class="filter-item">
+    <input
+        type="checkbox"
+        class="result-type-checkbox"
+        value="handups"
+       {% if request.params.showhandups == "true" %}
+    checked
+{% endif %}
+    >
+
+    <label>Handups</label>
+
+    <span class="filter-count">
+        {{ totalHandups }}
+    </span>
+</div>
+
+<div class="filter-item">
+<input type="checkbox"
+       class="result-type-checkbox"
+       value="articles"
+                {% if articlesChecked == "true" %}
+    checked
+{% endif %}>
+<label>Help Articles</label>
+<span class="filter-count">
+     {{ totalArticles }}
+</span>
+</div>
+<!-- <div class="filter-item">
+<input type="checkbox"
+       class="result-type-checkbox">
+       
+<label>News & Updates</label>
+<span class="filter-count">
+{{ totalNewsUpdates }}
+</span>
+
+</div> -->
+<div class="filter-item">
+    <input type="checkbox"
+       class="result-type-checkbox"
+       value="newsupdates"
+       {% if request.params.shownewsupdates == "true" %}
+       checked
+       {% endif %}>
+
+    <label>News & Updates</label>
+
+    <span class="filter-count">
+        {{ totalNewsUpdates }}
+    </span>
+</div>
+</details>
+<details id="productCategoryFilterSection" open>
+    <summary>
+        <i class="fa fa-chevron-right filter-chevron"></i>
+
+        <span>
+            Product / Category
+        </span>
+    </summary>
+
+    <div id="mappingFilterValues">
+
+        {% if productCategoryMappings.results.entities.size > 0 %}
+
+            {% for mapping in productCategoryMappings.results.entities %}
+
+            {% assign mappingCategoryValue = mapping.cat_category | default: "" %}
+{% assign mappingProductValue = mapping.cat_product | default: "" %}
+
+{% assign mappingCategoryId = mappingCategoryValue.id | default: mappingCategoryValue %}
+{% assign mappingCategoryId = mappingCategoryId | downcase | strip | remove: "{" | remove: "}" %}
+
+{% assign mappingProductId = mappingProductValue.id | default: mappingProductValue %}
+{% assign mappingProductId = mappingProductId | downcase | strip | remove: "{" | remove: "}" %}
+
+
+                {% assign articleIds = "|" %}
+                {% assign caseIds = "|" %}
+                {% assign handupIds = "|" %}
+                {% assign newsIds = "|" %}
+
+                {% for articleRecord in filterArticleRecords.results.entities %}
+
+    {% assign directCategoryValue = articleRecord.filtercategoryid | default: "" %}
+{% assign parentCategoryValue = articleRecord.filterparentcategoryid | default: "" %}
+{% assign grandparentCategoryValue = articleRecord.filtergrandparentcategoryid | default: "" %}
+
+{% assign directCategoryId = directCategoryValue.id | default: directCategoryValue %}
+{% assign directCategoryId = directCategoryId | downcase | strip | remove: "{" | remove: "}" %}
+
+{% assign parentCategoryId = parentCategoryValue.id | default: parentCategoryValue %}
+{% assign parentCategoryId = parentCategoryId | downcase | strip | remove: "{" | remove: "}" %}
+
+{% assign grandparentCategoryId = grandparentCategoryValue.id | default: grandparentCategoryValue %}
+{% assign grandparentCategoryId = grandparentCategoryId | downcase | strip | remove: "{" | remove: "}" %}
+
+{% assign articleRecordId = articleRecord.knowledgearticleid | default: "" %}
+{% assign articleRecordId = articleRecordId | downcase | strip | remove: "{" | remove: "}" %}
+
+{% assign articleMatchesMapping = false %}
+
+{% if directCategoryId != "" and directCategoryId == mappingCategoryId %}
+    {% assign articleMatchesMapping = true %}
+{% endif %}
+
+{% if parentCategoryId != "" and parentCategoryId == mappingCategoryId %}
+    {% assign articleMatchesMapping = true %}
+{% endif %}
+
+{% if grandparentCategoryId != "" and grandparentCategoryId == mappingCategoryId %}
+    {% assign articleMatchesMapping = true %}
+{% endif %}
+
+{% if articleMatchesMapping and articleRecordId != "" %}
+
+    {% assign articleKey = "|" | append: articleRecordId | append: "|" %}
+
+    {% unless articleIds contains articleKey %}
+        {% assign articleIds = articleIds | append: articleRecordId | append: "|" %}
+    {% endunless %}
+
+{% endif %}
+{% endfor %}
+
+             {% for caseRecord in filterCaseRecords.results.entities %}
+
+    {% assign caseProductValue = caseRecord.productid | default: "" %}
+
+    {% assign caseProductId = caseProductValue.id | default: caseProductValue %}
+    {% assign caseProductId = caseProductId | downcase | strip | remove: "{" | remove: "}" %}
+
+    {% assign caseRecordId = caseRecord.incidentid | default: "" %}
+    {% assign caseRecordId = caseRecordId | downcase | strip | remove: "{" | remove: "}" %}
+
+    {% if caseProductId != "" and mappingProductId != "" and caseProductId == mappingProductId and caseRecordId != "" %}
+
+        {% assign caseKey = "|" | append: caseRecordId | append: "|" %}
+
+        {% unless caseIds contains caseKey %}
+            {% assign caseIds = caseIds | append: caseRecordId | append: "|" %}
+        {% endunless %}
+
+    {% endif %}
+
+{% endfor %}
+
+{% for handupRecord in filterHandupRecords.results.entities %}
+
+    {% assign handupProductValue = handupRecord.productid | default: "" %}
+
+    {% assign handupProductId = handupProductValue.id | default: handupProductValue %}
+    {% assign handupProductId = handupProductId | downcase | strip | remove: "{" | remove: "}" %}
+
+    {% assign handupRecordId = handupRecord.incidentid | default: "" %}
+    {% assign handupRecordId = handupRecordId | downcase | strip | remove: "{" | remove: "}" %}
+
+    {% if handupProductId != "" and mappingProductId != "" and handupProductId == mappingProductId and handupRecordId != "" %}
+
+        {% assign handupKey = "|" | append: handupRecordId | append: "|" %}
+
+        {% unless handupIds contains handupKey %}
+            {% assign handupIds = handupIds | append: handupRecordId | append: "|" %}
+        {% endunless %}
+
+    {% endif %}
+
+{% endfor %}
+
+              {% for newsRecord in filterNewsRecords.results.entities %}
+
+    {% assign newsProductValue = newsRecord.filterproductid | default: newsRecord['newsproduct.filterproductid'] | default: newsRecord['newsproduct.productid'] | default: newsRecord['newsproduct.cat_productid'] | default: newsRecord.cat_product | default: "" %}
+
+    {% assign newsProductId = newsProductValue.id | default: newsProductValue %}
+    {% assign newsProductId = newsProductId | downcase | strip | remove: "{" | remove: "}" %}
+
+    {% assign newsRecordValue = newsRecord.cat_newsupdatesid | default: newsRecord['news.cat_newsupdatesid'] | default: newsRecord['newsupdate.cat_newsupdatesid'] | default: "" %}
+
+    {% assign newsRecordId = newsRecordValue.id | default: newsRecordValue %}
+    {% assign newsRecordId = newsRecordId | downcase | strip | remove: "{" | remove: "}" %}
+
+    {% if newsProductId != "" and mappingProductId != "" and newsProductId == mappingProductId and newsRecordId != "" %}
+
+        {% assign newsKey = "|" | append: newsRecordId | append: "|" %}
+
+        {% unless newsIds contains newsKey %}
+            {% assign newsIds = newsIds | append: newsRecordId | append: "|" %}
+        {% endunless %}
+
+    {% endif %}
+
+{% endfor %}
+
+                {% assign articleIdString = articleIds | remove_first: "|" | remove_last: "|" %}
+                {% assign caseIdString = caseIds | remove_first: "|" | remove_last: "|" %}
+                {% assign handupIdString = handupIds | remove_first: "|" | remove_last: "|" %}
+                {% assign newsIdString = newsIds | remove_first: "|" | remove_last: "|" %}
+
+                {% assign mappingArticleCount = 0 %}
+                {% assign mappingCaseCount = 0 %}
+                {% assign mappingHandupCount = 0 %}
+                {% assign mappingNewsCount = 0 %}
+
+                {% if articleIdString != "" %}
+                    {% assign mappingArticleCount = articleIdString | split: "|" | size %}
+                {% endif %}
+
+                {% if caseIdString != "" %}
+                    {% assign mappingCaseCount = caseIdString | split: "|" | size %}
+                {% endif %}
+
+                {% if handupIdString != "" %}
+                    {% assign mappingHandupCount = handupIdString | split: "|" | size %}
+                {% endif %}
+
+                {% if newsIdString != "" %}
+                    {% assign mappingNewsCount = newsIdString | split: "|" | size %}
+                {% endif %}
+{% assign normalizedCurrentMappingId = mapping.cat_producttocategorymappingid | downcase | strip | remove: "{" | remove: "}" %}
+{% assign isCurrentMappingSelected = false %}
+
+{% for selectedMappingId in selectedMappingIds %}
+
+    {% assign normalizedSelectedMappingId = selectedMappingId | downcase | strip | remove: "{" | remove: "}" %}
+
+    {% if normalizedSelectedMappingId != "" and normalizedSelectedMappingId == normalizedCurrentMappingId %}
+        {% assign isCurrentMappingSelected = true %}
+    {% endif %}
+
+{% endfor %}
+{% assign mappingResultCount = 0 %}
+
+{% assign isCasesSelected = false %}
+{% assign isHandupsSelected = false %}
+{% assign isArticlesSelected = false %}
+{% assign isNewsSelected = false %}
+
+{% assign hasAnySelectedResultType = false %}
+
+{% if request.params['showcases'] == "true" %}
+    {% assign isCasesSelected = true %}
+    {% assign hasAnySelectedResultType = true %}
+{% endif %}
+
+{% if request.params['showhandups'] == "true" %}
+    {% assign isHandupsSelected = true %}
+    {% assign hasAnySelectedResultType = true %}
+{% endif %}
+
+{% if request.params['showarticles'] == "true" %}
+    {% assign isArticlesSelected = true %}
+    {% assign hasAnySelectedResultType = true %}
+{% endif %}
+
+{% if request.params['shownewsupdates'] == "true" %}
+    {% assign isNewsSelected = true %}
+    {% assign hasAnySelectedResultType = true %}
+{% endif %}
+
+{% comment %}
+If no Result Type checkbox is selected, Product/Category count
+defaults to Cases + Handups + Help Articles.
+
+News is not included in the default Product/Category total.
+{% endcomment %}
+
+{% if hasAnySelectedResultType == false %}
+    {% assign isCasesSelected = true %}
+    {% assign isHandupsSelected = true %}
+    {% assign isArticlesSelected = true %}
+    {% assign isNewsSelected = true %}
+{% endif %}
+
+{% if isCasesSelected %}
+    {% assign mappingResultCount = mappingResultCount | plus: mappingCaseCount %}
+{% endif %}
+
+{% if isHandupsSelected %}
+    {% assign mappingResultCount = mappingResultCount | plus: mappingHandupCount %}
+{% endif %}
+
+{% if isArticlesSelected %}
+    {% assign mappingResultCount = mappingResultCount | plus: mappingArticleCount %}
+{% endif %}
+
+{% if isNewsSelected %}
+    {% assign mappingResultCount = mappingResultCount | plus: mappingNewsCount %}
+{% endif %}         
+<label class="filter-item mapping-filter-item{% if mappingResultCount == 0 and isCurrentMappingSelected == false %} mapping-disabled{% endif %}">
+ 
+                    <input
+                        type="checkbox"
+                        class="mapping-checkbox"
+                        value="{{ mapping.cat_producttocategorymappingid | escape }}"
+                        data-categoryid="{{ mappingCategoryId | escape }}"
+                        data-productid="{{ mappingProductId | escape }}"
+                        {% if isCurrentMappingSelected %}
+    checked
+{% endif %}
+                        {% if mappingResultCount == 0 and isCurrentMappingSelected == false %}
+    disabled
+{% endif %}
+                    >
+ 
+                    <span class="mapping-title">
+                        {% if mapping.cat_name %}
+                            {{ mapping.cat_name | escape }}
+                        {% elsif mapping.cat_product.name and mapping.cat_category.name %}
+                            {{ mapping.cat_product.name | escape }}
+                            /
+                            {{ mapping.cat_category.name | escape }}
+                        {% elsif mapping.cat_product.name %}
+                            {{ mapping.cat_product.name | escape }}
+                        {% else %}
+                            {{ mapping.cat_category.name | escape }}
+                        {% endif %}
+                    </span>
+ 
+                    <span
+                        class="category-count"
+                        title="Articles: {{ mappingArticleCount }}, Cases: {{ mappingCaseCount }}, Handups: {{ mappingHandupCount }}, News: {{ mappingNewsCount }}"
+                    >
+                        {{ mappingResultCount }}
+                    </span>
+ 
+                </label>
+ 
+
+            {% endfor %}
+
+        {% else %}
+
+            <div class="filter-empty-message">
+                No Product to Category records are available.
+            </div>
+
+        {% endif %}
+
+    </div>
+</details>
+
+<div class="mobile-filter-footer">
+<a href="javascript:void(0)"
+      id="clearFiltersMobile"
+      class="clear-filters-mobile">
+       Clear All
+</a>
+<button id="applyFilterBtn" class="apply-filter-btn">
+       Apply
+</button>
+</div>
+
+</div>
+<div id="filterOverlay"></div>
+</div>
+               <!-- Filter by end -->
+               
+<div class="col-md-9" style="border-right: 1px solid #e5e5e5; padding-right: 20px; overflow-x: hidden; height: 89vh !important; overflow-y: auto; min-height: 500px; position: sticky; top: 20px;">   
+               <!-- <h1>Search Results</h1> -->
+                <h1 style="font-family:'RobotoCondensed';">
+    Search Results
+</h1>
+ 
+               <button id="mobileFilterBtn" class="mobile-filter-btn">
+               <i class="fa fa-filter"></i>
+               Filter By
+               </button>
+
+<div
+    id="searchResultSummary"
+    style="margin-bottom:20px; color:#777; font-family:'NotoSans';">                    <!-- {% assign total = totalCases | plus: totalArticles %} -->
+                     <!-- {% assign total = totalCases | plus: totalArticles | plus: totalNewsUpdates %} -->
+                    {% assign total = 0 %}
+
+{% assign isCasesSelectedForTotal = false %}
+{% assign isHandupsSelectedForTotal = false %}
+{% assign isArticlesSelectedForTotal = false %}
+{% assign hasAnySelectedTypeForTotal = false %}
+
+{% if request.params['showcases'] == "true" %}
+    {% assign isCasesSelectedForTotal = true %}
+    {% assign hasAnySelectedTypeForTotal = true %}
+{% endif %}
+
+{% if request.params['showhandups'] == "true" %}
+    {% assign isHandupsSelectedForTotal = true %}
+    {% assign hasAnySelectedTypeForTotal = true %}
+{% endif %}
+
+{% if request.params['showarticles'] == "true" %}
+    {% assign isArticlesSelectedForTotal = true %}
+    {% assign hasAnySelectedTypeForTotal = true %}
+{% endif %}
+
+{% comment %}
+News is intentionally not included in the top Search Results total.
+When no included Result Type is selected, use the default three types.
+{% endcomment %}
+
+{% if hasAnySelectedTypeForTotal == false %}
+    {% assign isCasesSelectedForTotal = true %}
+    {% assign isHandupsSelectedForTotal = true %}
+    {% assign isArticlesSelectedForTotal = true %}
+{% endif %}
+
+{% if isCasesSelectedForTotal %}
+    {% assign total = total | plus: totalCases %}
+{% endif %}
+
+{% if isHandupsSelectedForTotal %}
+    {% assign total = total | plus: totalHandups %}
+{% endif %}
+
+{% if isArticlesSelectedForTotal %}
+    {% assign total = total | plus: totalArticles %}
+{% endif %}
+                    Showing results for: <strong style="color: gold">"{{ searchText }}"</strong> ({{ total }} results)
+               </div>
+               <div id="gridLoading" class="grid-loading" hidden>
+<!-- Loading results... -->
+</div>
+<div id="searchGrid">
+
+{% comment %}
+  ADDITIVE HANDUP RESULTS BLOCK - ONE PLACE
+  Handup = Child Case where current Case has Parent Case and Elevation Type = (Dealer Consultation OR Dealer Customer Resolution)
+{% endcomment %}
+
+{% assign handupMode = request.params.mode %}
+{% assign handupActiveType = request.params.activeType | default: request.params.types %}
+{% assign handupPage = request.params.page | default: 1 %}
+
+{% assign isHandupViewAll = false %}
+{% if handupMode == 'viewAll' and handupActiveType == 'Handups' %}
+  {% assign isHandupViewAll = true %}
+{% endif %}
+
+<!-- {% assign handupFilterSelected = request.params['showhandups'] | default: 'false' %} -->
+{% assign handupFilterSelected = request.params['showhandups'] | default: '' %}
+
+{% assign hasAnyResultTypeParameter = false %}
+
+{% if request.params['showcases'] != nil %}
+    {% assign hasAnyResultTypeParameter = true %}
+{% endif %}
+
+{% if request.params['showhandups'] != nil %}
+    {% assign hasAnyResultTypeParameter = true %}
+{% endif %}
+
+{% if request.params['showarticles'] != nil %}
+    {% assign hasAnyResultTypeParameter = true %}
+{% endif %}
+
+{% if request.params['shownewsupdates'] != nil %}
+    {% assign hasAnyResultTypeParameter = true %}
+{% endif %}
+
+{% assign showHandupSection = false %}
+
+{% if user %}
+
+    {% comment %}
+    Initial search:
+    No Result Type parameter is present, so show Handups by default.
+    {% endcomment %}
+    {% if hasAnyResultTypeParameter == false %}
+        {% assign showHandupSection = true %}
+    {% endif %}
+
+    {% comment %}
+    Handups checkbox selected.
+    {% endcomment %}
+    {% if handupFilterSelected == "true" %}
+        {% assign showHandupSection = true %}
+    {% endif %}
+
+    {% comment %}
+    View All Handups page.
+    {% endcomment %}
+    {% if isHandupViewAll %}
+        {% assign showHandupSection = true %}
+    {% endif %}
+
+{% endif %}
+
+{% if isHandupViewAll %}
+
+{% fetchxml handupResults %}
+<fetch mapping="logical" no-lock="true" distinct="true" count="20" page="{{ handupPage }}">
+    <entity name="incident">
+
+        <attribute name="incidentid" />
+        <attribute name="ticketnumber" />
+        <attribute name="title" />
+        <attribute name="createdon" />
+        <attribute name="description" />
+        <attribute name="cat_requestedfrom" />
+        <attribute name="cat_helpcenterstatus" />
+        <attribute name="productid" />
+
+        <order attribute="createdon" descending="true" />
+
+        <filter type="and">
+
+            <!-- Keep your existing search condition here -->
+              {% if searchText %}
+        <filter type="or">
+          <condition attribute="ticketnumber" operator="like" value="%{{ searchText }}%" />
+          <condition attribute="title" operator="like" value="%{{ searchText }}%" />
+          <condition attribute="description" operator="like" value="%{{ searchText }}%" />
+        </filter>
+        {% endif %}
+
+            <!-- Handup must be a child Case -->
+            <condition attribute="parentcaseid" operator="not-null" />
+
+            <!-- Keep your existing Manual Elevation Type condition here -->
+             <filter type="or">
+              <condition attribute="cat_elevationtype" operator="eq" value="100000003" />
+              <condition attribute="cat_elevationtype" operator="eq" value="100000004" />
+              </filter>
+
+          {% if hasSelectedProducts %}
+<filter type="and">
+    {% if selectedHandupIdString != "" %}
+    <condition attribute="incidentid" operator="in">
+        {% for selectedHandupId in selectedHandupIdArray %}
+            {% assign cleanSelectedHandupId = selectedHandupId | downcase | strip | remove: "{" | remove: "}" %}
+            {% if cleanSelectedHandupId != "" %}
+            <value>{{ cleanSelectedHandupId | escape }}</value>
+            {% endif %}
+        {% endfor %}
+    </condition>
+    {% else %}
+    <condition attribute="incidentid" operator="null" />
+    {% endif %}
+</filter>
+{% endif %}
+
+        </filter>
+
+    </entity>
+</fetch>
+{% endfetchxml %}
+
+{% else %}
+
+{% fetchxml handupResults %}
+<fetch mapping="logical" no-lock="true" distinct="true" count="5">
+    <entity name="incident">
+
+        <attribute name="incidentid" />
+        <attribute name="ticketnumber" />
+        <attribute name="title" />
+        <attribute name="createdon" />
+        <attribute name="description" />
+        <attribute name="cat_requestedfrom" />
+        <attribute name="cat_helpcenterstatus" />
+        <attribute name="productid" />
+
+        <order attribute="createdon" descending="true" />
+
+        <filter type="and">
+
+            <!-- Keep your existing search condition here -->
+              {% if searchText %}
+        <filter type="or">
+          <condition attribute="ticketnumber" operator="like" value="%{{ searchText }}%" />
+          <condition attribute="title" operator="like" value="%{{ searchText }}%" />
+          <condition attribute="description" operator="like" value="%{{ searchText }}%" />
+        </filter>
+        {% endif %}
+
+            <!-- Handup must be a child Case -->
+            <condition attribute="parentcaseid" operator="not-null" />
+
+            <!-- Keep your existing Manual Elevation Type condition here -->
+             <filter type="or">
+              <condition attribute="cat_elevationtype" operator="eq" value="100000003" />
+              <condition attribute="cat_elevationtype" operator="eq" value="100000004" />
+              </filter>
+
+           {% if hasSelectedProducts %}
+<filter type="and">
+    {% if selectedHandupIdString != "" %}
+    <condition attribute="incidentid" operator="in">
+        {% for selectedHandupId in selectedHandupIdArray %}
+            {% assign cleanSelectedHandupId = selectedHandupId | downcase | strip | remove: "{" | remove: "}" %}
+            {% if cleanSelectedHandupId != "" %}
+            <value>{{ cleanSelectedHandupId | escape }}</value>
+            {% endif %}
+        {% endfor %}
+    </condition>
+    {% else %}
+    <condition attribute="incidentid" operator="null" />
+    {% endif %}
+</filter>
+{% endif %}
+
+        </filter>
+
+    </entity>
+</fetch>
+{% endfetchxml %}
+
+{% endif %}
+
+
+{% if showHandupSection and handupResults.results.entities.size > 0 %}
+
+<div id="handupResultsWrapper"
+     class="search-container handup-container"
+     style="margin-bottom:70px;">
+
+  <div class="results-header">
+    <h3>
+      {% if isHandupViewAll %}
+        All Handup Results
+      {% else %}
+        Handup Results
+      {% endif %}
+      ({{ totalHandups }})
+    </h3>
+  </div>
+
+  {% for handup in handupResults.results.entities %}
+
+  <div class="case-card handup-result-card"
+     style="cursor:pointer;"
+     data-url="/Handup-Details/?id={{ handup.incidentid }}&amp;from=search&amp;search={{ searchText | url_encode }}&amp;type=Handups&amp;status=">
+
+      <div class="case-number">
+         {{ handup.ticketnumber }}
+      </div>
+
+      <div class="case-title">
+        {{ handup.title }}
+      </div>
+
+      <div class="case-date">
+        {{ handup.createdon }}
+      </div>
+
+      <div class="case-customerid">
+         {{ handup.cat_requestedfrom.name }}
+      </div>
+
+      <div class="case-helpcenterstatus">
+        {{ handup.cat_helpcenterstatus.label }}
+      </div>
+
+      <div class="case-description">
+         {{ handup.description }}
+      </div>
+
+    </div>
+
+  {% endfor %}
+
+  {% if isHandupViewAll == false and totalHandups > 5 %}
+    <button type="button"
+            class="handup-viewall-btn"
+data-url="/search-results?search={{ searchText | url_encode }}&showcases=false&showarticles=false&showhandups=true&shownewsupdates=false&mappingids={{ request.params.mappingids | default: '' | url_encode }}&categoryids={{ request.params.categoryids | default: '' | url_encode }}&productids={{ request.params.productids | default: '' | url_encode }}&types=Handups&mode=viewAll&activeType=Handups"            onclick="window.location.href=this.getAttribute('data-url');">
+      View All Handups
+    </button>
+  {% endif %}
+
+  {% if isHandupViewAll %}
+    <div id="handupPaginationContainer"></div>
+    <input type="hidden" id="totalHandups" value="{{ totalHandups }}">
+  {% endif %}
+
+</div>
+
+{% elsif isHandupViewAll %}
+
+<div id="handupResultsWrapper"
+     class="search-container handup-container"
+     style="margin-bottom:70px;">
+
+  <div class="results-header">
+    <h3 style="font-family:'RobotoCondensed', sans-serif; font-weight:400;">
+
+    All Handup Results ({{ totalHandups }})
+
+</h3>
+
+ 
+    <!-- <h3>All Handup Results ({{ totalHandups }})</h3> -->
+  </div>
+
+  <div class="alert-info">
+    No Handup results found.
+  </div>
+
+</div>
+
+{% endif %}
+<!--news and updates block-->
+{% assign showNewsUpdates = request.params['shownewsupdates'] | default:'false' %}
+
+{% if showNewsUpdates == 'true' %}
+
+<div class="news-results search-container" style="margin-bottom:70px;">
+
+    <h3 style="font-family:'RobotoCondensed', sans-serif; font-weight:400;">
+        News & Updates Results ({{ totalNewsUpdates }})
+    </h3>
+
+    {% if newsupdates.results.entities.size > 0 %}
+
+        {% for news in newsupdates.results.entities %}
+
+<div class="case-card news-card">
+
+    <div class="news-title searchable-text">
+        {{ news.cat_title }}
+    </div>
+
+    <div class="news-date">
+        Published:
+        {{ news.cat_publisheddate | date: "MMM dd, yyyy" }}
+    </div>
+
+    {% fetchxml relatedProducts %}
+    <fetch distinct="true">
+        <entity name="product">
+            <attribute name="name" />
+            <attribute name="productnumber" />
+
+            <link-entity name="cat_newsupdates_product"
+                         from="productid"
+                         to="productid"
+                         intersect="true">
+                <link-entity name="cat_newsupdates"
+                             from="cat_newsupdatesid"
+                             to="cat_newsupdatesid">
+                    <filter type="and">
+                        <condition attribute="cat_newsupdatesid"
+                                   operator="eq"
+                                   value="{{ news.cat_newsupdatesid }}" />
+                    </filter>
+                </link-entity>
+            </link-entity>
+        </entity>
+    </fetch>
+    {% endfetchxml %}
+
+    {% if relatedProducts.results.entities.size > 0 %}
+    <div class="news-product">
+        <!-- <strong>Product:</strong> -->
+
+        {% for product in relatedProducts.results.entities %}
+            <span class="news-product-badge">
+                {{ product.name }}
+            </span>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if news.cat_description %}
+    <div class="news-description searchable-text">
+        {{ news.cat_description }}
+    </div>
+    {% endif %}
+
+</div>
+
+{% endfor %}
+
+    {% else %}
+
+        <div class="alert-info">
+            No News & Updates results found.
+        </div>
+
+    {% endif %}
+
+</div>
+
+{% endif %}
+
+
+
+<style>
+    /* count 0 prod :disabled */
+    .mapping-filter-item.mapping-disabled {
+    opacity: 0.45;
+}
+ 
+.mapping-filter-item.mapping-disabled .mapping-title,
+.mapping-filter-item.mapping-disabled .category-count {
+    cursor: not-allowed;
+}
+ 
+.mapping-checkbox:disabled {
+    cursor: not-allowed;
+}
+ 
+    /* news and update */
+    .news-product {
+    font-family: 'NotoSans', sans-serif;
+    font-size: 14px;
+    color: #333;
+    margin: 8px 0 0 0 !important;
+    padding: 0 !important;
+    line-height: 1.5;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.news-product-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: #e1e1e1;
+    color: #333;
+    font-size: 13px;
+    font-weight: 600;
+}
+    .news-results {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.news-card {
+    width: 100% !important;
+    box-sizing: border-box;
+    overflow: hidden;
+    padding: 18px !important;
+}
+
+.news-title {
+    font-family: 'NotoSans', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: #1f1f1f;
+    line-height: 1.4;
+    margin: 0 0 10px 0 !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+    word-break: normal;
+    overflow-wrap: break-word;
+}
+
+.news-date {
+    font-family: 'NotoSans', sans-serif;
+    font-size: 14px;
+    color: #333;
+    margin: 8px 0 0 0 !important;
+    padding: 0 !important;
+    line-height: 1.4;
+}
+
+.news-description {
+    font-family: 'NotoSans', sans-serif;
+    font-size: 14px;
+    color: #555;
+    margin: 10px 0 0 0 !important;
+    padding: 0 !important;
+    line-height: 1.5;
+    max-width: 100%;
+    overflow-wrap: break-word;
+}
+
+.news-tag {
+    margin: 8px 0 0 0 !important;
+    padding: 0 !important;
+}
+    /* news and update */
+    .search-result-text {
+        font-family: "RobotoCondensed";
+ 
+    }
+.handup-viewall-btn {
+    background: none !important;
+    border: none !important;
+    color: #0066CC !important;
+    padding: 10px 18px;
+    border-radius: 4px;
+    font-weight: 600;
+    display: inline-block;
+    margin-top: 5px;
+    margin-bottom: 70px;
+    cursor: pointer;
+    text-decoration: underline !important;
+    text-underline-offset: 3px;
+    font-size: inherit;
+    font-family: inherit;
+}
+
+.handup-viewall-btn:hover {
+    color: #0066CC !important;
+    text-decoration: underline !important;
+}
+</style>
+
+<script>
+function refreshHandupUI() {
+    bindHandupCardClicks();
+    renderHandupPagination();
+}
+ 
+function bindHandupCardClicks() {
+    document.querySelectorAll(".handup-result-card").forEach(function (card) {
+        card.addEventListener("click", function () {
+            var rightColumn = document.querySelector(".col-md-9");
+            var scrollValue = rightColumn ? rightColumn.scrollTop : window.scrollY;
+            sessionStorage.setItem("handupSearchReturnUrl", window.location.href);
+            sessionStorage.setItem("handupSearchScroll", scrollValue);
+            window.location.href = card.getAttribute("data-url");
+        });
+    });
+}
+ 
+function renderHandupPagination() {
+    var params = new URLSearchParams(window.location.search);
+    var mode = params.get("mode");
+    var activeType = params.get("activeType") || params.get("types");
+    var isHandupViewAll = (mode === "viewAll" && activeType === "Handups");
+ 
+    var paginationContainer = document.getElementById("handupPaginationContainer");
+    if (!isHandupViewAll || !paginationContainer) return;
+ 
+    var pageSize = 20;
+    var totalRecords = parseInt(document.getElementById("totalHandups")?.value || "0", 10);
+    var currentPage = parseInt(params.get("page") || "1", 10);
+    var searchText = encodeURIComponent(params.get("search") || "");
+ 
+    if (!totalRecords) { paginationContainer.innerHTML = ""; return; }
+ 
+    var totalPages = Math.ceil(totalRecords / pageSize);
+    var startRecord = ((currentPage - 1) * pageSize) + 1;
+    var endRecord = Math.min(currentPage * pageSize, totalRecords);
+ 
+    function pageUrl(page) {
+        return "/search-results?search=" + searchText + "&types=Handups&mode=viewAll&activeType=Handups&page=" + page;
+    }
+ 
+    var html = '<div class="pagination-container"><div class="pagination-left">Viewing ' +
+        startRecord + ' - ' + endRecord + ' of ' + totalRecords + '</div><div class="pagination-right-controls">';
+ 
+    html += currentPage > 1
+        ? '<a class="pagination-button" href="' + pageUrl(currentPage - 1) + '">&#8249;</a>'
+        : '<span class="pagination-button disabled">&#8249;</span>';
+ 
+    function addPage(page) {
+        html += '<a class="pagination-page-number ' + (page === currentPage ? "active" : "") +
+            '" href="' + pageUrl(page) + '">' + page + '</a>';
+    }
+ 
+    addPage(1);
+    if (currentPage > 3) html += '<span class="pagination-ellipsis">...</span>';
+    for (var i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) addPage(i);
+    if (currentPage < totalPages - 2) html += '<span class="pagination-ellipsis">...</span>';
+    if (totalPages > 1) addPage(totalPages);
+ 
+    html += currentPage < totalPages
+        ? '<a class="pagination-button" href="' + pageUrl(currentPage + 1) + '">&#8250;</a>'
+        : '<span class="pagination-button disabled">&#8250;</span>';
+ 
+    html += '</div></div>';
+    paginationContainer.innerHTML = html;
+}
+ 
+document.addEventListener("DOMContentLoaded", function () {
+    refreshHandupUI();
+ 
+    var savedHandupScroll = sessionStorage.getItem("handupSearchScroll");
+    if (savedHandupScroll !== null) {
+        var rightColumnForScroll = document.querySelector(".col-md-9");
+        setTimeout(function () {
+            if (rightColumnForScroll) rightColumnForScroll.scrollTop = parseInt(savedHandupScroll, 10);
+            else window.scrollTo(0, parseInt(savedHandupScroll, 10));
+            sessionStorage.removeItem("handupSearchScroll");
+        }, 300);
+    }
+});
+ 
+document.addEventListener("searchGridUpdated", refreshHandupUI); // ← the fix
+</script>
+ 
+
+              {% if caseResults.results.entities.size > 0 or helpArticles.results.entities.size > 0 or handupResults.results.entities.size > 0 or newsupdates.results.entities.size > 0 %}
+               {% if showCases == 'true' and caseResults.results.entities.size > 0 and mode != 'viewallarticles' %}
+
+
+               <div class="search-container" style="margin-bottom: 70px;">
+               <!-- <div class="case-container" style="margin-bottom: 50px;"> -->
+               <div class="results-header">
+                    <!-- <h3> Case Results ({{ totalCases }}) </h3> -->
+                     <h3 style="font-family:'RobotoCondensed', sans-serif; font-weight:400;">
+    Case Results ({{ totalCases }})
+</h3>
+ 
+               </div>
+               
+                    <!-- {% for case in caseResults.results.entities %}
+                    <div class="case-card">
+                         <div class="case-number">
+                              <a href="/case-details?id={{ case.incidentid }}"> 
+                                   {{ case.ticketnumber }}
+                              </a>
+                         </div>
+                         <div class="case-title">
+                               {{ case.title }}
+                         </div>
+                         <div class="case-date">
+                               {{ case.createdon }}
+                         </div>
+                         <div class="case-customerid">
+                            {{ case.cat_requestedfrom.name }}
+                            
+                         </div>
+                         <div class="case-helpcenterstatus">
+                             {{ case.cat_helpcenterstatus.label }}
+                         </div>
+                         <div class="case-description">
+                             {{ case.description }}
+                         </div>
+                    </div>
+                    {% endfor %} -->
+                    {% for case in caseResults.results.entities %}
+                       
+                    <div class="case-card">
+                        <!-- <a href="/case-details?id={{ case.incidentid }}">  -->
+                            <!-- <a href="/case-details?id={{ case.incidentid }}&from=search"> -->
+                                <a href="/case-details?id={{ case.incidentid }}&from=search&search={{ request.params.search }}&type={{ request.params.type }}&status={{ request.params.status }}">
+ 
+                        
+                         <div class="case-number">
+                                 {{ case.ticketnumber }}
+                         </div>
+                         <div class="case-title">
+                              {{ case.title }}
+                         </div>
+                         <div class="case-date">
+                              {{ case.createdon }}
+                         </div>
+                         <div class="case-customerid">
+                              {{ case.cat_requestedfrom.name }}
+                         </div>
+                         <div class="case-helpcenterstatus">
+                             {{ case.cat_helpcenterstatus.label }}
+                         </div>
+                         <div class="case-description">
+                             {{ case.description }}
+                         </div>
+                          </a>
+                    </div>
+                    {% endfor %}
+                    
+               {% if mode != 'viewallcases' and totalCases > 5 and mode != 'viewallarticles' %}
+               <a class="viewall-btn" href="/search-results?search={{ searchText }}&mode=viewallcases">
+                    View All Cases
+               </a>
+               {% endif %}
+
+               {% if mode == 'viewallcases' %}
+               <div id="paginationContainer"></div>
+               <input type="hidden" id="totalCases" value="{{ totalCases }}">
+               {% endif %}
+
+               {% endif %}
+               <!-- </div> --> 
+
+
+               {% if showArticles == 'true' and mode != 'viewallcases' %}
+<div class="article-container" style="margin-bottom: 70px;">
+          
+    <h3 style="font-family:'RobotoCondensed', sans-serif; font-weight:400;">
+        Help Article Results ({{ totalArticles }})
+    </h3>
+
+    {% if helpArticles.results.entities.size > 0 %}
+
+               <!--hidden ai data-->
+              
+
+
+<div id="summaryArticleIds" style="display:none;">
+    {% for article in helpArticles.results.entities %}
+        <span class="summary-article-id"
+              data-id="{{ article.knowledgearticleid | escape }}">
+        </span>
+    {% endfor %}
+</div>
+
+<input type="hidden"
+       id="searchKeyword"
+       value="{{ searchText | default: '' | escape }}" />
+
+<input type="hidden"
+       id="personaValue"
+       value="{{ personaValue | default: '' | escape }}" />
+
+               <!--ai summary block st-->
+               <!-- <div class="ai-summary-card">
+ 
+    <div class="ai-summary-header">
+ 
+        <div class="ai-summary-title">
+ 
+            <span class="ai-icon">✨</span>
+ 
+            <span>Summarized by AI</span>
+ 
+        </div>
+ 
+        <div class="ai-summary-actions">
+ 
+            <button id="copySummaryBtn" class="icon-btn" title="Copy Summary" style="display:none;">
+                <svg width="16" height="16" viewBox="0 0 16 16">
+                    <rect x="5" y="3" width="8" height="10" rx="1"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.5"/>
+                    <rect x="3" y="1" width="8" height="10" rx="1"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.5"/>
+                </svg>
+            </button>
+ 
+<span id="copiedMessage" style="display:none;">Copied</span>
+ 
+ 
+           <button id="toggleSummaryBtn" class="icon-btn">
+ 
+    <svg id="chevronIcon"
+         class="chevron-expanded"
+         width="16"
+         height="16"
+         viewBox="0 0 16 16">
+ 
+        <path d="M3 10 L8 5 L13 10"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"/>
+ 
+    </svg>
+ 
+</button>
+ 
+ 
+        </div>
+ 
+    </div>
+ 
+ 
+ <div id="summaryContentWrapper">
+
+    <div class="summaryMatchedArticles">
+
+      
+
+    </div>
+
+    <div id="summaryLoading">
+        Generating summary...
+    </div>
+
+    <div id="summaryResult"></div>
+
+    <div class="summary-footer">
+        AI-generated content may be incorrect
+    </div>
+
+</div>
+</div> -->
+{% assign aiSearchKeyword = request.params['search'] | default: '' | strip %}
+
+{% if aiSearchKeyword != '' %}
+<div class="ai-summary-card">
+
+    <div class="ai-summary-header">
+
+        <div class="ai-summary-title">
+            <span class="ai-icon">✨</span>
+            <span>Summarized by AI</span>
+        </div>
+
+        <div class="ai-summary-actions">
+
+            <button
+                id="copySummaryBtn"
+                class="icon-btn"
+                type="button"
+                title="Copy summary"
+                aria-label="Copy summary"
+                style="display: none;"
+            >
+                <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 16 16"
+                    aria-hidden="true"
+                >
+                    <rect
+                        x="5"
+                        y="3"
+                        width="8"
+                        height="10"
+                        rx="1"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                    ></rect>
+
+                    <rect
+                        x="3"
+                        y="1"
+                        width="8"
+                        height="10"
+                        rx="1"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                    ></rect>
+                </svg>
+            </button>
+
+            <span id="copiedMessage" style="display: none;">
+                Copied
+            </span>
+
+            <button
+                id="toggleSummaryBtn"
+                class="icon-btn"
+                type="button"
+                title="Expand AI summary"
+                aria-label="Expand or collapse AI summary"
+                aria-expanded="false"
+                aria-controls="summaryContentWrapper"
+            >
+                <svg
+                    id="chevronIcon"
+                    class="chevron-collapsed"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 16 16"
+                    aria-hidden="true"
+                >
+                    <!-- Down arrow for the initial collapsed state -->
+                    <path
+                        d="M3 6 L8 11 L13 6"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    ></path>
+                </svg>
+            </button>
+
+        </div>
+    </div>
+
+    <div id="summaryContentWrapper" style="display: none;">
+
+        <div class="summaryMatchedArticles"></div>
+
+        <div id="summaryLoading" style="display: none;">
+            Generating summary...
+        </div>
+
+        <div id="summaryResult"></div>
+
+        <div class="summary-footer">
+            <!-- AI-generated content may be incorrect -->
+              {{ snippets['CAT_Error_AiIncorrect'] }}
+        </div>
+
+    </div>
+</div>
+{% endif %}
+               <!--ai summary end-->
+               <div class="article-results">
+
+               {% for article in helpArticles.results.entities %}
+               {% assign showArticle = true %}
+               {% if showArticle %}
+               
+               <div class="case-card">
+
+               <!-- <a href="/Knowledge-Article-Details?articleId={{ article.knowledgearticleid }}" class="card-link"></a> -->
+                <a href="/Knowledge-Article-Details?articleId={{ article.knowledgearticleid }}&from=search&search={{ request.params.search }}&type={{ request.params.type }}&status={{ request.params.status }}" class="card-link"></a>
+
+
+               <div class="article-title searchable-text" style="margin-left: 0px;">
+               
+                         {{ article.title }}
+               <!-- </a> -->
+               </div>
+
+                <!-- Tag Logic Starts -->
+            <div class="article-tag">
+              {% fetchxml articleCategories %}
+              <fetch top="1">
+                <entity name="category">
+                  <attribute name="title" />
+                  <attribute name="categoryid" />
+                  <attribute name="parentcategoryid" />
+                  <link-entity name="knowledgearticlescategories" intersect="true" from="categoryid" to="categoryid">
+                    <filter>
+                      <condition attribute="knowledgearticleid" operator="eq"
+                        value="{{ article.knowledgearticleid }}" />
+                    </filter>
+                  </link-entity>
+                </entity>
+              </fetch>
+              {% endfetchxml %}
+              {% assign printedTags = "|" %}
+              {% for cat in articleCategories.results.entities %}
+              {% if cat.parentcategoryid == nil %}
+              {% assign tagName = cat.title %}
+              {% unless printedTags contains tagName %}
+              <span class="kb-category-badge">
+                {{ tagName }}
+              </span>
+              {% assign printedTags = printedTags | append: tagName | append: "|" %}
+              {% endunless %}
+              {% else %}
+              {% fetchxml parentCategory %}
+              <fetch top="1">
+                <entity name="category">
+                  <attribute name="title" />
+                  <attribute name="parentcategoryid" />
+                  <filter>
+                    <condition attribute="categoryid" operator="eq" value="{{ cat.parentcategoryid.id }}" />
+                  </filter>
+                </entity>
+              </fetch>
+              {% endfetchxml %}
+              {% assign parent = parentCategory.results.entities[0] %}
+              {% if parent.parentcategoryid == nil %}
+              {% assign tagName = parent.title %}
+              {% unless printedTags contains tagName %}
+              <span class="kb-category-badge">
+                {{ tagName }}
+              </span>
+              {% assign printedTags = printedTags | append: tagName | append: "|" %}
+              {% endunless %}
+              {% else %}
+              {% fetchxml grandParentCategory %}
+              <fetch top="1">
+                <entity name="category">
+                  <attribute name="title" />
+                  <filter>
+                    <condition attribute="categoryid" operator="eq" value="{{ parent.parentcategoryid.id }}" />
+                  </filter>
+                </entity>
+              </fetch>
+              {% endfetchxml %}
+              {% assign tagName = grandParentCategory.results.entities[0].title %}
+              {% unless printedTags contains tagName %}
+              <span class="kb-category-badge">
+                {{ tagName }}
+              </span>
+              {% assign printedTags = printedTags | append: tagName | append: "|" %}
+              {% endunless %}
+              {% endif %}
+              {% endif %}
+              {% endfor %}
+            </div>
+            <!-- Tag Logic Ends -->
+
+               <div class="article-views">
+                <i class="fa fa-eye"></i>
+                {{ article.knowledgearticleviews }}
+              </div>
+
+               <div class="article-number">
+
+                         {{ article.articlepublicnumber }}
+               </div>
+               <div class="article-desc searchable-text">
+
+                         {{ article.description }}
+               </div>
+               </div>
+               {% endif %}
+              {% endfor %}
+</div>
+
+{% else %}
+
+<div class="alert-info">
+    No Articles found.
+</div>
+
+{% endif %}
+               {% if mode != 'viewallarticles' and mode != 'viewallcases' and totalArticles > 5 %}
+               <a class="viewallarticle-btn"
+               href="/search-results?search={{ searchText }}&mode=viewallarticles">
+               View All Articles
+               </a>
+               {% endif %}
+               {% if mode == 'viewallarticles' %}
+               <div id="articlePaginationContainer"></div>
+               <input type="hidden" id="totalArticles" value="{{ totalArticles }}">
+               {% endif %}
+
+               {% endif %}
+
+ 
+
+               </div>
+               </div>
+          
+             
+                
+
+   {% else %}
+
+      {% assign noAccessCount = noAccess.results.entities | size %}
+
+    {% if noAccessCount > 0 %}
+       <div class="alert-info">
+               You don’t have access to any cases matching this ticket number.   
+        </div>
+     
+        {% else %}
+        <div class="alert-info">
+             No Results Found!
+             </div>
+             {% fetchxml popularArticles %}
+                <fetch distinct="true">
+                <entity name="knowledgearticle">
+                    <attribute name="knowledgearticleid" />
+                    <attribute name="title" />
+                    <attribute name="description" />
+                    <attribute name="articlepublicnumber" />
+                    <attribute name="knowledgearticleviews" />
+                    <order attribute="knowledgearticleviews" descending="true" />
+                    <filter type="and">
+                        <condition attribute="statecode" operator="eq" value="3" />
+                        <condition attribute="cat_ispublicfacing" operator="eq" value="1" />
+                        <!-- Add your persona filter here exactly as used in helpArticles -->
+                        <condition attribute="cat_persona" operator="contain-values">
+                            <value>{{ personaValue }}</value>
+                        </condition>
+                    </filter>
+                    
+                </entity>
+                </fetch>
+            {% endfetchxml %}
+
+
+{% if popularArticles.results.entities.size > 0 %}
+
+<div class="article-container" style="margin-top:30px;">
+    <h3 style="font-family:'RobotoCondensed', sans-serif; font-weight:400;">Most Popular Articles</h3>
+
+    {% for article in popularArticles.results.entities %}
+    <!--<div class="case-card"> -->
+        <div class="case-card {% if forloop.index > 5 %}hidden-article{% endif %}">
+            <!-- <a href="/Knowledge-Article-Details?articleId={{ article.knowledgearticleid }}" class="card-link"></a> -->
+            <a href="/Knowledge-Article-Details?articleId={{ article.knowledgearticleid }}&from=search&search={{ request.params.search }}&type={{ request.params.type }}&status={{ request.params.status }}" class="card-link"></a>
+
+            <div class="article-title searchable-text" style="margin-left: 0px;">{{ article.title }}</div>
+
+                <!-- Tag Logic Starts -->
+            <div class="article-tag">
+              {% fetchxml articleCategories %}
+              <fetch top="1">
+                <entity name="category">
+                  <attribute name="title" />
+                  <attribute name="categoryid" />
+                  <attribute name="parentcategoryid" />
+                  <link-entity name="knowledgearticlescategories" intersect="true" from="categoryid" to="categoryid">
+                    <filter>
+                      <condition attribute="knowledgearticleid" operator="eq"
+                        value="{{ article.knowledgearticleid }}" />
+                    </filter>
+                  </link-entity>
+                </entity>
+              </fetch>
+              {% endfetchxml %}
+              {% assign printedTags = "|" %}
+              {% for cat in articleCategories.results.entities %}
+              {% if cat.parentcategoryid == nil %}
+              {% assign tagName = cat.title %}
+              {% unless printedTags contains tagName %}
+              <span class="kb-category-badge">
+                {{ tagName }}
+              </span>
+              {% assign printedTags = printedTags | append: tagName | append: "|" %}
+              {% endunless %}
+              {% else %}
+              {% fetchxml parentCategory %}
+              <fetch top="1">
+                <entity name="category">
+                  <attribute name="title" />
+                  <attribute name="parentcategoryid" />
+                  <filter>
+                    <condition attribute="categoryid" operator="eq" value="{{ cat.parentcategoryid.id }}" />
+                  </filter>
+                </entity>
+              </fetch>
+              {% endfetchxml %}
+              {% assign parent = parentCategory.results.entities[0] %}
+              {% if parent.parentcategoryid == nil %}
+              {% assign tagName = parent.title %}
+              {% unless printedTags contains tagName %}
+              <span class="kb-category-badge">
+                {{ tagName }}
+              </span>
+              {% assign printedTags = printedTags | append: tagName | append: "|" %}
+              {% endunless %}
+              {% else %}
+              {% fetchxml grandParentCategory %}
+              <fetch top="1">
+                <entity name="category">
+                  <attribute name="title" />
+                  <filter>
+                    <condition attribute="categoryid" operator="eq" value="{{ parent.parentcategoryid.id }}" />
+                  </filter>
+                </entity>
+              </fetch>
+              {% endfetchxml %}
+              {% assign tagName = grandParentCategory.results.entities[0].title %}
+              {% unless printedTags contains tagName %}
+              <span class="kb-category-badge">
+                {{ tagName }}
+              </span>
+              {% assign printedTags = printedTags | append: tagName | append: "|" %}
+              {% endunless %}
+              {% endif %}
+              {% endif %}
+              {% endfor %}
+            </div>
+            <!-- Tag Logic Ends -->
+
+               <div class="article-views">
+                <i class="fa fa-eye"></i>
+                {{ article.knowledgearticleviews }}
+              </div>
+
+               <div class="article-number">
+
+                         {{ article.articlepublicnumber }}
+               </div>
+               <div class="article-desc searchable-text">
+
+                         {{ article.description }}
+               </div>
+               </div>
+
+    {% endfor %}
+    {% if popularArticles.results.entities.size > 5 %}
+    <div class="show-more-container">
+        <a hrefipt:void(0); id="showRemainingArticles">View All Articles</a>
+    </div>
+{% endif %}
+
+
+
+</div>
+
+{% endif %}
+
+
+       {% endif %}
+               {% endif %}
+               
+               </div>
+               <!--new-->
+               <script>
+(function () {
+    "use strict";
+
+    var activeRequest = null;
+    var filterTimer = null;
+    var isUpdatingGrid = false;
+
+    /*
+     * =====================================================
+     * BASIC HELPERS
+     * =====================================================
+     */
+
+    function getCurrentParams() {
+        return new URLSearchParams(window.location.search);
+    }
+
+    function getResultTypeCheckbox(value) {
+        return document.querySelector(
+            '.result-type-checkbox[value="' + value + '"]'
+        );
+    }
+
+    function isResultTypeChecked(value) {
+        var checkbox = getResultTypeCheckbox(value);
+
+        return Boolean(checkbox && checkbox.checked);
+    }
+
+function getSelectedMappingIds() {
+    var selectedIds = [];
+
+    document
+        .querySelectorAll(".mapping-checkbox:checked")
+        .forEach(function (checkbox) {
+            var mappingId =
+                (checkbox.value || "").trim();
+
+            if (
+                mappingId &&
+                selectedIds.indexOf(mappingId) === -1
+            ) {
+                selectedIds.push(mappingId);
+            }
+        });
+
+    return selectedIds;
+}
+
+function getSelectedCategoryIds() {
+    var selectedIds = [];
+
+    document
+        .querySelectorAll(".mapping-checkbox:checked")
+        .forEach(function (checkbox) {
+            var categoryId =
+                (
+                    checkbox.getAttribute(
+                        "data-categoryid"
+                    ) || ""
+                ).trim();
+
+            if (
+                categoryId &&
+                selectedIds.indexOf(categoryId) === -1
+            ) {
+                selectedIds.push(categoryId);
+            }
+        });
+
+    return selectedIds;
+}
+
+function getSelectedProductIds() {
+    var selectedIds = [];
+
+    document
+        .querySelectorAll(".mapping-checkbox:checked")
+        .forEach(function (checkbox) {
+            var productId =
+                (
+                    checkbox.getAttribute(
+                        "data-productid"
+                    ) || ""
+                ).trim();
+
+            if (
+                productId &&
+                selectedIds.indexOf(productId) === -1
+            ) {
+                selectedIds.push(productId);
+            }
+        });
+
+    return selectedIds;
+}
+
+/*
+ * =====================================================
+ * AUTO SELECT PRODUCT / CATEGORY FROM ?product=
+ * =====================================================
+ */
+
+function normalizeGuid(value) {
+    return String(value || "")
+        .replace(/[{}]/g, "")
+        .trim()
+        .toLowerCase();
+}
+
+function autoSelectProductFromUrl() {
+
+    var params = getCurrentParams();
+
+    /*
+     * Only auto-select when the friendly product
+     * parameter exists in the URL.
+     */
+    var productParameter = (
+        params.get("product") || ""
+    ).trim();
+
+    if (!productParameter) {
+        return;
+    }
+
+
+    /*
+     * Product / Category GUIDs are resolved by the
+     * global CAT GA script.
+     */
+    var productId = normalizeGuid(
+        window.CAT_GA_ProductID ||
+        sessionStorage.getItem("CAT_GA_ProductID")
+    );
+
+    var categoryId = normalizeGuid(
+        window.CAT_GA_CategoryID ||
+        sessionStorage.getItem("CAT_GA_CategoryID")
+    );
+
+
+    /*
+     * GUID resolution may still be running.
+     */
+    if (!productId || !categoryId) {
+        return false;
+    }
+
+
+    /*
+     * If the Search Results URL already contains
+     * mappingids/productids/categoryids, respect the
+     * user's existing filter selection.
+     */
+    if (
+        params.has("mappingids") ||
+        params.has("productids") ||
+        params.has("categoryids")
+    ) {
+        return true;
+    }
+
+
+    var mappingCheckboxes =
+        document.querySelectorAll(
+            ".mapping-checkbox"
+        );
+
+    var matchingCheckbox = null;
+
+
+    mappingCheckboxes.forEach(
+        function (checkbox) {
+
+            if (matchingCheckbox) {
+                return;
+            }
+
+            var checkboxProductId =
+                normalizeGuid(
+                    checkbox.getAttribute(
+                        "data-productid"
+                    )
+                );
+
+            var checkboxCategoryId =
+                normalizeGuid(
+                    checkbox.getAttribute(
+                        "data-categoryid"
+                    )
+                );
+
+
+            /*
+             * Match BOTH:
+             *
+             * Product GUID
+             * Category GUID
+             */
+            if (
+                checkboxProductId === productId &&
+                checkboxCategoryId === categoryId
+            ) {
+                matchingCheckbox = checkbox;
+            }
+        }
+    );
+
+
+    if (!matchingCheckbox) {
+
+        console.warn(
+            "CAT Search: No Product/Category checkbox found for:",
+            {
+                productId: productId,
+                categoryId: categoryId
+            }
+        );
+
+        return true;
+    }
+
+
+    /*
+     * Select the Product / Category.
+     */
+    matchingCheckbox.checked = true;
+
+
+    /*
+     * Build parameters using your EXISTING
+     * Search Results filter logic.
+     */
+    var newParams = buildFilterParams();
+
+
+    console.log(
+        "CAT Search: Auto-selected mapping:",
+        {
+            mappingId: matchingCheckbox.value,
+            productId: productId,
+            categoryId: categoryId
+        }
+    );
+
+
+    /*
+     * Refresh Search Results using your existing
+     * AJAX grid refresh.
+     */
+    refreshSearchGrid(
+        newParams,
+        {
+            updateUrl: true,
+            replaceUrl: true
+        }
+    );
+
+
+    updateClearAllState();
+
+    return true;
+}
+
+   function removeOldViewAndPageParams(params) {
+        params.delete("mode");
+        params.delete("types");
+        params.delete("activeType");
+        params.delete("page");
+        params.delete("articlepage");
+        params.delete("casepage");
+        params.delete("handuppage");
+        params.delete("newspage");
+    }
+
+    /*
+     * =====================================================
+     * BUILD URL PARAMETERS FROM CURRENT FILTERS
+     * =====================================================
+     */
+function buildFilterParams() {
+    var params = getCurrentParams();
+
+    var selectedMappingIds =
+        getSelectedMappingIds();
+
+    var selectedCategoryIds =
+        getSelectedCategoryIds();
+
+    var selectedProductIds =
+        getSelectedProductIds();
+
+    if (selectedMappingIds.length > 0) {
+        params.set(
+            "mappingids",
+            selectedMappingIds.join(",")
+        );
+    } else {
+        params.delete("mappingids");
+    }
+
+    if (selectedCategoryIds.length > 0) {
+        params.set(
+            "categoryids",
+            selectedCategoryIds.join(",")
+        );
+    } else {
+        params.delete("categoryids");
+    }
+
+    if (selectedProductIds.length > 0) {
+        params.set(
+            "productids",
+            selectedProductIds.join(",")
+        );
+    } else {
+        params.delete("productids");
+    }
+
+   params.delete("resultids");
+ 
+var anyResultTypeChecked =
+    isResultTypeChecked("cases") ||
+    isResultTypeChecked("handups") ||
+    isResultTypeChecked("articles") ||
+    isResultTypeChecked("newsupdates");
+ 
+if (anyResultTypeChecked) {
+    params.set("showcases", String(isResultTypeChecked("cases")));
+    params.set("showarticles", String(isResultTypeChecked("articles")));
+    params.set("showhandups", String(isResultTypeChecked("handups")));
+    params.set("shownewsupdates", String(isResultTypeChecked("newsupdates")));
+} else {
+    params.delete("showcases");
+    params.delete("showarticles");
+    params.delete("showhandups");
+    params.delete("shownewsupdates");
+}
+ 
+removeOldViewAndPageParams(params);
+ 
+   
+
+    return params;
+}
+
+   /*
+     * =====================================================
+     * REFRESH ONLY THE SEARCH GRID
+     * =====================================================
+     */
+
+    async function refreshSearchGrid(params, options) {
+        options = options || {};
+
+        var currentGrid =
+            document.getElementById("searchGrid");
+
+        var loading =
+            document.getElementById("gridLoading");
+
+        if (!currentGrid) {
+            console.error(
+                "Grid refresh failed: #searchGrid not found."
+            );
+            return;
+        }
+
+        var requestUrl =
+            new URL(window.location.href);
+
+        if (params instanceof URLSearchParams) {
+            requestUrl.search = params.toString();
+        } else if (params instanceof URL) {
+            requestUrl.search = params.search;
+        } else if (typeof params === "string") {
+            var parsedUrl = new URL(
+                params,
+                window.location.origin
+            );
+
+            requestUrl.search = parsedUrl.search;
+        }
+
+        /*
+         * Cancel the previous request if another filter
+         * is selected before it completes.
+         */
+        if (activeRequest) {
+            activeRequest.abort();
+        }
+
+        var requestController =
+            new AbortController();
+
+        activeRequest = requestController;
+        isUpdatingGrid = true;
+
+        try {
+            currentGrid.classList.add(
+                "grid-refreshing"
+            );
+
+            currentGrid.setAttribute(
+                "aria-busy",
+                "true"
+            );
+
+            if (loading) {
+                loading.hidden = false;
+            }
+
+            removeGridError();
+
+            var response = await fetch(
+                requestUrl.toString(),
+                {
+                    method: "GET",
+                    credentials: "same-origin",
+                    cache: "no-store",
+                    headers: {
+                        "X-Requested-With":
+                            "XMLHttpRequest"
+                    },
+                    signal: requestController.signal
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(
+                    "Grid request failed. HTTP status: " +
+                    response.status
+                );
+            }
+
+            var responseHtml =
+                await response.text();
+
+            var newDocument =
+                new DOMParser().parseFromString(
+                    responseHtml,
+                    "text/html"
+                );
+
+            var newGrid =
+                newDocument.getElementById(
+                    "searchGrid"
+                );
+
+            if (!newGrid) {
+                throw new Error(
+                    "#searchGrid not found in fetched response."
+                );
+            }
+
+            /*
+             * Only grid content is replaced.
+             */
+            currentGrid.innerHTML =
+                newGrid.innerHTML;
+
+            /*
+             * Update result summary if available.
+             */
+            updateSearchSummary(newDocument);
+
+            /*
+             * Update left-navigation result counts.
+             */
+            updateResultTypeCounts(newDocument);
+            updateMappingFilterValues(newDocument);
+            updateClearAllState();
+
+            /*
+             * Change URL without refreshing the page.
+             */
+            if (options.updateUrl !== false) {
+                var browserUrl =
+                    requestUrl.pathname +
+                    requestUrl.search;
+
+                if (options.replaceUrl === true) {
+                    window.history.replaceState(
+                        {},
+                        "",
+                        browserUrl
+                    );
+                } else {
+                    window.history.pushState(
+                        {},
+                        "",
+                        browserUrl
+                    );
+                }
+            }
+
+            /*
+             * Reset AI summary because article results
+             * may have changed.
+             */
+            resetAiSummary();
+
+            /*
+             * Run a custom event after grid update.
+             */
+            document.dispatchEvent(
+                new CustomEvent(
+                    "searchGridUpdated",
+                    {
+                        detail: {
+                            url: requestUrl.toString()
+                        }
+                    }
+                )
+            );
+
+        } catch (error) {
+            if (error.name === "AbortError") {
+                return;
+            }
+
+            console.error(
+                "Unable to refresh search grid:",
+                error
+            );
+
+            showGridError(
+                "Unable to refresh results. Please try again."
+            );
+
+        } finally {
+            if (
+                activeRequest === requestController
+            ) {
+                currentGrid.classList.remove(
+                    "grid-refreshing"
+                );
+
+                currentGrid.setAttribute(
+                    "aria-busy",
+                    "false"
+                );
+
+                if (loading) {
+                    loading.hidden = true;
+                }
+
+                activeRequest = null;
+                isUpdatingGrid = false;
+            }
+        }
+    }
+
+    /*
+     * =====================================================
+     * UPDATE SUMMARY AND COUNTS
+     * =====================================================
+     */
+
+    function updateSearchSummary(newDocument) {
+        var currentSummary =
+            document.getElementById(
+                "searchResultSummary"
+            );
+
+        var newSummary =
+            newDocument.getElementById(
+                "searchResultSummary"
+            );
+
+        if (currentSummary && newSummary) {
+            currentSummary.innerHTML =
+                newSummary.innerHTML;
+        }
+    }
+
+    function updateResultTypeCounts(newDocument) {
+        var resultTypes = [
+            "cases",
+            "handups",
+            "articles",
+            "newsupdates"
+        ];
+
+        resultTypes.forEach(function (resultType) {
+            var newCheckbox =
+                newDocument.querySelector(
+                    '.result-type-checkbox[value="' +
+                    resultType +
+                    '"]'
+                );
+
+            var currentCheckbox =
+                document.querySelector(
+                    '.result-type-checkbox[value="' +
+                    resultType +
+                    '"]'
+                );
+
+            if (!newCheckbox || !currentCheckbox) {
+                return;
+            }
+
+            var newFilterItem =
+                newCheckbox.closest(".filter-item");
+
+            var currentFilterItem =
+                currentCheckbox.closest(
+                    ".filter-item"
+                );
+
+            var newCount = newFilterItem
+                ? newFilterItem.querySelector(
+                    ".filter-count"
+                )
+                : null;
+
+            var currentCount =
+                currentFilterItem
+                    ? currentFilterItem.querySelector(
+                        ".filter-count"
+                    )
+                    : null;
+
+            if (newCount && currentCount) {
+                currentCount.textContent =
+                    newCount.textContent.trim();
+            }
+        });
+    }
+
+    function updateMappingFilterValues(newDocument) {
+    var currentMappingValues =
+        document.getElementById("mappingFilterValues");
+
+    var newMappingValues =
+        newDocument.getElementById("mappingFilterValues");
+
+    if (!currentMappingValues || !newMappingValues) {
+        return;
+    }
+
+    currentMappingValues.innerHTML =
+        newMappingValues.innerHTML;
+}
+    /*
+     * =====================================================
+     * FILTER CHANGE
+     * =====================================================
+     */
+
+  function applyCurrentFilters() {
+    var params = buildFilterParams();
+
+    refreshSearchGrid(params, {
+        updateUrl: true
+    });
+}
+function handleFilterChange(event) {
+    var changedCheckbox = event.target.closest(
+        ".result-type-checkbox, " +
+        ".mapping-checkbox"
+    );
+
+    if (!changedCheckbox) {
+        return;
+    }
+
+    event.stopImmediatePropagation();
+    updateClearAllState();
+
+
+    if (window.innerWidth <= 768) {
+        return;
+    }
+
+    window.clearTimeout(filterTimer);
+
+    filterTimer = window.setTimeout(
+        function () {
+            applyCurrentFilters();
+        },
+        200
+    );
+}  
+
+/*
+     * =====================================================
+     * MOBILE APPLY
+     * =====================================================
+     */
+
+    function handleMobileApply(event) {
+        var applyButton =
+            event.target.closest("#applyFilterBtn");
+
+        if (!applyButton) {
+            return;
+        }
+
+        event.preventDefault();
+        event.stopImmediatePropagation();
+
+        applyCurrentFilters();
+        closeMobileFilter();
+    }
+
+    function closeMobileFilter() {
+        var filterPanel =
+            document.getElementById(
+                "filterPanel"
+            );
+
+        var filterOverlay =
+            document.getElementById(
+                "filterOverlay"
+            );
+
+        if (filterPanel) {
+            filterPanel.classList.remove(
+                "mobile-open"
+            );
+        }
+
+        if (filterOverlay) {
+            filterOverlay.classList.remove(
+                "show-overlay"
+            );
+        }
+    }
+
+    /*
+     * =====================================================
+     * CLEAR ALL
+     * =====================================================
+     */
+  function handleClearAll(event) {
+    var clearButton = event.target.closest(
+        "#clearFilters, #clearFiltersMobile"
+    );
+
+    if (!clearButton) {
+        return;
+    }
+
+    event.preventDefault();
+    event.stopImmediatePropagation();
+
+    document
+        .querySelectorAll(".mapping-checkbox")
+        .forEach(function (checkbox) {
+            checkbox.checked = false;
+        });
+
+    document
+        .querySelectorAll(".result-type-checkbox")
+        .forEach(function (checkbox) {
+            checkbox.checked = false;
+        });
+        updateClearAllState();
+
+    var params = getCurrentParams();
+
+    params.delete("mappingids");
+    params.delete("categoryids");
+    params.delete("productids");
+    params.delete("resultids");
+
+    params.delete("showcases");
+    params.delete("showarticles");
+    params.delete("showhandups");
+    params.delete("shownewsupdates");
+
+    removeOldViewAndPageParams(params);
+
+    refreshSearchGrid(params, {
+        updateUrl: true
+    });
+
+    closeMobileFilter();
+}
+function updateClearAllState() {
+
+    var hasSelectedFilter =
+        document.querySelectorAll(
+            ".result-type-checkbox:checked, .mapping-checkbox:checked"
+        ).length > 0;
+
+    [
+        document.getElementById("clearFilters"),
+        document.getElementById("clearFiltersMobile")
+    ].forEach(function (btn) {
+
+        if (!btn) {
+            return;
+        }
+
+        if (hasSelectedFilter) {
+            btn.classList.remove("disabled");
+        } else {
+            btn.classList.add("disabled");
+        }
+    });
+}
+
+
+/*
+     * =====================================================
+     * VIEW ALL AND PAGINATION
+     * =====================================================
+     */
+
+    function handleGridNavigation(event) {
+        var control = event.target.closest(
+            "#searchGrid .viewall-btn, " +
+            "#searchGrid .viewallarticle-btn, " +
+            "#searchGrid .handup-viewall-btn, " +
+            "#searchGrid .pagination-button, " +
+            "#searchGrid .pagination-page-number"
+        );
+
+        if (!control) {
+            return;
+        }
+
+        if (
+            control.disabled ||
+            control.classList.contains("disabled")
+        ) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            return;
+        }
+
+        var targetUrl =
+            control.getAttribute("href") ||
+            control.getAttribute("data-url");
+
+        if (!targetUrl) {
+            return;
+        }
+
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        
+
+        var parsedUrl = new URL(
+            targetUrl,
+            window.location.origin
+        );
+
+        refreshSearchGrid(
+            parsedUrl.searchParams,
+            {
+                updateUrl: true
+            }
+        );
+
+        scrollResultsToTop();
+    }
+
+    function scrollResultsToTop() {
+        var resultsColumn =
+            document.querySelector(".col-md-9");
+
+        if (resultsColumn) {
+            resultsColumn.scrollTo({
+                top: 0,
+                behavior: "smooth"
+            });
+        }
+    }
+
+    /*
+     * =====================================================
+     * ERROR HANDLING
+     * =====================================================
+     */
+
+    function removeGridError() {
+        var existingError =
+            document.querySelector(
+                "#searchGrid .ajax-grid-error"
+            );
+
+        if (existingError) {
+            existingError.remove();
+        }
+    }
+
+    function showGridError(message) {
+        var currentGrid =
+            document.getElementById(
+                "searchGrid"
+            );
+
+        if (!currentGrid) {
+            return;
+        }
+
+        removeGridError();
+
+        var errorElement =
+            document.createElement("div");
+
+        errorElement.className =
+            "alert-info ajax-grid-error";
+
+        errorElement.textContent = message;
+
+        currentGrid.insertBefore(
+            errorElement,
+            currentGrid.firstChild
+        );
+    }
+
+    /*
+     * =====================================================
+     * RESET AI SUMMARY
+     * =====================================================
+     */
+
+    function resetAiSummary() {
+        if (!window.jQuery) {
+            return;
+        }
+
+        var $ = window.jQuery;
+
+        $("#summaryContentWrapper").hide();
+        $("#summaryLoading").hide();
+        $("#summaryResult").empty().hide();
+        $("#copySummaryBtn").hide();
+        $("#copiedMessage").hide();
+
+        $("#toggleSummaryBtn").attr(
+            "aria-expanded",
+            "false"
+        );
+
+        $("#chevronIcon")
+            .removeClass("chevron-expanded")
+            .addClass("chevron-collapsed");
+
+        /*
+         * These variables may not exist on every result view.
+         */
+        if (
+            typeof window.summaryRequestStarted !==
+            "undefined"
+        ) {
+            window.summaryRequestStarted = false;
+        }
+
+        if (
+            typeof window.summaryGenerated !==
+            "undefined"
+        ) {
+            window.summaryGenerated = false;
+        }
+    }
+
+    /*
+     * =====================================================
+     * BROWSER BACK AND FORWARD
+     * =====================================================
+     */
+
+    function handleBrowserHistory() {
+        var params = getCurrentParams();
+
+        refreshSearchGrid(params, {
+            updateUrl: false
+        });
+    }
+
+    /*
+     * =====================================================
+     * BIND EVENTS
+     *
+     * Capture phase is used to stop older handlers that
+     * perform window.location navigation.
+     * =====================================================
+     */
+
+    document.addEventListener(
+        "change",
+        handleFilterChange,
+        true
+    );
+
+    document.addEventListener(
+        "click",
+        handleMobileApply,
+        true
+    );
+
+    document.addEventListener(
+        "click",
+        handleClearAll,
+        true
+    );
+
+    document.addEventListener(
+        "click",
+        handleGridNavigation,
+        true
+    );
+
+window.addEventListener(
+    "popstate",
+    handleBrowserHistory
+);
+
+
+/*
+ * =====================================================
+ * AUTO SELECT PRODUCT / CATEGORY FROM ?product=
+ * =====================================================
+ */
+
+function normalizeGuid(value) {
+    return String(value || "")
+        .replace(/[{}]/g, "")
+        .trim()
+        .toLowerCase();
+}
+
+
+function autoSelectProductFromUrl() {
+
+    var params = getCurrentParams();
+
+    /*
+     * Check whether friendly product parameter exists.
+     *
+     * Example:
+     * ?product=Partscatcom
+     */
+    var productParameter = (
+        params.get("product") || ""
+    ).trim();
+
+    if (!productParameter) {
+        return true;
+    }
+
+
+    /*
+     * IMPORTANT:
+     * If mapping parameters are already present,
+     * the page has already been filtered.
+     *
+     * Do not run auto-selection again.
+     */
+    if (
+        params.has("mappingids") ||
+        params.has("categoryids") ||
+        params.has("productids")
+    ) {
+        return true;
+    }
+
+
+    /*
+     * Get Product and Category GUIDs resolved
+     * by the global CAT_GA script.
+     */
+    var productId = normalizeGuid(
+        window.CAT_GA_ProductID ||
+        sessionStorage.getItem(
+            "CAT_GA_ProductID"
+        )
+    );
+
+    var categoryId = normalizeGuid(
+        window.CAT_GA_CategoryID ||
+        sessionStorage.getItem(
+            "CAT_GA_CategoryID"
+        )
+    );
+
+
+    /*
+     * The global script may still be resolving
+     * the GUIDs asynchronously.
+     *
+     * Return false so we can try again.
+     */
+    if (!productId || !categoryId) {
+
+        console.log(
+            "CAT Search: Waiting for Product/Category GUIDs..."
+        );
+
+        return false;
+    }
+
+
+    console.log(
+        "CAT Search Product GUID:",
+        productId
+    );
+
+    console.log(
+        "CAT Search Category GUID:",
+        categoryId
+    );
+
+
+    /*
+     * Find Product / Category mapping checkbox.
+     *
+     * Your checkboxes already contain:
+     *
+     * data-productid
+     * data-categoryid
+     * value = mapping GUID
+     */
+    var mappingCheckboxes =
+        document.querySelectorAll(
+            ".mapping-checkbox"
+        );
+
+    var matchingCheckbox = null;
+
+
+    mappingCheckboxes.forEach(
+        function (checkbox) {
+
+            if (matchingCheckbox) {
+                return;
+            }
+
+            var checkboxProductId =
+                normalizeGuid(
+                    checkbox.getAttribute(
+                        "data-productid"
+                    )
+                );
+
+            var checkboxCategoryId =
+                normalizeGuid(
+                    checkbox.getAttribute(
+                        "data-categoryid"
+                    )
+                );
+
+
+            /*
+             * Match BOTH Product and Category.
+             */
+            if (
+                checkboxProductId === productId &&
+                checkboxCategoryId === categoryId
+            ) {
+
+                matchingCheckbox = checkbox;
+            }
+        }
+    );
+
+
+    /*
+     * Product/Category GUIDs have resolved,
+     * but matching mapping was not found.
+     */
+    if (!matchingCheckbox) {
+
+        console.warn(
+            "CAT Search: No matching Product/Category mapping found.",
+            {
+                productParameter:
+                    productParameter,
+
+                productId:
+                    productId,
+
+                categoryId:
+                    categoryId
+            }
+        );
+
+        return true;
+    }
+
+
+    /*
+     * =====================================================
+     * SELECT THE PRODUCT / CATEGORY
+     * =====================================================
+     */
+
+    matchingCheckbox.checked = true;
+
+
+    console.log(
+        "CAT Search: Product/Category auto-selected.",
+        {
+            productParameter:
+                productParameter,
+
+            mappingId:
+                matchingCheckbox.value,
+
+            productId:
+                productId,
+
+            categoryId:
+                categoryId
+        }
+    );
+
+
+    /*
+     * buildFilterParams() is already part
+     * of your existing Search Results code.
+     *
+     * Because the checkbox is now checked,
+     * it automatically generates:
+     *
+     * mappingids
+     * categoryids
+     * productids
+     */
+    var newParams =
+        buildFilterParams();
+
+
+    /*
+     * Refresh Search Results using your
+     * existing AJAX refresh functionality.
+     */
+    refreshSearchGrid(
+        newParams,
+        {
+            updateUrl: true,
+            replaceUrl: true
+        }
+    );
+
+
+    updateClearAllState();
+
+    return true;
+}
+
+
+/*
+ * =====================================================
+ * WAIT FOR GLOBAL GUID RESOLUTION
+ * =====================================================
+ *
+ * Your global CAT_GA script calls the Dataverse Web API,
+ * so CAT_GA_ProductID and CAT_GA_CategoryID may not exist
+ * immediately when Search Results JavaScript starts.
+ */
+
+var catAutoSelectAttempts = 0;
+
+var catAutoSelectMaxAttempts = 30;
+
+
+function waitForCatProductResolution() {
+
+    catAutoSelectAttempts++;
+
+
+    var completed =
+        autoSelectProductFromUrl();
+
+
+    /*
+     * Product successfully resolved/selected,
+     * or no action is required.
+     */
+    if (completed === true) {
+        return;
+    }
+
+
+    /*
+     * GUIDs aren't available yet.
+     * Try again after 200ms.
+     */
+    if (
+        catAutoSelectAttempts <
+        catAutoSelectMaxAttempts
+    ) {
+
+        window.setTimeout(
+            waitForCatProductResolution,
+            200
+        );
+
+    } else {
+
+        console.warn(
+            "CAT Search: Timed out waiting for Product/Category GUID resolution."
+        );
+    }
+}
+
+
+/*
+ * =====================================================
+ * INITIAL PAGE LOAD
+ * =====================================================
+ */
+
+updateClearAllState();
+
+
+var initialParams =
+    new URLSearchParams(
+        window.location.search
+    );
+
+
+/*
+ * Only start auto-selection when
+ * ?product= exists.
+ */
+if (
+    (
+        initialParams.get("product") ||
+        ""
+    ).trim()
+) {
+
+    waitForCatProductResolution();
+}
+
+
+/*
+ * Make this function available in browser console.
+ */
+window.refreshSearchGrid =
+    refreshSearchGrid;
+
+
+})();
+</script>
+<!--end-->
+<style>
+   .mapping-filter-item {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    cursor: pointer;
+}
+
+.mapping-filter-item input {
+    flex-shrink: 0;
+    margin-right: 9px;
+}
+
+.mapping-filter-item .mapping-title {
+    flex: 1;
+    margin-left: 0;
+    padding-right: 8px;
+    word-break: break-word;
+    font-family: "NotoSans", sans-serif;
+}
+
+.mapping-filter-item .category-count {
+    margin-left: auto;
+    min-width: 40px;
+    text-align: center;
+    background: #f0f0f0;
+    border-radius: 20px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.filter-empty-message {
+    padding: 8px 0 15px 28px;
+    color: #666;
+    font-family: "NotoSans", sans-serif;
+    font-size: 14px;
+}
+</style>
+              <script>
+(function () {
+ 
+    function renderGridPagination() {
+ 
+        const pageSize = 20;
+        const params = new URLSearchParams(window.location.search);
+        const searchText = encodeURIComponent(params.get("search") || "");
+        const mode = params.get("mode");
+        let currentPage, totalRecords, pageParameter, containerId;
+ 
+        if (mode === "viewallcases") {
+            currentPage = parseInt(params.get("page") || "1");
+            totalRecords = parseInt(document.getElementById("totalCases")?.value || "0");
+            pageParameter = "page";
+            containerId = "paginationContainer";
+        } else if (mode === "viewallarticles") {
+            currentPage = parseInt(params.get("articlepage") || "1");
+            totalRecords = parseInt(document.getElementById("totalArticles")?.value || "0");
+            pageParameter = "articlepage";
+            containerId = "articlePaginationContainer";
+        } else {
+            return;
+        }
+ 
+        const container = document.getElementById(containerId);
+        if (!container) return;
+ 
+        const totalPages = Math.ceil(totalRecords / pageSize);
+        const startRecord = ((currentPage - 1) * pageSize) + 1;
+        let endRecord = currentPage * pageSize;
+        if (endRecord > totalRecords) endRecord = totalRecords;
+ 
+        let html = `
+<div class="pagination-container">
+<div class="pagination-left">Viewing ${startRecord} - ${endRecord} of ${totalRecords}</div>
+<div class="pagination-right-controls">`;
+ 
+        html += currentPage > 1
+            ? `<a class="pagination-button" href="/search-results/?search=${searchText}&mode=${mode}&${pageParameter}=${currentPage - 1}">&#8249;</a>`
+            : `<span class="pagination-button disabled">&#8249;</span>`;
+ 
+        function addPage(page) {
+            html += `<a class="pagination-page-number ${page === currentPage ? 'active' : ''}"
+                href="/search-results/?search=${searchText}&mode=${mode}&${pageParameter}=${page}">${page}</a>`;
+        }
+ 
+        addPage(1);
+        if (currentPage > 3) html += `<span class="pagination-ellipsis">...</span>`;
+        for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) addPage(i);
+        if (currentPage < totalPages - 2) html += `<span class="pagination-ellipsis">...</span>`;
+        if (totalPages > 1) addPage(totalPages);
+ 
+        html += currentPage < totalPages
+            ? `<a class="pagination-button" href="/search-results/?search=${searchText}&mode=${mode}&${pageParameter}=${currentPage + 1}">&#8250;</a>`
+            : `<span class="pagination-button disabled">&#8250;</span>`;
+ 
+        html += `</div></div>`;
+        container.innerHTML = html;
+    }
+ 
+    renderGridPagination(); // initial load
+    document.addEventListener("searchGridUpdated", renderGridPagination); // ← the fix
+ 
+})();
+</script>
+ 
+    
+
+<!-- // Clear All filters
+// document.addEventListener("DOMContentLoaded", function () {
+//    const clearBtn = document.getElementById("clearFilters");
+//    if(clearBtn){
+//        clearBtn.addEventListener("click", function(){
+//            document
+//                .querySelectorAll(".filter-panel input[type='checkbox']")
+//                .forEach(cb => cb.checked = false);
+//        });
+//    }
+// }); -->
+<script>
+
+    
+
+   
+
+// if (clearBtn) {
+
+//     clearBtn.addEventListener("click", function (e) {
+
+//         e.preventDefault();
+
+//         clearAllFilters();
+
+//     });
+
+// }
+
+// if (mobileClearBtn) {
+
+//     mobileClearBtn.addEventListener("click", function (e) {
+
+//         e.preventDefault();
+
+//         clearAllFilters();
+
+//     });
+
+// }
+
+
+
+
+
+
+// at least one filter code end
+
+//yellow highlight
+document.addEventListener("DOMContentLoaded", function () {
+
+    var searchTerm = "{{ searchText | escape }}";
+    if (!searchTerm || searchTerm.trim() === "") {
+        return;
+    }
+
+    document.querySelectorAll(".searchable-text").forEach(function (element) {
+        var text = element.innerHTML;
+        var regex = new RegExp(
+            "(" + searchTerm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")",
+            "gi"
+        );
+        element.innerHTML =
+            text.replace(
+                regex,
+                '<span class="search-highlight">$1</span>'
+            );
+    });
+
+});
+
+//new
+
+ 
+
+ 
+
+
+//Filter By :- Mobile view
+document.addEventListener("DOMContentLoaded", function(){
+   const filterBtn = document.getElementById("mobileFilterBtn");
+   const closeBtn = document.getElementById("closeFilterBtn");
+   const panel = document.getElementById("filterPanel");
+   const overlay = document.getElementById("filterOverlay");
+   if(filterBtn){
+       filterBtn.addEventListener("click", function(){
+           panel.classList.add("mobile-open");
+           overlay.classList.add("show-overlay");
+       });
+   }
+   if(closeBtn){
+       closeBtn.addEventListener("click", function(){
+           panel.classList.remove("mobile-open");
+           overlay.classList.remove("show-overlay");
+       });
+   }
+   if(overlay){
+       overlay.addEventListener("click", function(){
+           panel.classList.remove("mobile-open");
+           overlay.classList.remove("show-overlay");
+       });
+   }
+});
+ //ai summary
+ (function (webapi, $) {
+
+    webapi.safeAjax = function (ajaxOptions) {
+
+        var deferredAjax = $.Deferred();
+
+        shell.getTokenDeferred().done(function (token) {
+
+            if (!ajaxOptions.headers) {
+                ajaxOptions.headers = {};
+            }
+
+            ajaxOptions.headers["__RequestVerificationToken"] = token;
+
+            $.ajax(ajaxOptions)
+                .done(function (data, textStatus, jqXHR) {
+                    deferredAjax.resolve(data, textStatus, jqXHR);
+                })
+                .fail(function (jqXHR, textStatus, errorThrown) {
+                    deferredAjax.reject(jqXHR, textStatus, errorThrown);
+                });
+
+        });
+
+        return deferredAjax.promise();
+    };
+
+})(window.webapi = window.webapi || {}, jQuery);
+
+
+// $(document).ready(function () {
+//     generateArticleListSummary();
+// });
+
+// function generateArticleListSummary() {
+
+//     const searchKeyword = $("#searchKeyword").val() || "";
+//     const personaValue = $("#personaValue").val() || "";
+
+//     if (!searchKeyword || !personaValue) {
+//         $(".ai-summary-card").hide();
+//         return;
+//     }
+
+//     const safeKeyword = escapeODataString(searchKeyword);
+//     const safePersona = escapeODataString(personaValue);
+
+//     const filter =
+//         "contains(title,'" + safeKeyword + "')" +
+//         " and statecode eq 3" +
+//         " and cat_ispublicfacing eq true" +
+//         " and Microsoft.Dynamics.CRM.ContainValues(PropertyName='cat_persona',PropertyValues=['" + safePersona + "'])";
+
+//     const url =
+//         "/_api/summarization/data/v1.0/knowledgearticles" +
+//         "?$select=title,description,content,knowledgearticleid" +
+//         "&$filter=" + encodeURIComponent(filter) +
+//         "&$orderby=knowledgearticleviews desc" +
+//         "&$top=5";
+
+//     $("#summaryLoading").show();
+//     $("#summaryResult").hide().empty();
+//     $("#copySummaryBtn").hide();
+
+//     webapi.safeAjax({
+//         type: "POST",
+//         url: url,
+//         contentType: "application/json",
+//         data: JSON.stringify({
+//             InstructionIdentifier: "Summarization/prompt/article_search_summary"
+//         })
+//     })
+//     .done(function (response) {
+//         $("#summaryLoading").hide();
+
+//         console.log("Summarization API response:", response);
+
+//         const summary =
+//             response.Summary ||
+//             response.summary ||
+//             response.Text ||
+//             response.text ||
+//             response.value ||
+//             "Summary generated, but no summary text was returned.";
+
+//         $("#summaryResult")
+//             .show()
+//             .html(formatAiSummary(summary));
+
+//         $("#copySummaryBtn").show();
+//     })
+//     .fail(function (xhr, textStatus, errorThrown) {
+//         $("#summaryLoading").hide();
+
+//         $("#summaryResult")
+//             .show()
+//             .html("Unable to generate summary.");
+
+//         console.log("Summary API URL:", url);
+//         console.log("Summary API status:", xhr.status);
+//         console.log("Summary API textStatus:", textStatus);
+//         console.log("Summary API errorThrown:", errorThrown);
+//         console.log("Summary API response:", xhr.responseText);
+//     });
+// }
+
+
+function generateArticleListSummary() {
+    const searchKeyword = $("#searchKeyword").val() || "";
+    const personaValue = $("#personaValue").val() || "";
+
+    if (!searchKeyword || !personaValue) {
+        $(".ai-summary-card").hide();
+
+        // Allow another request if the required values later become available.
+        summaryRequestStarted = false;
+        return;
+    }
+
+    const safeKeyword = escapeODataString(searchKeyword);
+    const safePersona = escapeODataString(personaValue);
+
+    const filter =
+        "contains(title,'" + safeKeyword + "')" +
+        " and statecode eq 3" +
+        " and cat_ispublicfacing eq true" +
+        " and Microsoft.Dynamics.CRM.ContainValues(" +
+            "PropertyName='cat_persona'," +
+            "PropertyValues=['" + safePersona + "']" +
+        ")";
+
+    const url =
+        "/_api/summarization/data/v1.0/knowledgearticles" +
+        "?$select=title,description,content,knowledgearticleid" +
+        "&$filter=" + encodeURIComponent(filter) +
+        "&$orderby=knowledgearticleviews desc" +
+        "&$top=5";
+
+    $("#summaryLoading").show();
+    $("#summaryResult").hide().empty();
+    $("#copySummaryBtn").hide();
+
+    webapi.safeAjax({
+        type: "POST",
+        url: url,
+        contentType: "application/json",
+        data: JSON.stringify({
+            InstructionIdentifier:
+                "Summarization/prompt/article_search_summary"
+        })
+    })
+    .done(function (response) {
+        $("#summaryLoading").hide();
+
+        console.log("Summarization API response:", response);
+
+        const summary =
+            response.Summary ||
+            response.summary ||
+            response.Text ||
+            response.text ||
+            response.value ||
+            "{{ snippets['CAT_Error_NoSummary'] }}";
+
+        summaryGenerated = true;
+
+        /*
+         * Using .text() is safer than .html() because the API response
+         * cannot inject HTML into the page.
+         *
+         * Add white-space: pre-line to #summaryResult in CSS to retain
+         * line breaks.
+         */
+        $("#summaryResult")
+            .text(String(summary))
+            .show();
+
+        const isExpanded =
+            $("#toggleSummaryBtn").attr("aria-expanded") === "true";
+
+        if (isExpanded) {
+            $("#copySummaryBtn").show();
+        }
+    })
+    .fail(function (xhr, textStatus, errorThrown) {
+        $("#summaryLoading").hide();
+
+        summaryGenerated = false;
+
+        // $("#summaryResult")
+        //     .text("Unable to generate summary.")
+        //     .show();
+        $("#summaryResult")
+          .text("{{ snippets['CAT_Error_UnableSummary'] }}")
+          .show();
+        console.error("Summary API URL:", url);
+        console.error("Summary API status:", xhr.status);
+        console.error("Summary API textStatus:", textStatus);
+        console.error("Summary API errorThrown:", errorThrown);
+        console.error("Summary API response:", xhr.responseText);
+    });
+}
+function escapeODataString(value) {
+    return String(value || "").replace(/'/g, "''");
+}
+
+function formatAiSummary(summary) {
+    if (!summary) {
+        return "";
+    }
+
+    return String(summary).replace(/\n/g, "<br>");
+}
+
+
+// $(document).ready(function () {
+ 
+//    $("#toggleSummaryBtn").on("click", function () {
+ 
+//     $("#summaryContentWrapper").slideToggle(200);
+ 
+//     $("#chevronIcon").toggleClass(
+//         "chevron-expanded chevron-collapsed"
+//     );
+ 
+//     if ($("#summaryContentWrapper").is(":visible")) {
+//         $("#copySummaryBtn").show();
+//     } else {
+//         $("#copySummaryBtn").hide();
+//     }
+ 
+// });
+ 
+ 
+//     $("#copySummaryBtn").on("click", function () {
+ 
+//     navigator.clipboard.writeText($("#summaryResult").text());
+ 
+//     $("#copiedMessage")
+//         .stop(true,true)
+//         .fadeIn(200);
+ 
+//     setTimeout(function () {
+//         $("#copiedMessage").fadeOut(200);
+//     }, 1500);
+ 
+// });
+ 
+ 
+// });
+let summaryRequestStarted = false;
+let summaryGenerated = false;
+
+$(document).ready(function () {
+    const $summaryWrapper = $("#summaryContentWrapper");
+    const $toggleButton = $("#toggleSummaryBtn");
+    const $copyButton = $("#copySummaryBtn");
+    const $chevron = $("#chevronIcon");
+
+    // Ensure the summary is collapsed when the page first loads.
+    $summaryWrapper.hide();
+    $copyButton.hide();
+
+    $chevron
+        .removeClass("chevron-expanded")
+        .addClass("chevron-collapsed");
+
+    $toggleButton.attr({
+        "aria-expanded": "false",
+        "aria-controls": "summaryContentWrapper"
+    });
+
+    $toggleButton.on("click", function () {
+        const isCurrentlyExpanded =
+            $toggleButton.attr("aria-expanded") === "true";
+
+        if (isCurrentlyExpanded) {
+            // Collapse the summary.
+            $summaryWrapper.stop(true, true).slideUp(200);
+
+            $chevron
+                .removeClass("chevron-expanded")
+                .addClass("chevron-collapsed");
+
+            $toggleButton.attr("aria-expanded", "false");
+            $copyButton.hide();
+
+            return;
+        }
+
+        // Expand the summary.
+        $summaryWrapper.stop(true, true).slideDown(200);
+
+        $chevron
+            .removeClass("chevron-collapsed")
+            .addClass("chevron-expanded");
+
+        $toggleButton.attr("aria-expanded", "true");
+
+        // Generate only on the first expand click.
+        if (!summaryRequestStarted) {
+            summaryRequestStarted = true;
+            generateArticleListSummary();
+        } else if (summaryGenerated) {
+            $copyButton.show();
+        }
+    });
+
+    $copyButton.on("click", function () {
+        const summaryText = $("#summaryResult").text();
+
+        if (!summaryText) {
+            return;
+        }
+
+        navigator.clipboard
+            .writeText(summaryText)
+            .then(function () {
+                $("#copiedMessage")
+                    .stop(true, true)
+                    .fadeIn(200);
+
+                setTimeout(function () {
+                    $("#copiedMessage").fadeOut(200);
+                }, 1500);
+            })
+            .catch(function (error) {
+                console.error("Unable to copy summary:", error);
+            });
+    });
+});
+ 
+ 
+
+     </script>
+
+     <script>
+        document.addEventListener("DOMContentLoaded", function () {
+        const showMoreBtn = document.getElementById("showRemainingArticles");
+        if (!showMoreBtn) return;
+            showMoreBtn.addEventListener("click", function () {
+            document.querySelectorAll(".hidden-article")
+            .forEach(function (card) {
+                card.style.display = "block";
+            });
+            showMoreBtn.style.display = "none";
+        });});
+    </script>
+
+               <style>
+.hidden-article {
+    display: none;
+}
+
+                    /* ai st */
+  .ai-summary-card{
+    border:1px solid #7f56d9;
+    border-radius:12px;
+    padding:20px;
+    margin:25px 0;
+    background:#fff;
+}
+ 
+.ai-summary-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+ 
+.ai-summary-title{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:20px;
+    font-weight:600;
+    font-family: "RobotoCondensed";
+}
+ 
+.ai-icon{
+    font-size:18px;
+}
+ 
+.ai-summary-actions{
+    display:flex;
+    align-items:center;
+    gap:12px;
+}
+ 
+.icon-btn{
+    border:none;
+    background:none;
+    cursor:pointer;
+    padding:0;
+    color:#323130;
+}
+ 
+.icon-btn:hover{
+    opacity:0.8;
+}
+ 
+#summaryResult{
+    margin-top:15px;
+    line-height:1.7;
+    font-family: 'NotoSans';
+    white-space: pre-line;
+}
+ 
+.summary-footer{
+    margin-top:15px;
+    font-size:12px;
+    color:#666;
+     font-family: 'NotoSans';
+}
+#chevronIcon{
+    transition:transform .25s ease;
+}
+
+
+.chevron-collapsed {
+    transform: rotate(0deg);
+    transition: transform 200ms ease;
+}
+
+.chevron-expanded {
+    transform: rotate(180deg);
+    transition: transform 200ms ease;
+}
+
+#copiedMessage{
+    font-size:12px;
+    color:#605e5c;
+    margin-left:8px;
+}
+                    /* ai end */
+                    #clearFilters.disabled,
+#clearFiltersMobile.disabled {
+    color: #999 !important;
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+#clearFilters,
+#clearFiltersMobile {
+    color: #0078d4;
+    cursor: pointer;
+}
+                    .mt-4{
+                         max-width: 100%;
+                    }
+
+                    /* .col-md-9{
+                         border-right: 1px solid #e5e5e5;
+                         padding-right: 20px;
+                         overflow-x: hidden;
+                         height: 90vh !important;
+                         overflow-y: auto;
+                         min-height: 500px;
+                         position: sticky;
+                         top: 20px;
+                    } */
+                     .case-card a {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+}
+
+                    .case-card {
+                         background: #fff;
+                         border: 1px solid #d9d9d9;
+                         border-radius: 4px;
+                         padding: 18px;
+                         margin-bottom: 12px;
+                         width: 100% !important;
+                         position: relative;
+                         text-decoration: none;
+                    }
+
+                    .case-card:hover {
+                         background: #fafafa;
+                    }
+
+                    .case-number a {
+                         color: #333;
+                         font-size: 16px;
+                         font-weight: 600;
+                         text-decoration: none;
+                    }
+
+                    .case-title {
+                         margin-top: 8px;
+                         font-size: 15px;
+                         font-weight: 500;
+                    }
+
+                    .case-date,.case-helpcenterstatus,.case-customerid,.case-description {
+                         margin-top: 10px;
+                         color: #777;
+                         font-size: 13px;
+                    }
+
+                    .viewall-btn {
+                         color: #0066CC;
+                         padding: 10px 18px;
+                         border-radius: 4px;
+                         text-decoration: none;
+                         font-weight: 600;
+                         display: inline-block;
+                         margin-top: 5px;
+                         margin-bottom: 70px;
+                    }
+
+                    .viewall-btn:hover {
+
+                         color: #0066CC;
+                    }
+                    .viewallarticle-btn{
+                         color: #0066CC;
+                         padding: 10px 18px;
+                         border-radius: 4px;
+                         text-decoration: none;
+                         font-weight: 600;
+                         display: inline-block;
+                         margin-top: 5px;
+                         margin-bottom: 100px;
+                    }
+                    .viewallarticle-btn:hover {
+                         color: #0066CC;
+                    }
+
+                    .page {
+                         margin-bottom: 200px;
+                    }
+
+                    .pagination-container {
+                         display: flex;
+                         justify-content: space-between;
+                         align-items: center;
+                         margin-top: 30px;
+                         margin-bottom: 20px;
+                    }
+
+                    .pagination-left {
+                         color: #3f3f3f;
+                         font-size: 16px;
+                    }
+
+                    .pagination-right-controls {
+                         display: flex;
+                         align-items: center;
+                         gap: 8px;
+                    }
+
+                    .pagination-button {
+                         background: none;
+                         border: 1px solid transparent;
+                         border-radius: 0.25rem;
+                         padding: 0.25rem;
+                         cursor: pointer;
+                         display: flex;
+                         align-items: center;
+                         justify-content: center;
+                         min-width: 2rem;
+                         min-height: 2rem;
+                         color: #3f3f3f;
+                         text-decoration: none;
+                    }
+
+                    .pagination-page-number {
+                         background: none;
+                         border: none;
+                         padding: 0.25rem 0.5rem;
+                         cursor: pointer;
+                         font-size: .875rem;
+                         color: #3f3f3f;
+                         border-radius: .25rem;
+                         min-width: 2rem;
+                         min-height: 2rem;
+                         text-align: center;
+                         display: flex;
+                         justify-content: center;
+                         align-items: center;
+                         transition: background-color .2s ease;
+                         text-decoration: none;
+                    }
+
+                    .pagination-page-number.active {
+                         background-color: #ffcd11;
+                         color: #000;
+                         font-weight: 700;
+                    }
+
+                    .pagination-ellipsis {
+                         color: #3f3f3f;
+                         padding: 0 4px;
+                    }
+
+                    .pagination-button.disabled {
+                         color: #c5c5c5;
+                         cursor: pointer;
+                         pointer-events: none;
+
+                    }
+
+                    .filter-panel {
+
+                    border-right: 1px solid #e5e5e5;
+
+                    padding-right: 20px;
+                    overflow-x: hidden;
+                    height: 82vh !important;
+                    overflow-y: auto;
+                    min-height: 500px;
+                    position:sticky;
+                    top:20px;
+
+                    }
+
+                    .filter-header {
+
+                    font-size: 22px;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    font-weight: 600;
+                    margin-bottom: 20px;
+                    font-family: "RobotoCondensed";
+ 
+
+                    }
+
+                    .clear-filters{
+                    font-size:14px;
+                    color:#0066CC;
+                   
+                    }
+                    .clear-filters:hover{
+                    text-decoration:underline;
+                    }
+
+                    .filter-panel details {
+
+                    margin-bottom: 20px;
+
+                    }
+
+                    .filter-panel summary {
+
+                    cursor: pointer;
+
+                    font-size: 18px;
+
+                    font-weight: 600;
+
+                    margin-bottom: 15px;
+                    font-family: 'NotoSans';
+
+                    }
+
+                    .filter-item {
+                    display: flex;
+                    align-items: center;
+                    margin-bottom: 15px;
+                    }
+                    .filter-item label {
+                    flex: 1;
+                    margin-left: 10px;
+                    margin-bottom: 0;
+                    font-family: 'NotoSans';
+                    }
+                    .filter-count {
+                    background: #efefef;
+                    border-radius: 20px;
+                    padding: 4px 12px;
+                    font-size: 14px;
+                    font-weight: 600;
+                    min-width: 40px;
+                    text-align: center;
+                    }
+                    .filter-item input[type="checkbox"] {
+                    width: 18px;
+                    height: 18px;
+                    accent-color: #ffcd11;
+                    }
+                    
+                    .row.search-layout {
+                    display:flex;
+                    align-items:flex-start;
+                    }
+                    
+                    details summary {
+                    list-style: none;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    font-weight: 300;
+                    }
+                    details summary::-webkit-details-marker {
+                    display: none;
+                    }
+                    .filter-chevron {
+                    margin-right: 8px;
+                    font-size: 12px;
+                    transition: transform 0.2s ease;
+                    }
+                    /* Expanded = Down */
+                    details[open] .filter-chevron {
+                    transform: rotate(90deg);
+                    }
+                    /* Collapsed = Right */
+                    details:not([open]) .filter-chevron {
+                    transform: rotate(0deg);
+                    }
+                    .mobile-filter-btn{
+                    display:none;
+                    }
+                 
+                    .mobile-filter-footer,
+                    .close-filter{
+                         display: none;
+                    }
+
+                       .kb-category-badge {
+                         display: inline-flex;
+                         align-items: center;
+                         min-height: 28px;
+                         padding: 4px 10px;
+                         border-radius: 999px;
+                         background: #e1e1e1;
+                         font-size: 13px;
+                         font-weight: 600;
+                         color: #3f3f3f;
+                    }
+
+                    .search-highlight{
+                    background-color: yellow;
+                    font-weight: bold;
+                    padding: 0 2px;
+                    }
+
+                    .article-views{
+                    position:absolute;
+                    top:10px;
+                    right:12px;
+                    display:flex;
+                    align-items:center;
+                    gap:4px;
+                    font-size:13px;
+                    color:#666;
+                    }
+                    
+                    .article-title{
+
+                    max-width:80%;
+
+                    }
+                    
+                    .card-link {
+                    position: absolute;
+                    inset: 0;
+                    z-index: 5;
+                    display: block;
+                    text-decoration: none !important;
+                    color: inherit !important;
+                    }
+
+                    case-card>*:not(.card-link) {
+                    position: relative;
+                    z-index: 10;
+                    }
+                    .category-filter-item {
+                    display: flex;
+                    align-items: center;
+                    width: 100%;
+                    cursor: pointer;
+                    }
+                    .category-filter-item .cat-checkbox {
+                    margin-right: 10px;
+                    flex-shrink: 0;
+                    }
+                    .category-filter-item .category-title {
+                    flex: 1;
+                    word-break: break-word;
+                    font-family: 'NotoSans';
+                    margin-left: 9px;
+                    }
+                    .category-filter-item .category-count {
+                    margin-left: auto;
+                    min-width: 28px;
+                    text-align: center;
+                    background: #f0f0f0;
+                    border-radius: 12px;
+                    padding: 2px 8px;
+                    font-size: 12px;
+                    font-weight: 600;
+                    }
+ 
+
+                    @media (max-width: 768px) {
+
+
+                         .case-card {
+                              width: 100% !important
+                         }
+
+                         * {
+                              max-width: 100%;
+                         }
+
+                         .viewall-btn {
+                              color: #0066CC;
+                              padding: 10px 18px;
+                              border-radius: 4px;
+                              text-decoration: none;
+                              font-weight: 600;
+                              display: inline-block;
+                              margin-top: 5px;
+                              margin-bottom: 30px;
+                         }
+
+                         .viewall-btn:hover {
+
+                              color: #0066CC;
+                         }
+
+                         .page {
+                              margin-bottom: 300px;
+                         }
+
+                         .pagination-container {
+                              display: flex;
+                              justify-content: space-between;
+                              align-items: center;
+                              margin-top: 30px;
+                              margin-bottom: 200px;
+                         }
+                         .mobile-filter-btn{
+                         display:inline-flex;
+                         align-items:center;
+                         gap:8px;
+                         border:1px solid #d0d0d0;
+                         background:white;
+                         padding:10px 18px;
+                         border-radius:4px;
+                         margin-bottom:20px;
+                    }
+                    .container.mt-4{
+                         margin-left: 5px !important;
+                    }
+
+                    .search-layout .col-md-9{
+                         width:100%;
+                    }
+                    .filter-panel{
+                         position:fixed;
+                         top:0;
+                         left:-100%;
+                         /* width:320px; */
+                         height:100%;
+                         background:white;
+                         z-index:9999;
+                         overflow-y:auto;
+                         transition:left .3s ease;
+                         padding:20px;
+                         width: 100%;
+                         display: flex;
+                         flex-direction: column;
+                    }
+                    .filter-panel.mobile-open{
+                         left:0;
+                    }
+                    #filterOverlay{
+                         position:fixed;
+                         top:0;
+                         left:0;
+                         width:100%;
+                         height:100%;
+                         background:rgba(0,0,0,.4);
+                         z-index:9998;
+                         display:none;
+                    }
+                    #filterOverlay.show-overlay{
+                         display:block;
+                    }
+                    .close-filter{
+                         border:none;
+                         background:none;
+                         font-size:24px;
+                         cursor:pointer;
+                    }
+                    .filter-header{
+                         display:flex;
+                         justify-content:space-between;
+                         align-items:center;
+                    }
+                    .mobile-filter-footer{
+
+                    position:sticky;
+                    bottom:0;
+                    margin-bottom: 0px !important;
+                    background:#fff;
+                    padding:12px 16px;
+                    border-top:1px solid #eee;
+                    display:flex;
+                    justify-content:space-between;
+                    align-items:center;
+                    width: 100%;
+                    margin-top: auto;
+                    
+                    }
+
+                    .apply-filter-btn{
+                    background:#ffcd11;
+                    border:none;
+                    padding:10px 25px;
+                    border-radius:4px;
+                    font-weight:600;
+                    cursor: pointer;
+                    margin-left: auto;
+                    margin: 0;
+                    }
+                    #clearFilters{
+                         display: none;
+                    }
+                    .close-filter{
+                         display: flex;
+                    }
+
+                    .clear-filters-mobile{
+                         color: #0066CC;
+                         margin-right: auto;
+                         margin: 0;
+                         margin-left: 140px;
+
+                    }
+
+                    .col-md-9{
+                         width:100% !important;
+                         max-width:100% !important;
+                         flex:0 0 100% !important;
+                    }
+                    body{
+                         margin-left: 0 !important;
+                         padding-left: 0 !important;
+                         overflow-x: hidden;
+                    }
+                    .search-layout.col-md-3{
+                         width:0 !important;
+                         max-width:0 !important;
+                         flex:0 0 0 !important;
+                         padding:0 !important;
+                         margin:0 !important;
+                         overflow:hidden;
+                    }
+
+                    :root {
+                      --nav-expanded:0px;
+                    }
+
+                    .search-container{
+                         margin-bottom: 200px !important;
+                    }
+                    .article-container{
+                         margin-bottom: 100px !important;
+                    }
+
+                    }
+               </style>
+               </div>
+          <!-- </div> -->
+     </div>
+</div>
