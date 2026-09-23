@@ -1,0 +1,511 @@
+<script>
+(function () {
+    "use strict";
+
+    if (window.self !== window.top) return;
+
+    window.CAT_GA_ProductID = "";
+    window.CAT_GA_CategoryID = "";
+
+    /*
+     * ============================================================
+     * 1. READ PRODUCT FROM CURRENT URL
+     * ============================================================
+     */
+
+    var params = new URLSearchParams(window.location.search);
+
+    var urlProductParameter = (
+        params.get("product") || ""
+    ).trim();
+
+
+    /*
+     * ============================================================
+     * 2. IF PRODUCT DOES NOT EXIST IN URL
+     *
+     * Treat this as explicitly having no product context.
+     * Clear the stored values and STOP.
+     * ============================================================
+     */
+
+    if (!urlProductParameter) {
+
+        sessionStorage.removeItem(
+            "CAT_GA_ProductParameter"
+        );
+
+        sessionStorage.removeItem(
+            "CAT_GA_ProductID"
+        );
+
+        sessionStorage.removeItem(
+            "CAT_GA_CategoryID"
+        );
+
+        console.log(
+            "CAT_GA: No product in URL. Product context cleared."
+        );
+
+        return;
+    }
+
+
+    /*
+     * ============================================================
+     * 3. PRODUCT EXISTS IN URL
+     *
+     * Store the parameter.
+     * ============================================================
+     */
+
+    sessionStorage.setItem(
+        "CAT_GA_ProductParameter",
+        urlProductParameter
+    );
+
+
+    console.log(
+        "CAT_GA Product Parameter:",
+        urlProductParameter
+    );
+
+
+    /*
+     * ============================================================
+     * 4. POWER PAGES WEB API
+     * ============================================================
+     */
+
+    function webApiGet(query) {
+
+        return fetch("/_api/" + query, {
+
+            method: "GET",
+
+            headers: {
+                "Accept": "application/json",
+                "OData-MaxVersion": "4.0",
+                "OData-Version": "4.0"
+            }
+
+        }).then(function (response) {
+
+            if (!response.ok) {
+
+                throw new Error(
+                    "Web API request failed: " +
+                    response.status
+                );
+            }
+
+            return response.json();
+        });
+    }
+
+
+    /*
+     * ============================================================
+     * 5. ADD PRODUCT TO INTERNAL PORTAL LINKS
+     * ============================================================
+     */
+
+    function addProductToInternalLinks(root) {
+
+        if (!urlProductParameter) return;
+
+        var container = root || document;
+        var links = [];
+
+
+        /*
+         * If the added element itself is a link.
+         */
+        if (
+            container.nodeType === 1 &&
+            container.matches &&
+            container.matches("a[href]")
+        ) {
+            links.push(container);
+        }
+
+
+        /*
+         * Find links inside the element/document.
+         */
+        if (container.querySelectorAll) {
+
+            var childLinks =
+                container.querySelectorAll("a[href]");
+
+            childLinks.forEach(function (link) {
+                links.push(link);
+            });
+        }
+
+
+        /*
+         * Process each link.
+         */
+        links.forEach(function (link) {
+
+            var href = link.getAttribute("href");
+
+            if (!href) return;
+
+
+            /*
+             * Ignore special links.
+             */
+            if (
+                href.startsWith("#") ||
+                href.startsWith("javascript:") ||
+                href.startsWith("mailto:") ||
+                href.startsWith("tel:")
+            ) {
+                return;
+            }
+
+
+            try {
+
+                var linkUrl = new URL(
+                    href,
+                    window.location.origin
+                );
+
+
+                /*
+                 * Ignore external links.
+                 */
+                if (
+                    linkUrl.origin !==
+                    window.location.origin
+                ) {
+                    return;
+                }
+
+
+                /*
+                 * Do not overwrite a product if the
+                 * link already explicitly contains one.
+                 */
+                if (
+                    linkUrl.searchParams.has("product")
+                ) {
+                    return;
+                }
+
+
+                /*
+                 * Add current product.
+                 */
+                linkUrl.searchParams.set(
+                    "product",
+                    urlProductParameter
+                );
+
+
+                /*
+                 * Update href.
+                 */
+                link.setAttribute(
+                    "href",
+                    linkUrl.pathname +
+                    linkUrl.search +
+                    linkUrl.hash
+                );
+
+            } catch (error) {
+
+                console.warn(
+                    "CAT_GA: Unable to update link:",
+                    href,
+                    error
+                );
+            }
+        });
+    }
+
+
+    /*
+     * ============================================================
+     * 6. INITIALIZE INTERNAL LINK HANDLING
+     * ============================================================
+     */
+
+    function initializeProductNavigation() {
+
+        /*
+         * Update existing links.
+         */
+        addProductToInternalLinks(document);
+
+
+        /*
+         * Monitor dynamically-created links.
+         */
+        var observer = new MutationObserver(
+            function (mutations) {
+
+                mutations.forEach(
+                    function (mutation) {
+
+                        mutation.addedNodes.forEach(
+                            function (node) {
+
+                                if (
+                                    node.nodeType !== 1
+                                ) {
+                                    return;
+                                }
+
+                                addProductToInternalLinks(
+                                    node
+                                );
+                            }
+                        );
+                    }
+                );
+            }
+        );
+
+
+        observer.observe(
+            document.body,
+            {
+                childList: true,
+                subtree: true
+            }
+        );
+    }
+
+
+    /*
+     * Wait until DOM is ready.
+     */
+    if (document.readyState === "loading") {
+
+        document.addEventListener(
+            "DOMContentLoaded",
+            initializeProductNavigation
+        );
+
+    } else {
+
+        initializeProductNavigation();
+    }
+
+
+    /*
+     * ============================================================
+     * 7. FIND PRODUCT GUID
+     * ============================================================
+     */
+
+    var productFilter =
+        "products?$select=productid" +
+        "&$filter=cat_sourceurlproductparameter eq '" +
+        urlProductParameter.replace(/'/g, "''") +
+        "'";
+
+
+    webApiGet(productFilter)
+
+        .then(function (productResult) {
+
+            var records =
+                productResult.value || [];
+
+
+            /*
+             * No product found.
+             */
+            if (records.length === 0) {
+
+                console.warn(
+                    "CAT_GA: Product not found."
+                );
+
+                return;
+            }
+
+
+            /*
+             * ====================================================
+             * 8. GET PRODUCT GUID
+             * ====================================================
+             */
+
+            var productId = String(
+                records[0].productid || ""
+            )
+                .replace(/[{}]/g, "")
+                .trim();
+
+
+            if (!productId) {
+
+                console.warn(
+                    "CAT_GA: Product GUID is empty."
+                );
+
+                return;
+            }
+
+
+            /*
+             * Set global Product ID.
+             */
+            window.CAT_GA_ProductID =
+                productId;
+
+
+            /*
+             * Store Product ID.
+             */
+            sessionStorage.setItem(
+                "CAT_GA_ProductID",
+                productId
+            );
+
+
+            /*
+             * ====================================================
+             * 9. FIND PRODUCT -> CATEGORY MAPPING
+             * ====================================================
+             */
+
+            var mappingElements =
+                document.querySelectorAll(
+                    "#hiddenProductMappings div[data-mapping-id]"
+                );
+
+
+            var resolvedProductId =
+                productId.toLowerCase();
+
+
+            var matchingElement = null;
+
+
+            mappingElements.forEach(
+                function (element) {
+
+                    if (matchingElement) return;
+
+
+                    var mappingProductId = String(
+                        element.getAttribute(
+                            "data-product-id"
+                        ) || ""
+                    )
+                        .replace(/[{}]/g, "")
+                        .trim()
+                        .toLowerCase();
+
+
+                    if (
+                        mappingProductId ===
+                        resolvedProductId
+                    ) {
+
+                        matchingElement =
+                            element;
+                    }
+                }
+            );
+
+
+            /*
+             * No Category mapping.
+             */
+            if (!matchingElement) {
+
+                console.warn(
+                    "CAT_GA: No category mapping found."
+                );
+
+                return;
+            }
+
+
+            /*
+             * ====================================================
+             * 10. GET CATEGORY GUID
+             * ====================================================
+             */
+
+            var categoryId = String(
+                matchingElement.getAttribute(
+                    "data-category-id"
+                ) || ""
+            )
+                .replace(/[{}]/g, "")
+                .trim();
+
+
+            if (!categoryId) {
+
+                console.warn(
+                    "CAT_GA: Category GUID is empty."
+                );
+
+                return;
+            }
+
+
+            /*
+             * ====================================================
+             * 11. STORE CATEGORY GUID
+             * ====================================================
+             */
+
+            window.CAT_GA_CategoryID =
+                categoryId;
+
+
+            sessionStorage.setItem(
+                "CAT_GA_CategoryID",
+                categoryId
+            );
+
+
+            /*
+             * ====================================================
+             * 12. DEBUG LOGS
+             * ====================================================
+             */
+
+            console.log(
+                "CAT_GA Product Parameter:",
+                urlProductParameter
+            );
+
+            console.log(
+                "CAT_GA_ProductID:",
+                window.CAT_GA_ProductID
+            );
+
+            console.log(
+                "CAT_GA_CategoryID:",
+                window.CAT_GA_CategoryID
+            );
+
+            console.log(
+                "CAT_GA: GUID resolution completed."
+            );
+
+        })
+
+        .catch(function (error) {
+
+            console.error(
+                "CAT_GA: GUID resolution failed:",
+                error
+            );
+
+        });
+
+})();
+</script>
