@@ -1,0 +1,445 @@
+<script>
+(function () {
+
+    "use strict";
+
+    /*
+     * Prevent execution inside iframe
+     */
+    if (window.self !== window.top) {
+        return;
+    }
+
+
+    /*
+     * =====================================================
+     * GLOBAL CAT GA VALUES
+     * =====================================================
+     */
+
+    window.CAT_GA_ProductID = "";
+    window.CAT_GA_CategoryID = "";
+
+
+    /*
+     * Wait for Power Pages/Liquid content to be available
+     */
+    setTimeout(function () {
+
+
+        /*
+         * =====================================================
+         * READ PRODUCT PARAMETER FROM URL
+         * =====================================================
+         */
+
+        var params =
+            new URLSearchParams(window.location.search);
+
+        var urlProductParameter =
+            (params.get("product") || "").trim();
+
+
+        console.log(
+            "CAT_GA: window.location.href at check time:",
+            window.location.href
+        );
+
+        console.log(
+            "CAT_GA: Browser Product parameter:",
+            urlProductParameter
+        );
+
+
+        /*
+         * No product parameter
+         */
+        if (!urlProductParameter) {
+
+            console.log(
+                "CAT_GA: No product parameter on URL - skipping GUID resolution."
+            );
+
+            return;
+        }
+
+
+        /*
+         * =====================================================
+         * POWER PAGES WEB API GET
+         * =====================================================
+         */
+
+        function webApiGet(query) {
+
+            return fetch(
+                "/_api/" + query,
+                {
+                    method: "GET",
+
+                    headers: {
+                        "Accept": "application/json",
+                        "OData-MaxVersion": "4.0",
+                        "OData-Version": "4.0"
+                    }
+                }
+            )
+
+            .then(function (response) {
+
+                if (!response.ok) {
+
+                    return response.text().then(
+                        function (errorText) {
+
+                            console.error(
+                                "CAT_GA: Web API call failed",
+                                response.status,
+                                query
+                            );
+
+                            console.error(
+                                "CAT_GA: Web API response:",
+                                errorText
+                            );
+
+                            throw new Error(
+                                "Web API call failed: " +
+                                response.status
+                            );
+                        }
+                    );
+                }
+
+                return response.json();
+
+            });
+
+        }
+
+
+        /*
+         * =====================================================
+         * STEP 1
+         * RESOLVE URL PRODUCT PARAMETER TO PRODUCT GUID
+         * =====================================================
+         *
+         * Example:
+         *
+         * ?product=Partscatcom
+         *
+         * becomes:
+         *
+         * a699d29a-0164-f111-a826-7ced8d70f2ba
+         *
+         * =====================================================
+         */
+
+        var productFilter =
+            "products?$select=productid" +
+            "&$filter=cat_sourceurlproductparameter eq '" +
+            urlProductParameter.replace(/'/g, "''") +
+            "'";
+
+
+        console.log(
+            "CAT_GA: Looking up Product:",
+            urlProductParameter
+        );
+
+
+        webApiGet(productFilter)
+
+            .then(function (productResult) {
+
+
+                /*
+                 * =====================================================
+                 * CHECK PRODUCT RESULT
+                 * =====================================================
+                 */
+
+                var records =
+                    productResult.value || [];
+
+
+                console.log(
+                    "CAT_GA: product lookup returned",
+                    records.length,
+                    "record(s)",
+                    records
+                );
+
+
+                /*
+                 * Product not found
+                 */
+                if (records.length === 0) {
+
+                    console.warn(
+                        "CAT_GA: No product matched:",
+                        urlProductParameter
+                    );
+
+                    return;
+                }
+
+
+                /*
+                 * =====================================================
+                 * STEP 2
+                 * SET PRODUCT GUID
+                 * =====================================================
+                 */
+
+                var productId =
+                    records[0].productid || "";
+
+
+                /*
+                 * Normalize Product GUID
+                 */
+                productId =
+                    String(productId)
+                        .replace(/[{}]/g, "")
+                        .trim();
+
+
+                /*
+                 * Store Product GUID globally
+                 */
+                window.CAT_GA_ProductID =
+                    productId;
+
+
+                console.log(
+                    "CAT_GA: Resolved ProductID:",
+                    window.CAT_GA_ProductID
+                );
+
+
+                /*
+                 * =====================================================
+                 * STEP 3
+                 * READ PRODUCT -> CATEGORY MAPPINGS FROM 
+                 * * HIDDEN HTML
+* =====================================================
+*/
+
+var mappingElements =
+    document.querySelectorAll(
+        "#hiddenProductMappings div[data-mapping-id]"
+    );
+
+console.log(
+    "CAT_GA: Hidden mapping records available:",
+    mappingElements.length
+);
+
+
+/*
+* No mappings found
+*/
+if (mappingElements.length === 0* {
+
+    console.warn(
+        "CAT_GA: No hidden product mappings were found."
+    );
+
+    return;
+}
+
+
+/*
+* =====================================================
+* STEP 4
+* NORMALIZE RESOLVED PRODUCT GUID
+* =====================================================
+*/
+
+var resolvedProductId =
+    String(productId || "")
+        .replace(/[{}]/g, "")
+        .trim()
+        .toLowerCase();
+
+
+var matchingElement = null;
+
+
+/*
+* =====================================================
+* STEP 5
+* FIND MATCHING PRODUCT MAPPING
+* =====================================================
+*/
+
+mappingElements.forEach(function (element) {
+
+    /*
+    * If we already found the matching record,
+    * no further comparison is required.
+    */
+    if (matchingElement) {
+        return;
+    }
+
+
+    var mappingProductId =
+        String(
+            element.getAttribute(
+                "data-product-id"
+            ) || ""
+        )
+        .replace(/[{}]/g, "")
+        .trim()
+        .toLowerCase();
+
+
+    /*
+    * Compare Product GUID
+    */
+    if (
+        mappingProductId ===
+        resolvedProductId
+    ) {
+
+        matchingElement =
+            element;
+    }
+
+});
+
+
+/*
+* =====================================================
+* CHECK IF MATCHING MAPPING WAS FOUND
+* =====================================================
+*/
+
+if (!matchingElement) {
+
+    console.warn(
+        "CAT_GA: No category mapping found for ProductID:",
+        productId
+    );
+
+    return;
+}
+
+
+/*
+* =====================================================
+* STEP 6
+* READ CATEGORY DETAILS
+* =====================================================
+*/
+
+var categoryId =
+   *matching*lement*getAttribute(
+        "data-catego*y-id"
+    ) || "";
+
+
+var productName =
+    matchingElement.getAttribute(
+        "data-product"
+    ) || "";
+
+
+var categoryName =
+    matchingElement.getAttribute(
+        "data-category"
+    ) || "";
+
+
+/*
+* Normalize Category GUID
+*/
+categoryId =
+    String(categoryId)
+        .replace(/[{}]/g, "")
+        .trim();
+
+
+/*
+* =====================================================
+* STEP 7
+* SET GLOBAL CATEGORY GUID
+* =====================================================
+*/
+
+window.CAT_GA_CategoryID =
+    categoryId;
+
+
+/*
+* =====================================================
+* DEBUG LOGGING
+* =====================================================
+*/
+
+console.log(
+    "CAT_GA: Matching Product:",
+    productName
+);
+
+
+console.log(
+    "CAT_GA: Matching Category:",
+    categoryName
+);
+
+
+console.log(
+    "CAT_GA: Resolved CategoryID:",
+    window.CAT_GA_CategoryID
+);
+
+
+/*
+* =====================================================
+* FINAL RESULT
+* =====================================================
+*/
+
+console.log(
+    "CAT_GA: GUID resolution completed successfully."
+);
+
+
+console.log(
+    "CAT_GA: Final ProductID:",
+    window.CAT_GA_ProductID
+);
+
+
+console.log(
+    "CAT_GA: Final CategoryID:",
+    window.CAT_GA_CategoryID
+);
+
+})
+
+
+/*
+* =====================================================
+* ERROR HANDLING
+* =====================================================
+*/
+
+.catch(function (error) {
+
+    console.error(
+        "CAT_GA: GUID resolution failed:",
+        error
+    );
+
+});
+
+
+}, 2000);
+
+
+})();
+</script> 
