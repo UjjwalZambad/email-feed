@@ -1,0 +1,1942 @@
+<!-- Google Tag Manager -->
+<script>
+(function(w,d,s,l,i){
+    w[l]=w[l]||[];
+
+    w[l].push({
+        'gtm.start': new Date().getTime(),
+        event: 'gtm.js'
+    });
+
+    var f=d.getElementsByTagName(s)[0],
+        j=d.createElement(s),
+        dl=l!='dataLayer' ? '&l='+l : '';
+
+    j.async=true;
+    j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;
+    f.parentNode.insertBefore(j,f);
+
+})(window,document,'script','dataLayer','GTM-PV4KJLLR');
+</script>
+<!-- End Google Tag Manager -->
+
+<!-- Google Tag Manager (noscript) -->
+<noscript>
+    <iframe
+        src="https://www.googletagmanager.com/ns.html?id=GTM-PV4KJLLR"
+        height="0"
+        width="0"
+        style="display:none;visibility:hidden">
+    </iframe>
+</noscript>
+<!-- End Google Tag Manager (noscript) -->
+<div class="row sectionBlockLayout text-start" style="min-height:auto;padding:8px;">
+    <div class="container" style="display:flex;flex-wrap:wrap;max-width:100%;">
+
+        <div class="col-lg-12 columnBlockLayout"
+             style="padding:16px;margin:20px 0;min-height:200px;">
+
+            <div id="replyEmailContainer">
+                Loading email...
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+<div id="emailNotification" class="custom-notification">
+
+    <div class="notification-icon">
+
+    <svg width="18"
+         height="18"
+         viewBox="0 0 24 24"
+         fill="none"
+         xmlns="http://www.w3.org/2000/svg">
+
+        <path fill-rule="evenodd"
+              clip-rule="evenodd"
+              d="M12 23C14.9174 23 17.7153 21.8411 19.7782 19.7782C21.8411 17.7153 23 14.9174 23 12C23 9.08262 21.8411 6.28473 19.7782 4.22183C17.7153 2.15893 14.9174 1 12 1C9.08262 1 6.28473 2.15893 4.22183 4.22183C2.15893 6.28473 1 9.08262 1 12C1 14.9174 2.15893 17.7153 4.22183 19.7782C6.28473 21.8411 9.08262 23 12 23ZM17.5047 9.20129C17.7004 8.95685 17.7909 8.6447 17.7565 8.33349C17.722 8.02229 17.5653 7.73753 17.3209 7.54186C17.0764 7.34618 16.7643 7.25563 16.4531 7.29011C16.1419 7.32459 15.8571 7.48128 15.6614 7.72571L10.0923 14.6934L7.86243 13.0214C7.73861 12.9286 7.59771 12.861 7.44778 12.8226C7.29785 12.7842 7.14183 12.7757 6.98861 12.7976C6.83539 12.8194 6.68799 12.8713 6.55481 12.9502C6.42163 13.029 6.30529 13.1333 6.21243 13.2571C6.11957 13.381 6.052 13.5219 6.01359 13.6718C5.97518 13.8217 5.96667 13.9777 5.98856 14.131C6.01045 14.2842 6.0623 14.4316 6.14115 14.5648C6.22001 14.6979 6.32433 14.8143 6.44814 14.9071L9.591 17.2643C9.83591 17.4483 10.1428 17.5297 10.4467 17.4912C10.7506 17.4528 11.0276 17.2976 11.219 17.0584L17.5047 9.20129Z"
+              fill="#107C10"/>
+
+    </svg>
+
+    </div>
+
+    <span id="notificationText"></span>
+
+    <div class="notification-chevron">
+
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+         xmlns="http://www.w3.org/2000/svg">
+
+        <path fill-rule="evenodd"
+              clip-rule="evenodd"
+              d="M2.32416 7.03705C2.61706 6.74416 3.09193 6.74416 3.38482 7.03705L11.9995 15.6517L20.6142 7.03705C20.9071 6.74416 21.3819 6.74416 21.6748 7.03705C21.9677 7.32995 21.9677 7.80482 21.6748 8.09771L13.0291 16.7434C12.8977 16.8807 12.7402 16.9903 12.5657 17.0658C12.387 17.1432 12.1943 17.1831 11.9995 17.1831C11.8047 17.1831 11.612 17.1432 11.4332 17.0658C11.2588 16.9903 11.1013 16.8807 10.9699 16.7434L2.32416 8.09771C2.03127 7.80482 2.03127 7.32995 2.32416 7.03705Z"
+              fill="#605E5C"/>
+
+    </svg>
+
+    </div>
+
+</div>
+
+
+
+<style>
+    * {
+    font-family: 'NotoSans', sans-serif;
+}
+
+.compose-wrapper{
+    background:#fff;
+    padding:20px;
+}
+
+.compose-title{
+    font-size:42px;
+    font-weight:700;
+    margin-bottom:25px;
+}
+
+.compose-field{
+    margin-bottom:20px;
+}
+
+.compose-label{
+    display:block;
+    font-weight:600;
+    margin-bottom:10px;
+    font-size:16px;
+}
+
+.to-row{
+    display:flex;
+    align-items:center;
+    padding:12px 0 18px 0;
+    border-bottom:1px solid #d9d9d9;
+    margin-bottom:25px;
+}
+
+.to-label{
+    width:50px;
+    min-width:50px;
+    font-size:16px;
+    font-weight:600;
+    color:#333;
+}
+
+.recipients-container{
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:10px;
+}
+
+.email-chip{
+    background:#e5e5e5;
+    color:#4a4a4a;
+    border-radius:20px;
+    padding:8px 18px;
+    font-size:14px;
+    font-weight:600;
+    line-height:20px;
+}
+
+.reply-editor{
+    height:320px;
+    border:1px solid #d9d9d9;
+    padding:15px;
+    overflow-y:auto;
+    overflow-x:hidden;
+    background:#fff;
+    box-sizing:border-box;
+}
+
+.original-thread{
+    color:#444;
+}
+
+.attach-section{
+    margin-top:25px;
+}
+
+.upload-container{
+    border:1px dashed #9e9e9e;
+    border-radius:4px;
+    padding:4px;
+    display:inline-block;
+    background:#fff;
+}
+
+.upload-btn{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:10px 18px;
+    border:1px solid #9e9e9e;
+    border-radius:4px;
+    background:#f8f8f8;
+    color:#0f6cbd;
+    font-size:16px;
+    cursor:pointer;
+    font-weight:500;
+}
+
+.upload-btn:hover{
+    background:#f3f3f3;
+}
+
+.upload-icon{
+    font-size:20px;
+}
+
+#attachmentInput{
+    display:none;
+}
+
+.uploaded-files{
+    margin-top:10px;
+    font-size:14px;
+    color:#444;
+}
+
+.button-section{
+    margin-top:25px;
+}
+
+.send-btn{
+    background:#ffcd00;
+    border:none;
+    padding:12px 30px;
+    border-radius:4px;
+    font-weight:bold;
+    cursor:pointer;
+}
+
+.cancel-btn{
+    margin-left:15px;
+    border:none;
+    background:none;
+    color:#0078d4;
+    font-weight:bold;
+    cursor:pointer;
+}
+
+.error-message{
+    color:red;
+    font-size:18px;
+}
+
+.attachment-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:16px 20px;
+    margin-top:15px;
+    border:1px solid #d9d9d9;
+    border-radius:4px;
+    background:#fafafa;
+}
+
+.attachment-left{
+    display:flex;
+    align-items:center;
+    gap:12px;
+}
+
+.attachment-icon{
+    font-size:22px;
+    color:#444;
+}
+
+.attachment-name{
+    font-size:16px;
+    color:#222;
+}
+
+.attachment-right{
+    display:flex;
+    align-items:center;
+    gap:20px;
+}
+
+.attachment-size{
+    color:#777;
+    min-width:100px;
+    text-align:right;
+}
+
+.remove-attachment{
+    border:none;
+    background:none;
+    color:#d13438;
+    cursor:pointer;
+    font-size:18px;
+}
+
+.upload-modal{
+    display:none;
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,.35);
+    z-index:99999;
+}
+
+.upload-modal-content{
+    width:75%;
+    max-width:1200px;
+    background:#fff;
+    margin:120px auto;
+    border-radius:4px;
+    overflow:hidden;
+}
+
+.upload-modal-header{
+    text-align:center;
+    font-size:22px;
+    padding:20px;
+    border-bottom:1px solid #ddd;
+    font-weight:500;
+}
+
+.upload-modal-footer{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:15px 20px;
+    border-top:1px solid #ddd;
+}
+
+.upload-done-btn{
+    background:#005a9e;
+    color:#fff;
+    border:none;
+    padding:10px 25px;
+    border-radius:4px;
+    cursor:pointer;
+}
+
+.upload-preview-row{
+    display:flex;
+    align-items:center;
+    gap:20px;
+    padding:25px;
+}
+
+.file-doc-icon{
+    width:50px;
+    height:50px;
+    background:#2b88d8;
+    color:white;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:4px;
+    font-size:12px;
+    font-weight:bold;
+}
+
+.file-details{
+    min-width:300px;
+}
+
+.file-name{
+    font-size:20px;
+}
+
+.file-size{
+    color:#777;
+    margin-top:5px;
+}
+
+.progress-wrapper{
+    flex:1;
+}
+
+.progress-bar-ui{
+    width:100%;
+    height:16px;
+    background:#e5e5e5;
+    border-radius:20px;
+    overflow:hidden;
+}
+
+.progress-bar-fill{
+    width:0;
+    height:100%;
+    background:#005eb8;
+    animation:fillProgress 1.5s ease forwards;
+}
+
+@keyframes fillProgress{
+    from{
+        width:0%;
+    }
+    to{
+        width:100%;
+    }
+}
+
+.status-check{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    opacity:0;
+
+    animation:showTick .2s ease forwards;
+    animation-delay:1.5s;
+}
+
+@keyframes showTick{
+    from{
+        opacity:0;
+    }
+    to{
+        opacity:1;
+    }
+}
+
+.editor-toolbar{
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:6px;
+    padding:10px;
+    border:1px solid #bdbdbd;
+    border-bottom:none;
+    background:#f5f5f5;
+}
+
+.editor-toolbar select{
+    height:42px;
+    border:1px solid #a0a0a0;
+    border-radius:4px;
+    padding:0 10px;
+    background:#fff;
+    min-width:120px;
+}
+
+.editor-toolbar input[type=color]{
+    width:42px;
+    height:42px;
+    border:none;
+    cursor:pointer;
+    background:none;
+}
+
+.editor-btn,
+#linkBtn{
+    width:42px;
+    height:42px;
+    border:1px solid #a0a0a0;
+    border-radius:4px;
+    background:#fff;
+    cursor:pointer;
+    font-size:16px;
+}
+
+.editor-btn:hover,
+#linkBtn:hover{
+    background:#e5e5e5;
+}
+
+.reply-editor{
+    min-height:350px;
+    border:1px solid #a0a0a0;
+    padding:15px;
+    background:#fff;
+    overflow-y:auto;
+}
+
+.reply-editor:focus{
+    outline:none;
+    border-color:#0078d4;
+}
+
+.custom-notification{
+    display:none;
+    position:fixed;
+    top:20px;
+    right:20px;
+    width:500px;
+    max-width:85%;
+    padding:16px 20px;
+    background:#eff6ef;
+    border:1px solid #4caf50;
+    border-left:4px solid #107c10;
+    color:#323130;
+    box-shadow:0 1px 3px rgba(0,0,0,.1);
+    z-index:999999;
+    align-items:center;
+    gap:12px;
+}
+
+.notification-icon{
+    flex-shrink:0;
+    display:flex;
+    align-items:center;
+}
+
+#notificationText{
+    flex:1;
+    font-size:15px;
+    font-weight:600;
+    color:#323130;
+}
+
+.notification-chevron{
+    margin-left:auto;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    flex-shrink:0;
+}
+
+.notification-chevron svg{
+    width:16px;
+    height:16px;
+}
+
+.error-notification{
+    background:#fdf3f4 !important;
+    border:1px solid #d13438 !important;
+    border-left:4px solid #d13438 !important;
+}
+
+.error-notification .notification-chevron svg path{
+    fill:#d13438;
+}.error-notification{
+    background:#fdf3f4 !important;
+    border:1px solid #d13438 !important;
+    border-left:4px solid #d13438 !important;
+}
+
+.error-notification .notification-chevron svg path{
+    fill:#d13438;
+}
+</style>
+
+<div id="uploadModal" class="upload-modal">
+
+    <div class="upload-modal-content">
+
+        <div class="upload-modal-header">
+            Upload Files
+        </div>
+
+        <div id="uploadModalBody">
+        </div>
+
+        <div class="upload-modal-footer">
+
+            <div id="uploadCount">
+            </div>
+
+            <button
+                type="button"
+                id="uploadDoneBtn"
+                class="upload-done-btn">
+
+                Done
+
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+    var queueId = "{{ settings["SendEmail/Queue"] }}";
+    var currentContactId = "{{ user.id }}";
+</script>
+
+<script>
+
+    let originalEmail = null;
+    let currentCaseId = null;
+    let selectedFiles = [];
+    let recipientContactId = null;
+
+            // Example value: jpg,jpeg,png,gif,svg,js,css,zip,doc,docx,xls,xlsx,ppt,pptx,pdf,woff,ttf
+        window.caseAttachmentAllowedFileTypesRaw =
+            "{{ snippets['CAT Document Upload Allow File Type'] | default: '' }}";
+
+        window.caseAttachmentAllowedMaxFilesRaw =
+            "{{ snippets['CAT Webform Upload Allow Max Files'] | default: '5' }}";
+
+        window.caseAttachmentAllowedFileSizeMbRaw =
+            "{{ snippets['CAT Webform Upload Allow File Size (MB)'] | default: '25' }}";
+
+        const CASE_ATTACHMENT_MIME_TYPES = {
+            jpg: "image/jpeg",
+            jpeg: "image/jpeg",
+            png: "image/png",
+            gif: "image/gif",
+            svg: "image/svg+xml",
+
+            js: "text/javascript",
+            css: "text/css",
+
+            zip: "application/zip",
+
+            doc: "application/msword",
+            docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+
+            xls: "application/vnd.ms-excel",
+            xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+
+            ppt: "application/vnd.ms-powerpoint",
+            pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+
+            pdf: "application/pdf",
+
+            woff: "font/woff",
+            ttf: "font/ttf"
+        };
+
+        function parsePositiveInteger(value, fallbackValue) {
+            const parsed = parseInt(String(value || "").trim(), 10);
+
+            if (isNaN(parsed) || parsed <= 0) {
+                return fallbackValue;
+            }
+
+            return parsed;
+        }
+
+        function buildAllowedExtensionSet(rawValue) {
+
+            return new Set(
+                String(rawValue || "")
+                    .split(",")
+                    .map(x => x.trim().toLowerCase())
+                    .filter(Boolean)
+            );
+        }
+
+        const CASE_ATTACHMENT_ALLOWED_EXT =
+            buildAllowedExtensionSet(
+                window.caseAttachmentAllowedFileTypesRaw
+            );
+
+        const CASE_ATTACHMENT_MAX_FILES_PER_UPLOAD =
+            parsePositiveInteger(
+                window.caseAttachmentAllowedMaxFilesRaw,
+                5
+            );
+
+        const CASE_ATTACHMENT_MAX_FILE_SIZE_MB =
+            parsePositiveInteger(
+                window.caseAttachmentAllowedFileSizeMbRaw,
+                25
+            );
+
+        const CASE_ATTACHMENT_MAX_FILE_SIZE_BYTES =
+            CASE_ATTACHMENT_MAX_FILE_SIZE_MB * 1024 * 1024;
+
+    window.webapi = window.webapi || {};
+
+(function (webapi, $) {
+
+    function safeAjax(ajaxOptions) {
+
+        var deferredAjax = $.Deferred();
+
+        shell.getTokenDeferred().done(function (token) {
+
+            if (!ajaxOptions.headers) {
+                ajaxOptions.headers = {};
+            }
+
+            ajaxOptions.headers["__RequestVerificationToken"] = token;
+
+            $.ajax(ajaxOptions)
+                .done(function (data, textStatus, jqXHR) {
+                    deferredAjax.resolve(data, textStatus, jqXHR);
+                })
+                .fail(function (jqXHR, textStatus, errorThrown) {
+                    deferredAjax.reject(jqXHR, textStatus, errorThrown);
+                });
+
+        }).fail(function () {
+            deferredAjax.rejectWith(this, arguments);
+        });
+
+        return deferredAjax.promise();
+    }
+
+    webapi.safeAjax = safeAjax;
+
+})(window.webapi, jQuery);
+
+$(document).ready(function () {
+
+    if (window.self !== window.top) {
+
+        $("#vertical-nav").remove();
+
+        document.documentElement.setAttribute("data-nav-state", "collapsed");
+    }
+
+});
+
+$(document).ready(function () {
+
+    const params = new URLSearchParams(window.location.search);
+
+    const emailId = params.get("emailid");
+    const mode = params.get("mode");
+
+    currentCaseId = params.get("caseid");
+
+    if (mode === "popup") {
+
+    const css = `
+        header,
+        footer,
+        .navbar,
+        .navbar-inverse,
+        .side-nav,
+        #vertical-nav{
+            display:none !important;
+        }
+
+        html, body{
+            margin:0 !important;
+            padding:0 !important;
+            overflow:auto;
+        }
+
+        .container,
+        .container-fluid,
+        .row,
+        .sectionBlockLayout,
+        .columnBlockLayout{
+            max-width:100% !important;
+            width:100% !important;
+            margin:0 !important;
+            padding:0 !important;
+        }
+
+        #replyEmailContainer{
+            margin:0 !important;
+            padding:0 !important;
+        }
+
+        .compose-wrapper{
+            padding:10px !important;
+        }
+    `;
+
+    $("<style>")
+        .text(css)
+        .appendTo("head");
+}
+
+    if (!emailId) {
+
+        $("#replyEmailContainer").html(`
+            <div class="error-message">
+                Email Id missing from URL.
+            </div>
+        `);
+
+        return;
+    }
+
+    loadEmail(emailId);
+
+});
+
+function setParentSendButtonState(disabled) {
+
+    if (
+        window.parent &&
+        window.parent !== window
+    ) {
+
+        const $buttons = window.parent.$(
+            "#replyAllSendBtn, #popupSendBtn"
+        );
+
+        if ($buttons.length) {
+
+            $buttons.prop("disabled", disabled);
+
+            if (disabled) {
+
+                $buttons.css({
+                    opacity: "0.5",
+                    cursor: "not-allowed",
+                    pointerEvents: "none"
+                });
+
+            } else {
+
+                $buttons.css({
+                    opacity: "",
+                    cursor: "",
+                    pointerEvents: ""
+                });
+
+            }
+        }
+    }
+}
+
+function validateSelectedFiles(files) {
+
+    const validFiles = [];
+
+    for (const file of files) {
+
+        const extension =
+            (file.name.split(".").pop() || "")
+            .toLowerCase();
+
+        // Extension validation
+        if (
+            CASE_ATTACHMENT_ALLOWED_EXT.size > 0 &&
+            !CASE_ATTACHMENT_ALLOWED_EXT.has(extension)
+        ) {
+
+            showNotification(
+                `${file.name} is not an allowed file type.`,
+                "error"
+            );
+
+            continue;
+        }
+
+        // Size validation
+        if (
+            file.size >
+            CASE_ATTACHMENT_MAX_FILE_SIZE_BYTES
+        ) {
+
+            showNotification(
+                `${file.name} exceeds the maximum size of ${CASE_ATTACHMENT_MAX_FILE_SIZE_MB} MB.`,
+                "error"
+            );
+
+            continue;
+        }
+
+        validFiles.push(file);
+    }
+
+    return validFiles;
+}
+
+// function loadCaseContact(caseId){
+
+//     $.ajax({
+
+//         url:
+//         "/_api/incidents(" +
+//         caseId +
+//         ")?$select=_customerid_value",
+
+//         method: "GET",
+
+//         headers: {
+//             "Accept": "application/json"
+//         },
+
+//         success: function(result){
+
+//             recipientContactId =
+//                 result._customerid_value;
+
+//             console.log(
+//                 "Recipient Contact ID:",
+//                 recipientContactId
+//             );
+//         },
+
+//         error: function(xhr){
+
+//             console.error(
+//                 "Failed to load case customer",
+//                 xhr
+//             );
+
+//         }
+
+//     });
+
+// }
+
+
+function loadRecipientContact(emailAddress){
+
+    if(!emailAddress){
+        return;
+    }
+
+    webapi.safeAjax({
+
+        type: "GET",
+
+        url:
+            "/_api/contacts" +
+            "?$select=contactid,emailaddress1" +
+            "&$filter=emailaddress1 eq '" +
+            emailAddress +
+            "'",
+
+        success: function(result){
+
+            recipientContactId =
+                result.value?.[0]?.contactid || null;
+
+            console.log(
+                "Recipient Contact ID:",
+                recipientContactId
+            );
+        },
+
+        error: function(xhr){
+
+            console.error(
+                "Failed to load recipient contact",
+                xhr
+            );
+
+        }
+
+    });
+
+}
+
+function loadEmail(emailId){
+
+    $.ajax({
+
+       url:
+        "/_api/emails(" +
+        emailId +
+        ")?$select=activityid,subject,description,createdon,sender,torecipients,_regardingobjectid_value" +
+        "&$expand=email_activity_parties($select=participationtypemask,addressused,_partyid_value)",
+
+        method:"GET",
+
+        headers:{
+            "Accept":"application/json"
+        },
+
+        success:function(email){
+
+            console.log("Email Loaded", email);
+
+            originalEmail = email;
+
+            const recipientEmail =
+                (email.torecipients || "")
+                    .split(";")[0]
+                    .trim();
+
+            loadRecipientContact(recipientEmail);
+
+            renderCompose(email);
+
+            loadEmailAttachments(email.activityid)
+        },
+
+        error:function(xhr){
+
+            console.error(xhr);
+
+            $("#replyEmailContainer").html(`
+                <div class="error-message">
+                    {{ snippets['CAT_Error_EmailFail'] }}
+                    <br><br>
+                    ${xhr.responseText || ""}
+                </div>
+            `);
+
+        }
+
+    });
+
+}
+
+function renderCompose(email){
+
+    const subject =
+        email.subject || "";
+
+    const description =
+        email.description || "";
+
+    const createdOn =
+        email.createdon
+            ? new Date(email.createdon).toLocaleString()
+            : "";
+
+    const sender =
+        email.sender || "";
+
+    const recipients =
+        email.torecipients || "";
+
+    const recipientChips = [];
+
+    if(sender){
+
+        recipientChips.push(`
+            <div class="email-chip">
+                ${sender}
+            </div>
+        `);
+
+    }
+
+    if(recipients){
+
+        recipients
+            .split(";")
+            .filter(x => x.trim())
+            .forEach(function(address){
+
+                recipientChips.push(`
+                    <div class="email-chip">
+                        ${address.trim()}
+                    </div>
+                `);
+
+            });
+
+    }
+
+    const html = `
+
+    <div class="compose-wrapper">
+
+        <div class="compose-title">
+            Compose Email
+        </div>
+
+        <div class="to-row">
+
+            <div class="to-label">
+                To:
+            </div>
+
+            <div
+                class="recipients-container"
+                id="toRecipientsInput"
+                contenteditable="true">
+
+                ${recipientChips.join("")}
+
+            </div>
+
+        </div>
+
+        <div class="compose-field">
+
+          <label class="compose-label">
+              Message:
+          </label>
+
+          <div class="editor-toolbar">
+
+            <select id="fontNameSelect">
+                <option value="Segoe UI">Segoe UI</option>
+                <option value="Arial">Arial</option>
+                <option value="Calibri">Calibri</option>
+                <option value="Verdana">Verdana</option>
+            </select>
+
+            <select id="fontSizeSelect">
+                <option value="2">10</option>
+                <option value="3" selected>13</option>
+                <option value="4">16</option>
+                <option value="5">18</option>
+                <option value="6">24</option>
+            </select>
+
+            <input
+                type="color"
+                id="fontColorPicker">
+
+            <button type="button" class="editor-btn" data-cmd="bold">
+                <b>B</b>
+            </button>
+
+            <button type="button" class="editor-btn" data-cmd="italic">
+                <i>I</i>
+            </button>
+
+            <button type="button" class="editor-btn" data-cmd="underline">
+                <u>U</u>
+            </button>
+
+            <button type="button" class="editor-btn" data-cmd="strikeThrough">
+                S
+            </button>
+
+            <button type="button" class="editor-btn" data-cmd="insertUnorderedList">
+                •
+            </button>
+
+            <button type="button" class="editor-btn" data-cmd="insertOrderedList">
+                1.
+            </button>
+
+            <button type="button" class="editor-btn" data-cmd="justifyLeft">
+                ⬅
+            </button>
+
+            <button type="button" class="editor-btn" data-cmd="justifyCenter">
+                ⬌
+            </button>
+
+            <button type="button" class="editor-btn" data-cmd="justifyRight">
+                ➡
+            </button>
+
+            <button type="button" id="linkBtn">
+                🔗
+            </button>
+
+            <button type="button" class="editor-btn" data-cmd="removeFormat">
+                Tx
+            </button>
+
+          </div>
+          <div
+              id="replyEditor"
+              class="reply-editor"
+              contenteditable="true">
+
+              <br><br><br>
+
+              <div class="original-thread">
+
+                    <strong>
+                        ------------- Original Message -------------
+                    </strong>
+
+                    <br><br>
+
+                    <strong>From:</strong>
+                    ${sender}
+
+                    <br>
+
+                    <strong>Sent:</strong>
+                    ${createdOn}
+
+                    <br>
+
+                    <strong>To:</strong>
+                    ${recipients}
+
+                    <br>
+
+                    <strong>Subject:</strong>
+                    ${subject}
+
+                    <br><br>
+
+                    ${description}
+
+                </div>
+
+
+          </div>
+
+      </div>
+        <div class="attach-section">
+
+    <label class="compose-label">
+        Attach files:
+    </label>
+
+    <div class="upload-container">
+
+            <label
+                for="attachmentInput"
+                class="upload-btn">
+
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12.5752 1.37398C12.4376 1.20956 12.2309 1.10498 11.9998 1.10498C11.8275 1.10498 11.6688 1.16305 11.5422 1.26069C11.5017 1.29188 11.4641 1.32739 11.4303 1.36689L6.74795 6.82958C6.47839 7.14407 6.51481 7.61755 6.8293 7.88712C7.1438 8.15668 7.61727 8.12026 7.88684 7.80577L11.2498 3.88236V15.9019C11.2498 16.3161 11.5855 16.6519 11.9998 16.6519C12.414 16.6519 12.7498 16.3161 12.7498 15.9019V3.88248L16.1126 7.80577C16.3821 8.12026 16.8556 8.15668 17.1701 7.88712C17.4846 7.61755 17.521 7.14407 17.2515 6.82958L12.5752 1.37398Z" fill="#0078D4"/>
+                <path d="M2.60449 17.4629C2.60449 17.0487 2.26871 16.7129 1.85449 16.7129C1.44028 16.7129 1.10449 17.0487 1.10449 17.4629V19.0237C1.10449 20.0505 1.51239 21.0352 2.23844 21.7612C2.96449 22.4873 3.94923 22.8952 4.97603 22.8952H19.023C20.0498 22.8952 21.0345 22.4873 21.7605 21.7612C22.4866 21.0352 22.8945 20.0505 22.8945 19.0237V17.4629C22.8945 17.0487 22.5587 16.7129 22.1445 16.7129C21.7303 16.7129 21.3945 17.0487 21.3945 17.4629V19.0237C21.3945 19.6526 21.1446 20.2558 20.6999 20.7006C20.2551 21.1453 19.6519 21.3952 19.023 21.3952H4.97603C4.34706 21.3952 3.74385 21.1453 3.2991 20.7006C2.85435 20.2558 2.60449 19.6526 2.60449 19.0237V17.4629Z" fill="#0078D4"/>
+                </svg>
+
+                Upload Files
+
+            </label>
+
+            <input
+                type="file"
+                id="attachmentInput"
+                multiple />
+
+        </div>
+
+        <div
+            id="uploadedFiles"
+            class="uploaded-files">
+        </div>
+
+    </div>
+
+        <div class="button-section">
+
+            <button
+                type="button"
+                id="sendEmailBtn"
+                class="send-btn">
+                Send
+            </button>
+
+            <button
+                type="button"
+                id="cancelBtn"
+                class="cancel-btn">
+                Cancel
+            </button>
+
+        </div>
+
+    </div>
+
+    `;
+
+    $("#replyEmailContainer").html(html);
+
+        const params = new URLSearchParams(window.location.search);
+
+        if (
+            params.get("mode") === "popup" &&
+            window.parent &&
+            window.parent !== window
+        ) {
+
+            $(".compose-title").hide();
+
+            $(".button-section").hide();
+
+        }
+
+}
+
+function loadEmailAttachments(emailId) {
+ 
+    $.ajax({
+        url: "/_api/activitymimeattachments" +
+             "?$select=activitymimeattachmentid,filename,mimetype,filesize" +
+             "&$filter=_objectid_value eq " + emailId,
+        method: "GET",
+        headers: { "Accept": "application/json" },
+ 
+        success: function (result) {
+            renderExistingAttachments(result.value || []);
+        },
+ 
+        error: function (xhr) {
+            console.error("Failed to load attachments", xhr.status, xhr.responseText);
+        }
+    });
+}
+ 
+function renderExistingAttachments(items) {
+ 
+    if (!items.length) {
+        $("#existingAttachments").empty();
+        return;
+    }
+ 
+    let html = '<div class="compose-label">Attachments:</div>';
+ 
+    items.forEach(function (a) {
+        const sizeKB = a.filesize ? (a.filesize / 1024).toFixed(2) : "";
+        html += `
+<div class="attachment-row">
+<div class="attachment-name">${a.filename || ""}</div>
+<div class="attachment-size">${sizeKB} KB</div>
+</div>
+        `;
+    });
+ 
+    $("#existingAttachments").html(html);
+}
+
+function triggerSendEmailFlow(emailId) {
+
+    const flowUrl =
+        "/_api/cloudflow/v1.0/trigger/150e9a76-0c9a-f111-b8dc-7ced8d6fdee0";
+
+    const cleanId = String(emailId)
+        .replace(/[{}]/g, "")
+        .trim();
+
+    /*
+     * Important:
+     * eventData must be a JSON STRING.
+     * Do not pass eventData as a nested object.
+     */
+    const requestPayload = {
+       eventData: JSON.stringify({
+           emailId: cleanId
+    })
+    };
+
+    console.log("Flow UR*:", flowUrl);
+    console.log("Ema*l ID:", cleanId);
+    console.log("Flow request object:", requestPayload);
+    console.log(
+        "Serialized eventData:",
+        requestPayload.eventData
+    );
+
+    return webapi.safeAjax({
+        type: "POST",
+        url: flowUrl,
+
+        /*
+         * Let jQuery send requestPayload as form data.
+         * This matches Microsoft's Power Pages example.
+         */
+        data: requestPayload,
+
+        success: function (response, textStatus, jqXHR) {
+
+            console.log("Flow triggered successfully");
+            console.log("Status:", jqXHR.status);
+            console.log("Response:", response);
+        },
+
+        error: function (xhr, textStatus, errorThrown) {
+
+            console.error("Flow trigger failed");
+            console.error("Status:", xhr.status);
+            console.error("Response:", xhr.responseText);
+            console.error("Error:", errorThrown);
+        }
+    });
+}
+
+function showNotification(message, type) {
+
+    const isError = type === "error";
+
+    const iconSvg = isError
+        ? `
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                 xmlns="http://www.w3.org/2000/svg">
+                <path fill-rule="evenodd" clip-rule="evenodd"
+                    d="M1.72255 13.7441C0.75915 12.7807 0.75915 11.2188 1.72255 10.2554L10.2556 1.72231C11.219 0.758905 12.781 0.758907 13.7444 1.72231L22.2775 10.2554C23.2408 11.2188 23.2408 12.7807 22.2775 13.7441L13.7444 22.2771C12.781 23.2407 11.219 23.2407 10.2556 22.2771L1.72255 13.7441ZM12.0007 5.9116C12.6516 5.9116 13.1792 6.43922 13.1792 7.09007V12.1968C13.1792 12.8476 12.6516 13.3753 12.0007 13.3753C11.3499 13.3753 10.8222 12.8476 10.8222 12.1968V7.09007C10.8222 6.43922 11.3499 5.9116 12.0007 5.9116ZM13.572 16.5179C13.572 17.3857 12.8685 18.0892 12.0007 18.0892C11.1329 18.0892 10.4294 17.3857 10.4294 16.5179C10.4294 15.6501 11.1329 14.9466 12.0007 14.9466C12.8685 14.9466 13.572 15.6501 13.572 16.5179Z"
+                    fill="#D13438"/>
+            </svg>
+        `
+        : `
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                 xmlns="http://www.w3.org/2000/svg">
+                <path fill-rule="evenodd" clip-rule="evenodd"
+                    d="M12 23C14.9174 23 17.7153 21.8411 19.7782 19.7782C21.8411 17.7153 23 14.9174 23 12C23 9.08262 21.8411 6.28473 19.7782 4.22183C17.7153 2.15893 14.9174 1 12 1C9.08262 1 6.28473 2.15893 4.22183 4.22183C2.15893 6.28473 1 9.08262 1 12C1 14.9174 2.15893 17.7153 4.22183 19.7782C6.28473 21.8411 9.08262 23 12 23ZM17.5047 9.20129C17.7004 8.95685 17.7909 8.6447 17.7565 8.33349C17.722 8.02229 17.5653 7.73753 17.3209 7.54186C17.0764 7.34618 16.7643 7.25563 16.4531 7.29011C16.1419 7.32459 15.8571 7.48128 15.6614 7.72571L10.0923 14.6934L7.86243 13.0214C7.73861 12.9286 7.59771 12.861 7.44778 12.8226C7.29785 12.7842 7.14183 12.7757 6.98861 12.7976C6.83539 12.8194 6.68799 12.8713 6.55481 12.9502C6.42163 13.029 6.30529 13.1333 6.21243 13.2571C6.11957 13.381 6.052 13.5219 6.01359 13.6718C5.97518 13.8217 5.96667 13.9777 5.98856 14.131C6.01045 14.2842 6.0623 14.4316 6.14115 14.5648C6.22001 14.6979 6.32433 14.8143 6.44814 14.9071L9.591 17.2643C9.83591 17.4483 10.1428 17.5297 10.4467 17.4912C10.7506 17.4528 11.0276 17.2976 11.219 17.0584L17.5047 9.20129Z"
+                    fill="#107C10"/>
+            </svg>
+        `;
+
+    $(".notification-icon").html(iconSvg);
+
+    $("#emailNotification").toggleClass("error-notification", isError);
+
+    $("#notificationText").text(message);
+
+    $("#emailNotification")
+        .css("display", "flex")
+        .hide()
+        .fadeIn(300);
+
+    setTimeout(function () {
+        $("#emailNotification").fadeOut(300);
+    }, 5000);
+}
+
+function createReplyEmail(replyHtml){
+
+    if(!currentCaseId){
+        // alert("Case Id not found.");
+        alert("{{ snippets['CAT_Error_NoCase'] }}");
+        return;
+    }
+
+    const replySubject =
+    /^RE:/i.test(originalEmail.subject || "")
+        ? originalEmail.subject
+        : "RE: " + (originalEmail.subject || "");
+
+    const emailPayload = {
+    subject: replySubject,
+    description: replyHtml,
+    email_activity_parties: [
+    {
+        "partyid_queue@odata.bind":
+            `/queues(${queueId})`,
+        participationtypemask: 1
+    },
+    {
+        "partyid_contact@odata.bind":
+            `/contacts(${recipientContactId})`,
+        participationtypemask: 2
+    }
+],
+
+    sender: originalEmail.sender,
+    torecipients: originalEmail.torecipients,
+    "regardingobjectid_incident@odata.bind":
+        "/incidents(" + currentCaseId + ")"
+};
+
+    webapi.safeAjax({
+
+        type: "POST",
+
+        url: "/_api/emails",
+
+        contentType: "application/json",
+
+        data: JSON.stringify(emailPayload),
+
+       success: function(result, textStatus, jqXHR){
+
+    console.log(
+        "Reply Email Created"
+    );
+
+    const entityUri =
+        jqXHR.getResponseHeader("OData-EntityId");
+
+    console.log(
+        "Entity URI:",
+        entityUri
+    );
+
+    if(!entityUri){
+
+        // alert(
+        //     "Email created but could not retrieve Email ID."
+        // );
+        alert("{{ snippets['CAT_Error_EmailCreated'] }}");
+
+        return;
+    }
+
+    const matches =
+        entityUri.match(/\(([^)]+)\)/);
+
+    const emailId =
+        matches ? matches[1] : null;
+
+    console.log(
+        "Email Id:",
+        emailId
+    );
+
+    if(!emailId){
+
+        // alert(
+        //     "Unable to determine Email ID."
+        // );
+        alert("{{ snippets['CAT_Error_UnableEmail'] }}");
+
+        return;
+    }
+
+    Promise.all(
+
+    selectedFiles.map(function(file){
+
+        return createMimeAttachment(
+            file,
+            emailId
+        );
+
+    })
+
+).then(function () {
+    console.log("Calling flow for email:", emailId);
+    return triggerSendEmailFlow(emailId);
+
+})
+.then(function () {
+
+    showNotification(
+        "Email created and sent successfully.",
+        "success"
+    );
+    setParentSendButtonState(false);
+
+})
+.catch(function (error) {
+
+    console.error(
+        "Email processing or flow trigger failed",
+        error
+    );
+
+    let message =
+        "The email record was created, but the send flow failed.";
+
+    if (error && error.responseText) {
+        message += "\n\n" + error.responseText;
+    }
+
+    showNotification(message, "error");
+    setParentSendButtonState(false);
+});
+     },
+
+        error: function(xhr){
+
+            console.error(
+                "Create Email Error",
+                xhr
+            );
+
+            console.log(
+                "Response Text:",
+                xhr.responseText
+            );
+
+            console.log(
+                "Status:",
+                xhr.status
+            );
+
+            // showNotification(
+            //     "Email cannot be sent at this time. Please try again later.",
+            //     "error"
+            // );
+            showNotification(
+                "{{ snippets['CAT_Error_EmailNotSent'] }}",
+                "error"
+            );
+            setParentSendButtonState(false);
+        }
+    });
+}
+
+function createMimeAttachment(file, emailId){
+
+    return new Promise(function(resolve,reject){
+
+        const reader = new FileReader();
+
+        reader.onload = function(e){
+
+            const base64Content =
+                e.target.result.split(",")[1];
+
+            const attachmentPayload = {
+
+                objecttypecode: "email",
+                subject: file.name,
+                filename: file.name,
+                mimetype: file.type,
+                body: base64Content,
+                "objectid_email@odata.bind":
+                    "/emails(" + emailId + ")"
+            };
+
+            webapi.safeAjax({
+
+                type: "POST",
+
+                url: "/_api/activitymimeattachments",
+
+                contentType: "application/json",
+
+                data: JSON.stringify(
+                    attachmentPayload
+                ),
+
+                success: function(){
+
+                    resolve();
+
+                },
+
+                error: function(xhr){
+
+                    reject(xhr);
+
+                }
+
+            });
+
+        };
+
+        reader.readAsDataURL(file);
+
+    });
+
+}
+
+function renderAttachments(){
+
+    let html = "";
+
+    selectedFiles.forEach(function(file,index){
+
+        const sizeKB =
+            (file.size / 1024)
+            .toFixed(2);
+
+        html += `
+
+            <div class="attachment-row">
+
+                <div class="attachment-left">
+
+                    <div class="attachment-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path fill-rule="evenodd" clip-rule="evenodd" d="M15.9392 3.11645C15.5327 2.95012 15.0971 2.86643 14.6579 2.87024C14.2186 2.87406 13.7846 2.96531 13.381 3.13868C12.9774 3.31205 12.6124 3.56406 12.3072 3.88001L12.2981 3.88941L4.16767 12.0188C4.16766 12.0188 4.16768 12.0188 4.16767 12.0188C3.1668 13.0197 2.60449 14.3772 2.60449 15.7927C2.60449 17.2081 3.16678 18.5656 4.16767 19.5665C5.16856 20.5674 6.52605 21.1297 7.94152 21.1297C9.35699 21.1297 10.7145 20.5674 11.7154 19.5665L21.6141 9.66684C21.907 9.37393 22.3819 9.37391 22.6748 9.66679C22.9677 9.95967 22.9677 10.4345 22.6748 10.7274L12.776 20.6271C11.4939 21.9093 9.75481 22.6297 7.94152 22.6297C6.12823 22.6297 4.3892 21.9094 3.10701 20.6272C1.82482 19.345 1.10449 17.606 1.10449 15.7927C1.10449 13.9794 1.82482 12.2403 3.10701 10.9582L11.233 2.83305C11.6756 2.37613 12.2044 2.01155 12.7889 1.76046C13.3755 1.50848 14.0064 1.37585 14.6448 1.3703C15.2832 1.36475 15.9164 1.4864 16.5072 1.72815C17.0981 1.9699 17.6349 2.32691 18.0864 2.77835C18.5378 3.22978 18.8948 3.7666 19.1366 4.35749C19.3783 4.94837 19.5 5.58149 19.4944 6.21989C19.4889 6.85829 19.3563 7.4892 19.1043 8.07579C18.8532 8.66027 18.4886 9.18909 18.0318 9.63164L9.89744 17.7705C9.3734 18.2768 8.67138 18.5569 7.94274 18.5507C7.21409 18.5445 6.51704 18.2523 6.00171 17.7371C5.48638 17.222 5.194 16.525 5.18756 15.7964C5.18111 15.0677 5.46111 14.3657 5.96725 13.8415L5.97629 13.8321L14.1068 5.69909C14.3996 5.40614 14.8745 5.40606 15.1674 5.69891C15.4604 5.99175 15.4605 6.46663 15.1676 6.75957L7.04235 14.8875C6.81193 15.1283 6.68455 15.4497 6.6875 15.7831C6.69047 16.1184 6.82503 16.4392 7.0622 16.6763C7.29938 16.9134 7.62018 17.0479 7.95553 17.0507C8.28895 17.0536 8.61022 16.9261 8.85095 16.6956L16.9846 8.55743C17.3006 8.25227 17.5527 7.88734 17.726 7.48375C17.8994 7.08016 17.9907 6.64609 17.9945 6.20685C17.9983 5.76762 17.9146 5.33203 17.7483 4.92549C17.582 4.51895 17.3363 4.1496 17.0257 3.83901C16.7151 3.52841 16.3458 3.28278 15.9392 3.11645Z" fill="#1F1F1F"/>
+                        </svg>
+
+                    </div>
+
+                    <div class="attachment-name">
+                        ${file.name}
+                    </div>
+
+                </div>
+
+                <div class="attachment-right">
+
+                    <div class="attachment-size">
+                        ${sizeKB} KB
+                    </div>
+
+                    <button
+                        type="button"
+                        class="remove-attachment"
+                        data-index="${index}">
+                       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path fill-rule="evenodd" clip-rule="evenodd" d="M16.76 5.88145H21.48C21.89 5.88145 22.23 6.22145 22.23 6.63145C22.23 7.04145 21.89 7.38145 21.48 7.38145H19.89V20.6814C19.89 21.2914 19.65 21.8814 19.21 22.3114C18.77 22.7414 18.19 22.9914 17.58 22.9914H6.65C6.04 22.9914 5.45 22.7514 5.02 22.3114C4.59 21.8814 4.34 21.2914 4.34 20.6814V7.38145H2.75C2.34 7.38145 2 7.04145 2 6.63145C2 6.22145 2.34 5.88145 2.75 5.88145H7.47C7.47 3.31145 9.55 1.23145 12.11 1.23145C14.67 1.23145 16.76 3.31145 16.76 5.88145ZM15.26 5.88145C15.26 4.14145 13.85 2.73145 12.11 2.73145C10.37 2.73145 8.96 4.14145 8.96 5.88145H15.25H15.26ZM5.84 7.38145H18.39V20.6814C18.39 20.8914 18.3 21.1014 18.15 21.2514C18 21.4014 17.79 21.4914 17.58 21.4914H6.65C6.44 21.4914 6.23 21.4014 6.08 21.2514C5.93 21.1014 5.84 20.8914 5.84 20.6814V7.38145ZM10.52 11.3114C10.52 10.9014 10.18 10.5614 9.77 10.5614C9.36 10.5614 9.02 10.9014 9.02 11.3114V17.5614C9.02 17.9714 9.36 18.3114 9.77 18.3114C10.18 18.3114 10.52 17.9714 10.52 17.5614V11.3114ZM14.45 10.5614C14.86 10.5614 15.2 10.9014 15.2 11.3114V17.5614C15.2 17.9714 14.86 18.3114 14.45 18.3114C14.04 18.3114 13.7 17.9714 13.7 17.5614V11.3114C13.7 10.9014 14.04 10.5614 14.45 10.5614Z" fill="#FF0000"/>
+                        </svg>
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        `;
+    });
+
+    $("#uploadedFiles").html(html);
+}
+
+function showUploadPopup(filesToShow){
+
+    let html = "";
+
+    filesToShow.forEach(function(file){
+
+        const sizeKB =
+            Math.round(file.size / 1024);
+
+        html += `
+
+            <div class="upload-preview-row">
+
+                <div class="file-doc-icon">
+                    DOC
+                </div>
+
+                <div class="file-details">
+
+                    <div class="file-name">
+
+                        ${file.name}
+
+                    </div>
+
+                    <div class="file-size">
+
+                        ${sizeKB} KB
+
+                    </div>
+
+                </div>
+
+                <div class="progress-wrapper">
+
+                    <div class="progress-bar-ui">
+
+                        <div class="progress-bar-fill">
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="status-check">
+
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M12 23C14.9174 23 17.7153 21.8411 19.7782 19.7782C21.8411 17.7153 23 14.9174 23 12C23 9.08262 21.8411 6.28473 19.7782 4.22183C17.7153 2.15893 14.9174 1 12 1C9.08262 1 6.28473 2.15893 4.22183 4.22183C2.15893 6.28473 1 9.08262 1 12C1 14.9174 2.15893 17.7153 4.22183 19.7782C6.28473 21.8411 9.08262 23 12 23ZM17.5047 9.20129C17.7004 8.95685 17.7909 8.6447 17.7565 8.33349C17.722 8.02229 17.5653 7.73753 17.3209 7.54186C17.0764 7.34618 16.7643 7.25563 16.4531 7.29011C16.1419 7.32459 15.8571 7.48128 15.6614 7.72571L10.0923 14.6934L7.86243 13.0214C7.73861 12.9286 7.59771 12.861 7.44778 12.8226C7.29785 12.7842 7.14183 12.7757 6.98861 12.7976C6.83539 12.8194 6.68799 12.8713 6.55481 12.9502C6.42163 13.029 6.30529 13.1333 6.21243 13.2571C6.11957 13.381 6.052 13.5219 6.01359 13.6718C5.97518 13.8217 5.96667 13.9777 5.98856 14.131C6.01045 14.2842 6.0623 14.4316 6.14115 14.5648C6.22001 14.6979 6.32433 14.8143 6.44814 14.9071L9.591 17.2643C9.83591 17.4483 10.1428 17.5297 10.4467 17.4912C10.7506 17.4528 11.0276 17.2976 11.219 17.0584L17.5047 9.20129Z" fill="#006400"/>
+                    </svg>
+
+                </div>
+
+            </div>
+
+        `;
+    });
+
+    $("#uploadModalBody").html(html);
+
+    $("#uploadCount").text(
+        filesToShow.length +
+        " file(s) uploaded"
+    );
+
+
+    $("#uploadModal").show();
+}
+
+$(document).on(
+    "click",
+    ".editor-btn",
+    function(){
+
+        const command =
+            $(this).data("cmd");
+
+        document.execCommand(
+            command,
+            false,
+            null
+        );
+
+        $("#replyEditor").focus();
+
+    }
+);
+
+$(document).on(
+    "click",
+    "#linkBtn",
+    function(){
+
+        const url =
+            prompt("Enter URL");
+
+        if(url){
+
+            document.execCommand(
+                "createLink",
+                false,
+                url
+            );
+
+        }
+
+        $("#replyEditor").focus();
+
+    }
+);
+
+$(document).on(
+    "change",
+    "#fontSizeSelect",
+    function(){
+
+        const size = $(this).val();
+
+        if(size){
+
+            document.execCommand(
+                "fontSize",
+                false,
+                size
+            );
+
+        }
+
+        $("#replyEditor").focus();
+
+    }
+);
+
+$(document).on(
+    "change",
+    "#fontNameSelect",
+    function(){
+
+        document.execCommand(
+            "fontName",
+            false,
+            $(this).val()
+        );
+
+        $("#replyEditor").focus();
+
+    }
+);
+
+$(document).on(
+    "change",
+    "#fontColorPicker",
+    function(){
+
+        document.execCommand(
+            "foreColor",
+            false,
+            $(this).val()
+        );
+
+        $("#replyEditor").focus();
+
+    }
+);
+
+
+$(document).on(
+    "change",
+    "#attachmentInput",
+    function () {
+
+        let newFiles = Array.from(this.files);
+
+        // Validate extension and file size
+        newFiles = validateSelectedFiles(newFiles);
+
+        if (!newFiles.length) {
+            this.value = "";
+            return;
+        }
+
+        // Validate total number of files
+        const totalFiles =
+            selectedFiles.length +
+            newFiles.length;
+
+        if (
+            totalFiles >
+            CASE_ATTACHMENT_MAX_FILES_PER_UPLOAD
+        ) {
+
+            showNotification(
+                `Maximum ${CASE_ATTACHMENT_MAX_FILES_PER_UPLOAD} files can be uploaded.`,
+                "error"
+            );
+
+            this.value = "";
+            return;
+        }
+
+        selectedFiles.push(...newFiles);
+
+        renderAttachments();
+
+        showUploadPopup(newFiles);;
+
+        this.value = "";
+    }
+);
+
+$(document).on(
+    "click",
+    ".remove-attachment",
+    function(){
+
+        const index = $(this).data("index");
+
+        selectedFiles.splice(index, 1);
+
+        renderAttachments();
+
+    }
+);
+
+$(document).on(
+    "click",
+    "#sendEmailBtn",
+    function(){
+
+        const replyHtml =
+            $("#replyEditor").html();
+
+        if(!replyHtml.trim()){
+
+            // alert("Please enter a reply.");
+            alert("{{ snippets['CAT_Error_EnterReply'] }}");
+
+            return;
+        }
+
+        createReplyEmail(replyHtml);
+    }
+);
+
+$(document).on(
+    "click",
+    "#cancelBtn",
+    function(){
+
+        history.back();
+
+    }
+);
+
+$(document).on(
+    "click",
+    "#uploadDoneBtn",
+    function(){
+
+        $("#uploadModal").hide();
+
+    }
+);
+
+window.triggerReplyAllSend = function(){
+
+    if (
+        window.parent &&
+        window.parent !== window
+    ) {
+
+        const $buttons =
+            window.parent.$(
+                "#replyAllSendBtn, #popupSendBtn"
+            );
+
+        if ($buttons.prop("disabled")) {
+            return;
+        }
+    }
+
+    const replyHtml =
+        $("#replyEditor").html();
+
+    const text =
+        $("#replyEditor").text().trim();
+
+    if(!text){
+
+        // alert("Please enter a reply.");
+        alert("{{ snippets['CAT_Error_EnterReply'] }}");
+        return;
+    }
+
+    setParentSendButtonState(true);
+
+    createReplyEmail(replyHtml);
+};
+</script>

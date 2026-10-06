@@ -1,0 +1,3161 @@
+<!-- Google Tag Manager -->
+<script>
+(function(w,d,s,l,i){
+    w[l]=w[l]||[];
+
+    w[l].push({
+        'gtm.start': new Date().getTime(),
+        event: 'gtm.js'
+    });
+
+    var f=d.getElementsByTagName(s)[0],
+        j=d.createElement(s),
+        dl=l!='dataLayer' ? '&l='+l : '';
+
+    j.async=true;
+    j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;
+    f.parentNode.insertBefore(j,f);
+
+})(window,document,'script','dataLayer','GTM-PV4KJLLR');
+</script>
+<!-- End Google Tag Manager -->
+
+<!-- Google Tag Manager (noscript) -->
+<noscript>
+    <iframe
+        src="https://www.googletagmanager.com/ns.html?id=GTM-PV4KJLLR"
+        height="0"
+        width="0"
+        style="display:none;visibility:hidden">
+    </iframe>
+</noscript>
+<!-- End Google Tag Manager (noscript) -->
+
+<!--back to search -->
+  <script>
+$(document).ready(function () {
+ 
+    var params = new URLSearchParams(window.location.search);
+ 
+if (params.get("from") === "search") {
+ 
+    var search = params.get("search") || "";
+    var type = params.get("type") || "";
+    var status = params.get("status") || "";
+ 
+    var backUrl =
+        "/search-results?search=" + encodeURIComponent(search) +
+        "&type=" + encodeURIComponent(type) +
+        "&status=" + encodeURIComponent(status);
+ 
+    $("#caseBackBtn")
+        .text("← Back to Search Results")
+        .attr("href", backUrl);
+}
+ 
+});
+ $(document).ready(function () {
+ 
+    var from = new URLSearchParams(window.location.search).get("from");
+ 
+    if (from === "search") {
+ 
+        $(".navbar, footer, .side-nav").each(function () {
+            this.style.setProperty("display", "block", "important");
+            this.style.setProperty("visibility", "visible", "important");
+            this.style.setProperty("opacity", "1", "important");
+        });
+ 
+    }
+ 
+});
+$(document).ready(function () {
+
+    if (window.self !== window.top) {
+
+        $("#vertical-nav").remove();
+
+        document.documentElement.setAttribute("data-nav-state", "collapsed");
+    }
+
+});
+  </script>
+  <style>
+    a.back-btn,
+a.back-btn:visited,
+a.back-btn:hover,
+a.back-btn:active {
+    color: #0078d4 !important;
+    text-decoration: none;
+}
+.case-header{
+    font-size:45px;
+    font-weight:900;
+    color:#000;
+    line-height:1;
+    margin:20px 0;
+}
+ 
+.case-header::after{
+    content:"";
+    display:block;
+    width:60px;
+    height:5px;
+    background:#f2c100;
+    margin-top:15px;
+}
+#caseTopHeader{
+    margin-bottom:20px;
+}
+
+.email-grid-wrapper{
+    width:100%;
+    overflow-x:auto;
+    margin-top:10px;
+}
+
+.email-grid{
+    width:100%;
+    border-collapse:collapse;
+    font-family:Segoe UI, Arial, sans-serif;
+}
+
+.email-grid thead th{
+    background:#f3f2f1;
+    color:#323130;
+    font-weight:600;
+    padding:12px;
+    text-align:left;
+    border-bottom:1px solid #d1d1d1;
+}
+
+.email-grid tbody td{
+    padding:14px 12px;
+    border-bottom:1px solid #edebe9;
+}
+
+.email-grid tbody tr:hover{
+    background:#faf9f8;
+}
+
+.email-action-btn{
+    min-width:110px;
+    padding:8px 16px;
+    border:1px solid #8a8886;
+    border-radius:4px;
+    background:#fff;
+    cursor:pointer;
+    font-weight:600;
+}
+
+.email-action-btn:hover{
+    background:#f3f2f1;
+}
+
+.email-subject{
+    font-weight:600;
+}
+
+.email-empty{
+    padding:20px;
+    color:#666;
+}
+ 
+.back-btn{
+    display:block;
+    margin-bottom:20px;
+    color:#0078d4 !important;
+    text-decoration:none;
+}
+.case-expand{
+   position: relative;
+}
+
+.expand-actions{
+   position: absolute;
+   top: 2px;
+   right: 10px;
+   z-index: 5;
+}
+
+.open-popup-btn{
+   border: none;
+   background: #fff;
+   cursor: pointer;
+   width: 36px;
+   height: 32px;
+   font-size: 18px;
+   transition: all 0.2s ease;
+}
+
+.open-popup-btn:hover{
+   background: #f5f5f5;
+}
+
+.case-popup-overlay{
+   display:none;
+   position:fixed;
+   inset:0;
+   background:rgba(0,0,0,0.5);
+   z-index:9999;
+   justify-content:center;
+   align-items:center;
+}
+
+.case-popup-content{
+   width:76%;
+   height:90%;
+   background:#fff;
+   border-radius:8px;
+   overflow:hidden;
+   display:flex;
+   flex-direction:column;
+}
+
+.case-popup-header{
+   display:flex;
+   justify-content:space-between;
+   align-items:center;
+   padding:16px;
+   border-bottom:1px solid #ddd;
+}
+
+.popup-actions{
+   display:flex;
+   gap:10px;
+}
+
+#replyAllPopupFrame{
+   flex:1;
+   width:100%;
+   border:none;
+   overflow-x: hidden;
+   overflow-y: auto;
+}
+
+#closeReplyAllBtn{
+   border:none;
+   background:none;
+   font-size:22px;
+   cursor:pointer;
+}
+
+#popupSendBtn{
+   background:#ffcd11;
+   border:none;
+   cursor:pointer;
+   border-radius:4px;
+   padding: 14px 24px;
+   font-weight: 600;
+}
+
+.close-replyall-btn {
+  background: transparent;
+  border: none;
+  color: #0066cc;
+  font-weight: 600;
+}
+.attachment-icon {
+    width: 14px;
+    height: 14px;
+}
+
+.button-container {
+  display: flex;
+  justify-content: flex-start; /* keeps buttons on left */
+  align-items: center;
+  gap: 16px;
+  padding: 16px 24px;
+}
+
+.email-pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 18px;
+    padding: 12px 0;
+}
+
+.pagination-info {
+    color: #605e5c;
+    font-size: 15px;
+}
+
+.pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.page-nav {
+    border: none;
+    background: transparent;
+    color: #8a8886;
+    font-size: 28px;
+    cursor: pointer;
+    padding: 0;
+    width: 24px;
+}
+
+.page-nav:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.current-page {
+    width: 35px;
+    height: 35px;
+    background: #ffcc00;
+    border-radius: 6px;
+    font-size: 20px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #000;
+}
+
+.current-page:hover {
+    background-color: #8a8886;
+}
+
+/* email feed */
+.email-feed-row.email-unread td,
+.email-feed-row.email-unread .email-feed-subject,
+.email-feed-row.email-unread .email-feed-address {
+    font-weight: 700;
+}
+
+.email-no-results {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    background: #deecf9;
+
+    border: 1px solid #005a9e;       /* thin border all sides */
+    border-left: 4px solid #005a9e;  /* thick left border */
+
+    color: #000000;
+    padding: 12px 16px;
+    margin: 24px;
+    font-size: 16px;
+    box-sizing: border-box;
+}
+
+
+.email-no-results-icon {
+    display: flex;
+    align-items: center;
+}
+
+.email-no-results-icon svg {
+    width: 16px;
+    height: 16px;
+    vertical-align: middle;
+}
+
+.email-feed-row {
+    cursor: pointer;
+}
+
+.email-feed-row:hover {
+    background: #f8f8f8;
+}
+
+.email-expanded-row td {
+    padding: 0 !important;
+    background: #fff;
+}
+
+.email-expanded-content {
+    background: #f3f3f3;
+    padding: 30px;
+    max-height: 500px;
+    overflow-y: auto;
+    line-height: 1.8;
+}
+
+.email-expanded-footer {
+    text-align: center;
+    padding-top: 20px;
+}
+
+.collapse-email-preview {
+    color: #0067b8;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.email-subject {
+    display: inline-block;
+    max-width: 350px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.email-address {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.email-attachments {
+    margin-top: 20px;
+}
+
+.email-attachments h5 {
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.email-attachments ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.email-attachments li {
+    margin-bottom: 5px;
+}
+
+.email-grid th:nth-child(1),
+.email-grid td:nth-child(1) {
+    width: 100px;
+}
+
+.email-grid th:nth-child(2),
+.email-grid td:nth-child(2) {
+    width: 350px;
+}
+
+.email-grid th:nth-child(3),
+.email-grid td:nth-child(3) {
+    width: 220px;
+}
+
+.email-grid th:nth-child(4),
+.email-grid td:nth-child(4) {
+    width: 220px;
+}
+
+.email-grid th:nth-child(5),
+.email-grid td:nth-child(5) {
+    width: 120px;
+}
+/* Expanded Row Container */
+.email-expanded-row td {
+    background: #f5f5f5;
+    padding: 20px !important;
+}
+
+/* Expanded Content Wrapper */
+.email-expanded-content {
+    padding: 15px;
+}
+
+/* Description Box */
+.email-description-box {
+    border: 1px solid #000;
+    border-radius: 4px;
+    padding: 16px;
+    margin-bottom: 20px;
+    background: #ffffff;
+    max-height: 300px;
+    overflow-y: auto;
+    line-height: 1.6;
+    word-break: break-word;
+    box-sizing: border-box;
+}
+
+/* Attachment Section */
+.email-attachments-grid {
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+/* Attachment Table */
+.email-attachment-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #ffffff;
+    margin-bottom: 15px;
+    table-layout: fixed;
+}
+
+/* Header */
+.email-attachment-table th {
+    background: #f5f5f5;
+    font-weight: 600;
+    text-align: left;
+    padding: 14px 16px;
+    border: 1px solid #dcdcdc;
+    color: #333;
+}
+
+/* Cells */
+.email-attachment-table td {
+    padding: 14px 16px;
+    border: 1px solid #dcdcdc;
+    vertical-align: middle;
+    word-wrap: break-word;
+}
+
+/* Wider Attachment Column */
+.email-attachment-table th:first-child,
+.email-attachment-table td:first-child {
+    width: 70%;
+}
+
+/* Action Column */
+.email-attachment-table th:last-child,
+.email-attachment-table td:last-child {
+    width: 30%;
+}
+
+.email-action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* Hover Effect */
+.email-attachment-table tbody tr:hover {
+    background: #fafafa;
+}
+
+/* Action Links */
+.email-attachment-table th {
+    background: #f5f5f5;
+}
+
+.email-attachment-table td {
+    background: #ffffff;
+}
+.attachment-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.attachment-action-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #1f1f1f;
+    text-decoration: none;
+}
+
+.attachment-action-link svg {
+    width: 16px;
+    height: 16px;
+}
+
+.attachment-action-link svg path {
+    fill: #1f1f1f;
+    transition: fill 0.2s ease;
+}
+
+.attachment-action-link:hover svg path {
+    fill: #005a9c;
+}
+
+.attachment-action-link:hover {
+    text-decoration: none;
+}
+
+/* Space Between View and Download */
+.email-attachment-table td a:first-child {
+    margin-right: 10px;
+}
+
+/* Footer */
+.email-expanded-footer {
+    margin-top: 15px;
+    text-align: center;
+}
+
+/* Collapse Link */
+.collapse-email-preview {
+    color: #005a9c;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.collapse-email-preview:hover {
+    text-decoration: underline;
+}
+
+.attachment-preview-modal {
+    display: none;
+    position: fixed;
+    z-index: 99999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+}
+
+.attachment-preview-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 85%;
+    max-width: 1000px;
+    height: 85%;
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.attachment-preview-header {
+    padding: 15px 20px;
+    border-bottom: 1px solid #ddd;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+}
+
+.attachment-preview-body {
+    flex: 1;
+}
+
+#attachmentPreviewFrame {
+    width: 100%;
+    height: 100%;
+}
+
+.attachment-preview-close {
+    border: none;
+    background: transparent;
+    font-size: 22px;
+    cursor: pointer;
+    color: #444;
+}
+
+.attachment-preview-close:hover {
+    color: #005a9c;
+}
+  </style>
+<div class="row sectionBlockLayout text-start" style="min-height: auto;">
+  <div class="container" style="display: flex; max-width: 100%;">
+    <div id="caseDetailsContainer">Loading...</div>
+  </div>
+</div>
+
+{% assign userRoles = user.roles %} {% assign isCustomer = false %} {% if user.roles contains "Cat_Customer Persona Role" %} {% assign isCustomer = true %} {% endif %}
+
+{% assign isDealerUser = false %}
+
+{% if user.roles contains "Dealer" or user.roles contains "Cat_Dealer Persona Role" %}
+    {% assign isDealerUser = true %}
+{% endif %}
+
+{% assign isInternalCustomerUser = false %}
+
+{% if user.roles contains "Cat_Internal Customer Persona Role" %}
+    {% assign isInternalCustomerUser = true %}
+{% endif %}
+<!--back to search -->
+<script>
+  $(document).ready(function () {
+
+      var params = new URLSearchParams(window.location.search);
+
+      if (params.get("from") === "search") {
+
+          var keyword = params.get("search") || "";
+
+          $("#caseBackBtn")
+              .text("← Back to Search Results")
+              .attr("href",
+                  "/en-US/search-results/?search=" +
+                  encodeURIComponent(keyword));
+
+      } else {
+
+          $("#caseBackBtn")
+              .text("← Back to Cases")
+              .attr("href", "/en-US/");
+
+      }
+
+  });
+</script>
+<style>
+      a.back-btn,
+  a.back-btn:visited,
+  a.back-btn:hover,
+  a.back-btn:active {
+      color: #0078d4 !important;
+      text-decoration: none;
+  }
+</style>
+<script>
+
+  const params = new URLSearchParams(window.location.search);
+  const viewMode = params.get("mode");
+  let pageCaseId = cleanGuid(params.get("id"));
+  let parentcase="";
+  let elevationType="";
+
+  let currentReplyAllUrl = "";
+
+  $(document).ready(function () {
+
+     // ✅ Read URL parameters
+     const params = new URLSearchParams(window.location.search);
+     const viewMode = params.get("mode");
+
+     console.log("View Mode:", viewMode);
+
+     // ✅ Apply CSS only for new tab mode
+     if (viewMode === "newtab") {
+
+        const css = `
+           header, .navbar, .navbar-inverse {
+              display: block !important;
+           }
+
+           footer {
+              display: block !important;
+           }
+
+           #vertical-nav {
+              display: block !important;
+           }
+
+           #caseDetailsContainer {
+              margin: 25px 0 0 25px;
+           }
+
+           .case-grid {
+              gap: 14px
+           }
+        `;
+
+        // ✅ Inject CSS into page
+        const style = document.createElement("style");
+        style.type = "text/css";
+        style.appendChild(document.createTextNode(css));
+        document.head.appendChild(style);
+     }
+  });
+
+
+  var isCustomer = { isCustomer};
+   var isDealerUser = {{ isDealerUser | json }};
+   var isInternalCustomerUser = {{ isInternalCustomerUser | json }};
+
+  $(document).ready(function () {
+
+     const caseId = pageCaseId;
+     console.log("Popup caseId:", caseId);
+
+     if (!caseId) {
+        $("#caseDetailsContainer").html("No Case ID found");
+        return;
+     }
+
+     $.ajax({
+        url: "/_api/incidents(" + caseId + ")?$select=incidentid,ticketnumber,title,description,createdon,caseorigincode,_entitlementid_value,_productid_value,_customerid_value,_parentcaseid_value,isescalated,escalatedon,cat_assigneeemail,cat_assigneename,cat_actionrequested,cat_helpcenterstatus,cat_additionalassigneename,cat_additionalassigneeemail,_cat_secondaryproducttechnology_id_value,_cat_secondarysupporttype_id_value,_cat_requestedfrom_value,_cat_supporttype_id_value,cat_language,cat_additionalemail2,cat_additionalemail1,_cat_tertiarysupporttype_value,cat_elevationtype",
+        method: "GET",
+        headers: { "Accept": "application/json" },
+
+        success: function (data) {
+            var contactId = data._customerid_value;
+            var parentCaseId = data._parentcaseid_value;
+             var requestedById=data._cat_requestedfrom_value; 
+             console.log("RequestedBy", requestedById);
+             var elevationType=data.cat_elevationtype;
+      window.parentCaseId = parentCaseId;
+window.elevationType = elevationType;
+console.log("Parent Case ID:", window.parentCaseId);
+console.log("Elevation Type:", window.elevationType);
+
+                                                 
+        $.ajax({
+            url: "/_api/contacts(" + contactId + ")?$select=fullname,emailaddress1,address1_telephone1",
+            method: "GET",
+            headers: { "Accept": "application/json" },
+            success: function (contact) {
+
+              // Requested By API
+               $.ajax({
+               url: "/_api/contacts(" + requestedById + ")?$select=fullname,firstname,lastname,emailaddress1,address1_telephone1,cat_persona",
+               method: "GET",
+               headers: { "Accept": "application/json" },
+
+               success: function (requestedBy) {
+
+                data.requestedBy = requestedBy;
+
+                $.ajax({
+                        url: "/_api/incidents(" + parentCaseId + ")?$select=ticketnumber",
+                        method: "GET",
+                        headers: { "Accept": "application/json" },
+
+                        success: function (parentCase) {
+
+           $("#caseDetailsContainer").html(`
+
+  <!-- Tabs -->
+  <div class="case-tabs">
+  <div class="case-tab active" data-tab="details">Handup Details</div>
+  <div class="case-tab" data-tab="updatestatus">Update Status</div>
+  <div class="case-tab" data-tab="casedetails">Case Details</div>
+  <div class="case-tab" data-tab="asset">Asset Details</div>
+  <div class="case-tab" data-tab="email">Email Feed</div>
+  ${!isCustomer ? `<div class="case-tab" data-tab="resolution">Resolution Details</div>` : ``}
+  <div class="case-tab" data-tab="attachments">Attachments</div>
+  </div>
+  <!-- Panels -->
+  <div class="case-panel active" id="details">
+  <div class="case-grid">
+  <div>
+     <label>Handup Number</label>
+     <p>${data.ticketnumber || "-"}</p>
+  </div>
+  <div>
+        <label>Case Number</label>
+        <p>${parentCase.ticketnumber || "-"}</p>
+    </div>
+
+     <div>
+     <label>Handup Status</label>
+     <p>${data["cat_helpcenterstatus@OData.Community.Display.V1.FormattedValue"] || "-"}</p>
+  </div>
+
+
+  <div>
+     <label>Case Contact Full Name</label>
+     <p>${data["_customerid_value@OData.Community.Display.V1.FormattedValue"] || "-"}</p>
+  </div>
+
+  <div>
+    <label>Case Contact Email</label>
+    <p>${contact.emailaddress1 || "-"}</p>
+  </div>
+
+  <div>
+    <label>Case Contact Phone</label>
+    <p>${contact.address1_telephone1 || "-"}</p>
+  </div>
+
+  <div>
+     <label>Assignee Email</label>
+     <p>${data.cat_assigneeemail || "-"}</p>
+  </div>
+  <div>
+     <label>Assignee Name</label>
+     <p>${data.cat_assigneename || "-"}</p>
+  </div>
+  <div>
+     <label>Additional Assignee Email</label>
+     <p>${data.cat_additionalassigneeemail || "-"}</p>
+  </div>
+  <div>
+     <label>Additional Assignee Name</label>
+     <p>${data.cat_additionalassigneename || "-"}</p>
+  </div>
+    
+  <div>
+     <label>Action Requested</label>
+     <p>${data.cat_actionrequested || "-"}</p>
+  </div>
+   <div>
+     <label>Description</label>
+     <p>${data.description || "-"}</p>
+  </div>
+ 
+
+  </div>
+  </div>
+
+
+<!----Update Status Panel-->
+<div class="case-panel" id="updatestatus" data-case-id="${caseId}">
+
+<form class="status-form" id="statusForm">
+<div class="field-group">
+   <label class="field-label" for="statusSelectModal">
+   Portal Status<span class="required-tag">(required)</span>
+  </label>
+ 
+   <select class="select-input" id="statusSelectModal" required>
+  <option value="">--Select--</option>
+  <option value="100000013">Action Completed</option>
+  <option value="100000009">Approved</option>
+  <option value="100000014">Exporter/Reseller</option>
+  <option value="100000001">In Process</option>
+  <option value="100000000">New</option>
+  <option value="100000011">Other Dealer Territory</option>
+  <option value="100000012">Pending Customer</option>
+  <option value="100000010">Rejected</option>
+  </select>
+    </div>
+  <!--Resolution Details-->
+
+  <div class="field-group">
+    <label class="field-label" for="resolutionDetailModal">
+        Resolution Detail
+    </label>
+
+    <div class="textarea-wrap">
+        <textarea
+            class="textarea-input resolution-detail-modal"
+            id="resolutionDetailModal"
+            maxlength="131072"
+            placeholder="Enter resolution details"></textarea>
+        <span class="char-count" id="charCountModal">
+            0/131072
+        </span>
+    </div>
+
+    <p class="helper-text">
+        This will be updated on both the Hand-up and the related cases.
+    </p>
+</div>
+
+   <!--Button-->
+   <div class="modal-actions">
+   <button type="button" class="btn-update" id="updateBtn">Update</button>
+   <button type="button" class="btn-cancel" id="modalCancelBtn">Cancel</button>
+   </div>
+   </form>
+   </div>
+   </div>
+
+
+  
+<!-- Panels -->
+  <div class="case-panel" id="casedetails">
+  <div class="case-grid">
+  <div>
+     <label>Contact Name</label>
+     <p>${data.requestedBy?.fullname || "-"}</p>
+  </div>
+
+  <div>
+    <label>Persona</label>
+    <p>${data.requestedBy?.["cat_persona@OData.Community.Display.V1.FormattedValue"] || "-"}</p>
+    </div>
+
+     <div>
+     <label>Account Name</label>
+     <p>${data["_customerid_value@OData.Community.Display.V1.FormattedValue"] || "-"}</p>
+  </div>
+<div>
+     <label>Subject</label>
+     <p>${data.title || "-"}</p>
+  </div>
+
+  <div>
+     <label>First Name</label>
+     <p>${data.requestedBy?.firstname || "-"}</p>
+  </div>
+  <div>
+     <label>Description</label>
+     <p>${data.description || "-"}</p>
+  </div>
+  
+  <div>
+   <label>Last Name</label>
+   <p>${data.requestedBy?.lastname || "-"}</p>
+</div>
+<div>
+   <label>Email</label>
+   <p>${data.requestedBy?.emailaddress1 || "-"}</p>
+</div>
+ 
+  <div>
+     <label>Phone</label>
+     <p>${data.requestedBy?.address1_telephone1 || "-"}</p>
+  </div>
+  
+
+  <div>
+     <label>Product Technology</label>
+     <p>${data["_productid_value@OData.Community.Display.V1.FormattedValue"] || "-"}</p>
+  </div>
+
+  <div>
+     <label>Additional Applications</label>
+     <p>${data.cat_additionalapplications || "-"}</p>
+  </div>
+
+  
+  <div>
+     <label>Secondary Product Technology</label>
+     <p>${data["_cat_secondaryproducttechnology_id_value@OData.Community.Display.V1.FormattedValue"]	 || "-"}</p>
+  </div>
+
+    <div>
+     <label>Support Type</label>
+     <p>${data["_cat_supporttype_id_value@OData.Community.Display.V1.FormattedValue"] || "-"}</p>
+  </div>
+ 
+  <div>
+     <label>Secondary Support Type</label>
+     <p>${data["_cat_secondarysupporttype_id_value@OData.Community.Display.V1.FormattedValue"] || "-"}</p> 
+  </div>
+ 
+  <div>
+     <label>Tertiary Support Type</label>
+     <p>${data["_cat_tertiarysupporttype_value@OData.Community.Display.V1.FormattedValue"] || "-"}</p>
+  </div>
+  
+    <div>
+     <label>Asset Administration</label>
+     <p></p>
+  </div>
+  
+   <div>
+     <label>Channel</label>
+     <p>${data["caseorigincode@OData.Community.Display.V1.FormattedValue"] || "-"}</p>
+  </div>
+  
+   <div>
+     <label>Language</label>
+     <p>${data["cat_language@OData.Community.Display.V1.FormattedValue"] || "-"}</p>
+  </div>
+  
+   <div>
+     <label>Additional Email 1</label>
+     <p>${data.cat_additionalemail1 || "-"}</p>
+  </div>
+  
+   <div>
+     <label>Additional Email 2</label>
+     <p>${data.cat_additionalemail2 || "-"}</p>
+  </div>
+  
+  
+  </div>
+  </div>
+
+  <div class="case-panel" id="asset">Asset content...</div>
+  <div class="case-panel" id="email" data-case-id="${caseId}">Email content...</div>
+  ${!isCustomer ? `<div class="case-panel" id="resolution">Resolution content...</div>` : ``}
+  <div class="case-panel case-attachments-panel" id="attachments" data-case-id="${caseId}">
+
+      <div class="case-attachments-top">
+          <div class="case-attachments-summary">
+              Loading attachments...
+          </div>
+
+          <button type="button" class="case-add-attachment-btn">
+              + Add New
+          </button>
+
+          <input
+              type="file"
+              class="case-attachment-file-input"
+              multiple
+              style="display:none;"
+          />
+      </div>
+
+      <div class="case-attachment-message"></div>
+      <div class="case-attachments-empty-message" style="display:none;">
+        No attachments found.
+     </div>
+
+      <table class="case-attachments-table">
+          <thead>
+              <tr>
+                  <th>Title</th>
+                  <th>Owner</th>
+                  <th>Last Modified</th>
+                  <th>Size</th>
+                  <th>Actions</th>
+              </tr>
+          </thead>
+
+          <tbody>
+              <tr>
+                  <td colspan="5">Loading...</td>
+              </tr>
+          </tbody>
+      </table>
+
+  </div>
+
+  </div>
+
+           `);
+                      },//end parentcase
+                    
+        
+
+       
+    
+     });//endparentcase ajax
+     }//end requestedby success
+		});//end requested by ajax
+    
+    }//end contact success
+});//end contact ajax
+		},//end incident success
+	
+	  error: function (err) {
+
+           console.error("Popup API error:", err);
+
+           $("#caseDetailsContainer")
+              .html("<div style='color:red;'>Failed to load data</div>");
+        }
+	 });//end incident ajax
+  });//end document.ready
+
+  $(document).on("click", ".case-tab", function () {
+
+      const tab = $(this).data("tab");
+
+      console.log("Clicked tab:", tab);
+
+      $(this).siblings().removeClass("active");
+      $(this).addClass("active");
+
+      const container = $("#caseDetailsContainer");
+
+      container.find(".case-panel").removeClass("active").hide();
+
+      const panel = container.find("#" + tab);
+
+      panel.fadeIn(150).addClass("active");
+      
+      const caseId=panel.attr("data-case-id") || pageCaseId;
+      console.log("CaseID for tab:", caseId);
+       
+
+       
+
+      //---Case Close tab--
+      if(tab === "updatestatus")
+      {
+        const parentCaseId = window.parentCaseId;
+        const elevationType = window.elevationType;
+        console.log("Parent Case ID:", parentCaseId);
+        console.log("Elevation Type:", elevationType);
+        if(!caseId)
+      {
+        console.error("Case ID not found");
+      }
+       console.log("CaseClose Case ID", caseId);
+      
+      }
+      if (tab === "email"){
+        const caseId = panel.attr("data-case-id") || pageCaseId;
+        if (!caseId) {
+              console.error("Case Id not found for email panel.");
+              return;
+          }
+
+        loadEmails(panel, caseId);
+        return;
+      }
+
+      if (tab === "attachments") {
+          const caseId = panel.attr("data-case-id") || pageCaseId;
+
+          if (!caseId) {
+              console.error("Case Id not found for attachment panel.");
+              return;
+          }
+
+          setAttachmentInputAccept(panel);
+          loadCaseAttachments(caseId, panel);
+
+          return;
+      }
+
+      loadTabPlaceholder(tab, panel);
+  });
+
+
+  function loadTabPlaceholder(tab, panel) {
+
+     switch (tab) {
+
+        case "asset":
+           panel.html(`
+              <div style="padding:20px; color:#666;">
+                 No Asset data available yet
+              </div>
+           `);
+           break;
+
+        case "email":
+           panel.html(`
+              <div style="padding:20px; color:#666;">
+                 No Email history available yet
+              </div>
+           `);
+           break;
+
+        case "resolution":
+           panel.html(`
+              <div style="padding:20px; color:#666;">
+                 No Resolution details available yet
+              </div>
+           `);
+           break;
+
+        case "attachments":
+           break;
+
+        default:
+           // Do nothing for "details"
+           break;
+     }
+  }
+
+  function loadTabData(tab, panel) {
+
+     console.log("Loading tab:", tab);
+
+     panel.html("<div style='padding:20px;'>Loading...</div>");
+
+     if (!caseId) {
+        panel.html("No Case ID available");
+        return;
+     }
+
+     switch (tab) {
+
+        case "asset":
+           loadAsset(panel);
+           break;
+
+        case "email":
+           loadEmails(panel);
+           break;
+
+        case "resolution":
+           loadResolution(panel);
+           break;
+
+        case "attachments":
+           loadAttachments(panel);
+           break;
+     }
+
+  }
+
+  function loadAsset(panel) {
+
+     $.ajax({
+        url: "/_api/incidents(" + caseId + ")?$expand=productid($select=name)",
+        method: "GET",
+        headers: { "Accept": "application/json" },
+
+        success: function (data) {
+
+           panel.html(`
+              <div class="case-grid">
+                 <div>
+                    <label>Product</label>
+                    <p>${data.productid?.name || "-"}</p>
+                 </div>
+              </div>
+           `);
+
+        },
+
+        error: function () {
+           panel.html("Failed to load asset");
+        }
+     });
+
+  }
+
+
+     // ===== READ/UNREAD TRACKING (NEW) =====
+
+const READ_FIELD = "cat_cathelpcenterreademail";
+
+const currentContactId = "{{ user.id }}";
+
+let readEmailIds = new Set();
+ 
+function normalizeGuid(g) {
+
+    return (g || "").replace(/[{}]/g, "").toLowerCase().trim();
+
+}
+ 
+function loadReadEmailIds() {
+
+    return $.Deferred(function (d) {
+
+        if (!currentContactId) { d.resolve(); return; }
+
+        safeAjax({
+
+            type: "GET",
+
+            url: "/_api/contacts(" + currentContactId + ")?$select=" + READ_FIELD,
+
+            success: function (res) {
+
+                const raw = (res && res[READ_FIELD]) ? res[READ_FIELD] : "";
+
+                readEmailIds = new Set(raw.split(",").map(normalizeGuid).filter(Boolean));
+
+                d.resolve();
+
+            },
+
+            error: function () { readEmailIds = new Set(); d.resolve(); }
+
+        });
+
+    }).promise();
+
+}
+ 
+function markEmailAsRead(emailId) {
+
+    const id = normalizeGuid(emailId);
+
+    if (!id || readEmailIds.has(id) || !currentContactId) return;
+
+    readEmailIds.add(id);
+
+    $('.email-feed-row[data-emailid="' + emailId + '"]').removeClass("email-unread");
+
+    safeAjax({
+
+        type: "PATCH",
+
+        url: "/_api/contacts(" + currentContactId + ")",
+
+        contentType: "application/json",
+
+        data: JSON.stringify({ [READ_FIELD]: Array.from(readEmailIds).join(",") }),
+
+        error: function () { console.warn("Could not persist read state for", id); }
+
+    });
+
+}
+
+// ===== END NEW =====
+  
+const PAGE_SIZE = 5;
+let isCustomerRequestedFromCase = false;
+
+function loadEmails(panel, caseId, page = 1) {
+
+    isCustomerRequestedFromCase = false;
+
+    safeAjax({
+        type: "GET",
+        url:
+            "/_api/incidents(" + caseId + ")" +
+            "?$select=_cat_requestedfrom_value",
+
+        success: function(caseRes) {
+
+            const requestedFromId =
+                caseRes._cat_requestedfrom_value;
+
+            if (!requestedFromId) {
+                loadCaseEmailsGrid(panel, caseId, page);
+                return;
+            }
+
+            safeAjax({
+                type: "GET",
+                url:
+                    "/_api/contacts(" + requestedFromId + ")" +
+                    "?$select=cat_persona",
+
+                success: function(contactRes) {
+
+                    const persona =
+                        contactRes[
+                            "cat_persona@OData.Community.Display.V1.FormattedValue"
+                        ] || "";
+
+                    isCustomerRequestedFromCase =
+                        (isDealerUser || isInternalCustomerUser) &&
+                        persona === "Customer";
+
+                    loadCaseEmailsGrid(panel, caseId, page);
+                },
+
+                error: function() {
+                    loadCaseEmailsGrid(panel, caseId, page);
+                }
+            });
+        },
+
+        error: function() {
+            loadCaseEmailsGrid(panel, caseId, page);
+        }
+    });
+}
+
+function loadCaseEmailsGrid(panel, caseId, page){
+    $.ajax({
+        url:
+            "/_api/emails" +
+            "?$select=activityid,subject,description,createdon,sender,torecipients,statuscode" +
+            "&$filter=_regardingobjectid_value eq " + caseId +
+            "&$orderby=createdon desc",
+
+        method: "GET",
+
+        headers: {
+            "Accept": "application/json"
+        },
+
+        success: function (res) {
+
+            let allEmails = res.value || [];
+
+            if (allEmails.length === 0) {
+
+                panel.html(`
+                    <div class="email-no-results">
+                    <span class="email-no-results-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path fill-rule="evenodd" clip-rule="evenodd" d="M1.10547 12C1.10547 5.98284 5.98333 1.10498 12.0005 1.10498C18.0177 1.10498 22.8955 5.98284 22.8955 12C22.8955 18.0172 18.0177 22.895 12.0005 22.895C5.98333 22.895 1.10547 18.0172 1.10547 12ZM12.0005 2.60498C6.81176 2.60498 2.60547 6.81127 2.60547 12C2.60547 17.1888 6.81175 21.395 12.0005 21.395C17.1893 21.395 21.3955 17.1888 21.3955 12C21.3955 6.81126 17.1893 2.60498 12.0005 2.60498Z" fill="#1F1F1F"/>
+                                        <path d="M12.0005 8.1C12.4147 8.1 12.7505 7.76421 12.7505 7.35C12.7505 6.93579 12.4147 6.6 12.0005 6.6C11.5863 6.6 11.2505 6.93579 11.2505 7.35C11.2505 7.76421 11.5863 8.1 12.0005 8.1Z" fill="#1F1F1F"/>
+                                        <path fill-rule="evenodd" clip-rule="evenodd" d="M10.5005 7.35C10.5005 6.52158 11.1721 5.85 12.0005 5.85C12.8289 5.85 13.5005 6.52158 13.5005 7.35C13.5005 8.17842 12.8289 8.85 12.0005 8.85C11.1721 8.85 10.5005 8.17842 10.5005 7.35Z" fill="#1F1F1F"/>
+                                        <path d="M10.4397 10.4702C10.0255 10.4702 9.6897 10.806 9.6897 11.2202C9.6897 11.6344 10.0255 11.9702 10.4397 11.9702H11.2505V15.9326H9.65918C9.24497 15.9326 8.90918 16.2684 8.90918 16.6826C8.90918 17.0968 9.24497 17.4326 9.65918 17.4326H11.9794C11.9864 17.4328 11.9934 17.4329 12.0005 17.4329C12.0075 17.4329 12.0145 17.4328 12.0215 17.4326H14.3415C14.7557 17.4326 15.0915 17.0968 15.0915 16.6826C15.0915 16.2684 14.7557 15.9326 14.3415 15.9326H12.7505V11.2202C12.7505 10.806 12.4147 10.4702 12.0005 10.4702H10.4397Z" fill="#1F1F1F"/>
+                                        </svg>
+                    </span>
+                    <span>{{ snippets["CAT_No_Emails_Found"] }}</span>
+                    </div>
+                `);
+
+                return;
+            }
+
+            // Default: no attachment
+            allEmails.forEach(function (email) {
+                email.hasAttachment = false;
+            });
+
+            // Check which emails have attachments
+            safeAjax({
+                type: "GET",
+                url: "/_api/activitymimeattachments?$select=_objectid_value",
+
+                success: function (attRes) {
+
+                    const attachmentEmailIds = new Set(
+                        (attRes.value || []).map(function (att) {
+                            return att._objectid_value;
+                        })
+                    );
+
+                    allEmails.forEach(function (email) {
+                        email.hasAttachment =
+                            attachmentEmailIds.has(email.activityid);
+                    });
+
+                    loadReadEmailIds().then(renderEmailGrid);
+                },
+
+                error: function () {
+                    loadReadEmailIds().then(renderEmailGrid);
+                }
+            });
+
+            function renderEmailGrid() {
+
+                const totalRecords = allEmails.length;
+                const totalPages = Math.ceil(totalRecords / PAGE_SIZE);
+
+                const startIndex = (page - 1) * PAGE_SIZE;
+                const endIndex = startIndex + PAGE_SIZE;
+
+                const pageEmails = allEmails.slice(
+                    startIndex,
+                    endIndex
+                );
+
+                const startRecord = startIndex + 1;
+                const endRecord = Math.min(
+                    endIndex,
+                    totalRecords
+                );
+
+                let html = `
+                    <div class="email-grid-wrapper">
+                        <table class="email-grid">
+                            <thead>
+                                <tr>
+                                    <th style="width:180px">Action</th>
+                                    <th>Subject</th>
+                                    <th>File</th>
+                                    <th>To Address</th>
+                                    <th>Status</th>
+                                    <th style="width:180px">Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+
+                pageEmails.forEach(function (email) {
+
+                    const isUnread = !readEmailIds.has(normalizeGuid(email.activityid));
+
+                    const formattedDate = email.createdon
+                        ? new Date(email.createdon).toLocaleDateString(
+                            "en-US",
+                            {
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric"
+                            }
+                        )
+                        : "-";
+
+                    html += `
+                        <tr class="email-feed-row ${isUnread ? "email-unread" : ""}"
+                        data-emailid="${email.activityid}"
+                        data-description="${encodeURIComponent(email.description || '')}">
+
+                            <td>
+                                <button
+                                    class="email-action-btn"
+                                    data-id="${email.activityid}"
+                                    data-caseid="${caseId}"
+                                    data-to="${email.torecipients || ""}"
+                                    ${
+                                        (isDealerUser || isInternalCustomerUser) &&
+                                        isCustomerRequestedFromCase
+                                            ? "disabled"
+                                            : ""
+                                    }>
+                                    Reply All
+                                </button>
+                            </td>
+
+                            <td>
+                                <span class="email-subject">
+                                    ${email.subject || "-"}
+                                </span>
+                            </td>
+
+                            <td>
+                               <span class="email-file">
+                                    ${
+                                        email.hasAttachment
+                                            ? `
+                                                <svg class="attachment-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                    <path fill-rule="evenodd" clip-rule="evenodd"
+                                                    d="M15.9392 3.11645C15.5327 2.95012 15.0971 2.86643 14.6579 2.87024C14.2186 2.87406 13.7846 2.96531 13.381 3.13868C12.9774 3.31205 12.6124 3.56406 12.3072 3.88001L12.2981 3.88941L4.16767 12.0188C3.1668 13.0197 2.60449 14.3772 2.60449 15.7927C2.60449 17.2081 3.16678 18.5656 4.16767 19.5665C5.16856 20.5674 6.52605 21.1297 7.94152 21.1297C9.35699 21.1297 10.7145 20.5674 11.7154 19.5665L21.6141 9.66684C21.907 9.37393 22.3819 9.37391 22.6748 9.66679C22.9677 9.95967 22.9677 10.4345 22.6748 10.7274L12.776 20.6271C11.4939 21.9093 9.75481 22.6297 7.94152 22.6297C6.12823 22.6297 4.3892 21.9094 3.10701 20.6272C1.82482 19.345 1.10449 17.606 1.10449 15.7927C1.10449 13.9794 1.82482 12.2403 3.10701 10.9582L11.233 2.83305C11.6756 2.37613 12.2044 2.01155 12.7889 1.76046C13.3755 1.50848 14.0064 1.37585 14.6448 1.3703C15.2832 1.36475 15.9164 1.4864 16.5072 1.72815C17.0981 1.9699 17.6349 2.32691 18.0864 2.77835C18.5378 3.22978 18.8948 3.7666 19.1366 4.35749C19.3783 4.94837 19.5 5.58149 19.4944 6.21989C19.4889 6.85829 19.3563 7.4892 19.1043 8.07579C18.8532 8.66027 18.4886 9.18909 18.0318 9.63164L9.89744 17.7705C9.3734 18.2768 8.67138 18.5569 7.94274 18.5507C7.21409 18.5445 6.51704 18.2523 6.00171 17.7371C5.48638 17.222 5.194 16.525 5.18756 15.7964C5.18111 15.0677 5.46111 14.3657 5.96725 13.8415L5.97629 13.8321L14.1068 5.69909C14.3996 5.40614 14.8745 5.40606 15.1674 5.69891C15.4604 5.99175 15.4605 6.46663 15.1676 6.75957L7.04235 14.8875C6.81193 15.1283 6.68455 15.4497 6.6875 15.7831C6.69047 16.1184 6.82503 16.4392 7.0622 16.6763C7.29938 16.9134 7.62018 17.0479 7.95553 17.0507C8.28895 17.0536 8.61022 16.9261 8.85095 16.6956L16.9846 8.55743C17.3006 8.25227 17.5527 7.88734 17.726 7.48375C17.8994 7.08016 17.9907 6.64609 17.9945 6.20685C17.9983 5.76762 17.9146 5.33203 17.7483 4.92549C17.582 4.51895 17.3363 4.1496 17.0257 3.83901C16.7151 3.52841 16.3458 3.28278 15.9392 3.11645Z"
+                                                    fill="#1F1F1F"/>
+                                                </svg>
+                                            `
+                                            : "-"
+                                    }
+                                </span>
+                            </td>
+
+                            <td>
+                                <span class="email-address">
+                                    ${email.torecipients || "-"}
+                                </span>
+                            </td>
+
+                            <td>
+                                ${
+                                    email["statuscode@OData.Community.Display.V1.FormattedValue"] || "-"
+                                }
+                            </td>
+
+                            <td>
+                                ${formattedDate}
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                html += `
+                            </tbody>
+                        </table>
+
+                        <div class="email-pagination">
+
+                            <div class="pagination-info">
+                                Showing ${startRecord}-${endRecord}
+                                of ${totalRecords} results
+                            </div>
+
+                            <div class="pagination-controls">
+
+                                <button
+                                    class="page-nav prev-page"
+                                    ${page === 1 ? "disabled" : ""}>
+                                    ‹
+                                </button>
+
+                                <span class="current-page">
+                                    ${page}
+                                </span>
+
+                                <button
+                                    class="page-nav next-page"
+                                    ${page === totalPages ? "disabled" : ""}>
+                                    ›
+                                </button>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+                `;
+
+                panel.html(html);
+                if (
+                    (isDealerUser || isInternalCustomerUser) &&
+                    isCustomerRequestedFromCase
+                ) {
+
+                    panel.find(".email-action-btn")
+                        .prop("disabled", true)
+                        .attr(
+                            "title",
+                            "Reply All is not allowed because Requested From contact has Customer persona."
+                        );
+                }
+
+                if (isDealerUser || isInternalCustomerUser) {
+
+                    panel.find(".email-action-btn").each(function () {
+
+                        const btn = $(this);
+
+                        const emailAddress =
+                            (btn.data("to") || "")
+                                .replace(";", "")
+                                .trim();
+
+                        safeAjax({
+                            type: "GET",
+                            url:
+                                "/_api/contacts" +
+                                "?$select=cat_persona,emailaddress1" +
+                                "&$filter=emailaddress1 eq '" +
+                                emailAddress +
+                                "'",
+
+                            success: function (res) {
+
+                                const persona =
+                                    res.value?.[0]?.[
+                                        "cat_persona@OData.Community.Display.V1.FormattedValue"
+                                    ] || "";
+
+                                // Dealer validation
+                                if (
+                                    isDealerUser &&
+                                    (
+                                        persona === "Customer" 
+                                    )
+                                ) {
+
+                                    btn.prop("disabled", true);
+
+                                    btn.attr(
+                                        "title",
+                                        "Dealer cannot directly message customer."
+                                    );
+                                }
+
+                                // Internal Customer validation
+                                if (
+                                    isInternalCustomerUser &&
+                                    persona === "Customer"
+                                ) {
+
+                                    btn.prop("disabled", true);
+
+                                    btn.attr(
+                                        "title",
+                                        "Reply All is not allowed for Customer recipients."
+                                    );
+                                }
+                            }
+                        });
+                    });
+                }
+
+                panel.find(".prev-page").on(
+                    "click",
+                    function () {
+                        loadEmails(
+                            panel,
+                            caseId,
+                            page - 1
+                        );
+                    }
+                );
+
+                panel.find(".next-page").on(
+                    "click",
+                    function () {
+                        loadEmails(
+                            panel,
+                            caseId,
+                            page + 1
+                        );
+                    }
+                );
+            }
+        }
+    });
+}
+
+$(document).on(
+    "click",
+    ".email-feed-row",
+    function (e) {
+
+        if ($(e.target).closest(".email-action-btn").length) {
+            return;
+        }
+
+        const currentRow = $(this);
+
+        // Collapse if already open
+        if (currentRow.next().hasClass("email-expanded-row")) {
+            currentRow.next().remove();
+            return;
+        }
+
+        // Close any previously opened row
+        $(".email-expanded-row").remove();
+
+        const description = decodeURIComponent(
+            currentRow.attr("data-description") || ""
+        );
+
+        const emailId = currentRow.data("emailid");
+        markEmailAsRead(emailId);
+        console.log(emailId);
+
+        safeAjax({
+            type: "GET",
+            url:
+                "/_api/activitymimeattachments" +
+                "?$select=activitymimeattachmentid,filename,mimetype,body" +
+                "&$filter=_objectid_value eq " + emailId,
+
+            success: function (response) {
+
+                const attachments = response.value || [];
+                let attachmentHtml = "";
+
+                if (attachments.length > 0) {
+
+                    attachments.forEach(function(att) {
+                        const byteCharacters = atob(att.body);
+                        const byteNumbers = new Array(byteCharacters.length);
+                        for (let i = 0; i < byteCharacters.length; i++) {
+                            byteNumbers[i] = byteCharacters.charCodeAt(i);
+                        }
+                        const byteArray = new Uint8Array(byteNumbers);
+                        const blob = new Blob([byteArray], { type: att.mimetype });
+                        const blobUrl = URL.createObjectURL(blob);
+                        attachmentHtml += `
+                        <tr class="email-table-attachment">
+                             <td>   ${att.filename} </td>
+                             <td>
+                                <div class="attachment-actions">
+                                <a href="javascript:void(0)" data-url="${blobUrl}" data-filename="${att.filename}" class="attachment-view-btn attachment-action-link" title="View File">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M11.8897 8.38379C9.74822 8.38379 8.01221 10.1198 8.01221 12.2613C8.01221 14.4028 9.74822 16.1388 11.8897 16.1388C14.0312 16.1388 15.7672 14.4028 15.7672 12.2613C15.7672 10.1198 14.0312 8.38379 11.8897 8.38379ZM9.51221 12.2613C9.51221 10.9482 10.5766 9.88379 11.8897 9.88379C13.2028 9.88379 14.2672 10.9482 14.2672 12.2613C14.2672 13.5743 13.2028 14.6388 11.8897 14.6388C10.5766 14.6388 9.51221 13.5743 9.51221 12.2613Z" fill="#1F1F1F"/>
+                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M12.0005 4.21289C9.59906 4.21289 7.42067 5.27499 5.67016 6.53839C3.91356 7.80619 2.52248 9.32363 1.68009 10.3435L1.67334 10.3518C1.30152 10.8153 1.10547 11.4031 1.10547 11.9998C1.10547 12.5966 1.30152 13.1844 1.67334 13.6479L1.68009 13.6562C2.52248 14.6761 3.91356 16.1935 5.67016 17.4613C7.42067 18.7247 9.59906 19.7868 12.0005 19.7868C14.4019 19.7868 16.5803 18.7247 18.3308 17.4613C20.0874 16.1935 21.4785 14.6761 22.3209 13.6562L22.3277 13.6478C22.6994 13.1844 22.8955 12.5966 22.8955 11.9998C22.8955 11.4031 22.6994 10.8153 22.3277 10.3519L22.3209 10.3435C21.4785 9.32363 20.0874 7.80619 18.3308 6.53839C16.5803 5.27499 14.4019 4.21289 12.0005 4.21289ZM2.60547 11.9998C2.60547 11.7275 2.69533 11.4768 2.84048 11.2941C3.64034 10.3262 4.93733 8.91717 6.548 7.7547C8.16737 6.58595 10.0391 5.71289 12.0005 5.71289C13.9619 5.71289 15.8336 6.58595 17.453 7.7547C19.0637 8.91717 20.3606 10.3262 21.1605 11.2941C21.3056 11.4768 21.3955 11.7275 21.3955 11.9998C21.3955 12.2722 21.3056 12.5229 21.1605 12.7056C20.3606 13.6735 19.0637 15.0825 17.453 16.245C15.8336 17.4137 13.9619 18.2868 12.0005 18.2868C10.0391 18.2868 8.16737 17.4137 6.548 16.245C4.93732 15.0825 3.64033 13.6735 2.84047 12.7056C2.69532 12.5229 2.60547 12.2722 2.60547 11.9998Z" fill="#1F1F1F"/>
+                                    </svg>
+
+                                </a>
+                                        |
+                                <a href="${blobUrl}" download="${att.filename}" class="attachment-action-link" title="Download File">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M11.9998 1.10498C12.414 1.10498 12.7498 1.44077 12.7498 1.85498V13.8747L16.1126 9.95137C16.3821 9.63688 16.8556 9.60046 17.1701 9.87002C17.4846 10.1396 17.521 10.6131 17.2515 10.9276L12.5691 16.3903C12.4267 16.5565 12.2186 16.6522 11.9997 16.6522C11.7808 16.6522 11.5727 16.5565 11.4303 16.3903L6.74795 10.9276C6.47839 10.6131 6.51481 10.1396 6.8293 9.87002C7.1438 9.60046 7.61727 9.63688 7.88684 9.95137L11.2498 13.8748V1.85498C11.2498 1.44077 11.5855 1.10498 11.9998 1.10498Z" fill="#1F1F1F"/>
+                                    <path d="M2.60449 17.4629C2.60449 17.0487 2.26871 16.7129 1.85449 16.7129C1.44028 16.7129 1.10449 17.0487 1.10449 17.4629V19.0237C1.10449 20.0505 1.51239 21.0352 2.23844 21.7612C2.96449 22.4873 3.94923 22.8952 4.97603 22.8952H19.023C20.0498 22.8952 21.0345 22.4873 21.7605 21.7612C22.4866 21.0352 22.8945 20.0505 22.8945 19.0237V17.4629C22.8945 17.0487 22.5587 16.7129 22.1445 16.7129C21.7303 16.7129 21.3945 17.0487 21.3945 17.4629V19.0237C21.3945 19.6526 21.1446 20.2558 20.6999 20.7006C20.2551 21.1453 19.6519 21.3952 19.023 21.3952H4.97603C4.34706 21.3952 3.74385 21.1453 3.2991 20.7006C2.85435 20.2558 2.60449 19.6526 2.60449 19.0237V17.4629Z" fill="#1F1F1F"/>
+                                    </svg>
+
+                                </a>
+                            </div>
+                            </td>
+                        </tr>
+                        `;
+                    });
+                }else {
+                    attachmentHtml = `
+                        <tr>
+                            <td>No attachments</td>
+                            <td>-</td>
+                        </tr>
+                    `;
+                }
+
+                const previewHtml = `
+                    <tr class="email-expanded-row">
+                        <td colspan="6">
+
+                            <div class="email-expanded-content">
+
+                                <div class="email-description-box">
+                                    ${description || "No email content available"}
+                                </div>
+
+                                <div class="email-attachments-grid">
+                                    <table class="email-attachment-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Attachment</th>
+                                                <th>Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${attachmentHtml}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <div class="email-expanded-footer">
+                                                    <a href="javascript:void(0);"
+                                                    class="collapse-email-preview">
+                                                    Collapse ▲
+                                                    </a>
+                                </div>
+
+                            </div>
+
+                        </td>
+                    </tr>
+                `;
+
+                currentRow.after(previewHtml);
+            },
+
+            error: function () {
+
+                const previewHtml = `
+                    <tr class="email-expanded-row">
+                        <td colspan="6">
+
+                            <div class="email-expanded-content">
+
+                                ${description || "No email content available"}
+
+                                <div style="margin-top:10px;color:red;">
+                                    Unable to load attachments.
+                                </div>
+
+                                <div class="email-expanded-footer">
+                                    <a href="javascript:void(0);"
+                                       class="collapse-email-preview">
+                                       Collapse ▲
+                                    </a>
+                                </div>
+
+                            </div>
+
+                        </td>
+                    </tr>
+                `;
+
+                currentRow.after(previewHtml);
+            }
+        });
+    }
+);
+
+$(document).on(
+    "click",
+    ".attachment-view-btn",
+    function (e) {
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        const fileUrl = $(this).data("url");
+        const fileName = $(this).data("filename");
+
+        $("#attachmentPreviewTitle").text(fileName);
+
+        $("#attachmentPreviewFrame").attr(
+            "src",
+            fileUrl
+        );
+
+        $("#attachmentPreviewModal").fadeIn(200);
+    }
+);
+
+$(document).on(
+    "click",
+    "#closeAttachmentPreview",
+    function () {
+
+        $("#attachmentPreviewModal").fadeOut(200);
+
+        $("#attachmentPreviewFrame").attr(
+            "src",
+            ""
+        );
+    }
+);
+
+$(document).on(
+    "click",
+    "#attachmentPreviewModal",
+    function (e) {
+
+        if (e.target === this) {
+
+            $(this).fadeOut(200);
+
+            $("#attachmentPreviewFrame").attr(
+                "src",
+                ""
+            );
+        }
+    }
+);
+
+
+
+
+$(document).on(
+    "click",
+    ".collapse-email-preview",
+    function (e) {
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        $(this)
+            .closest(".email-expanded-row")
+            .remove();
+    }
+);
+
+$(document).on(
+    "click",
+    ".email-action-btn",
+    function (e) {
+        if (
+            (isDealerUser || isInternalCustomerUser) &&
+            isCustomerRequestedFromCase
+        ) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            alert(
+                "Reply All is not allowed because Requested From contact has Customer persona."
+            );
+
+            return;
+        }
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        const emailId = $(this).data("id");
+        const caseId = $(this).data("caseid");
+        markEmailAsRead(emailId);
+
+        const emailAddress =
+        ($(this).data("to") || "")
+            .split(";")[0]
+            .trim();
+
+        if (!isDealerUser && !isInternalCustomerUser) {
+
+            openReplyAll(emailId, caseId);
+            return;
+        }
+        console.log("isDealerUser:", isDealerUser);
+        console.log("Email Address:", emailAddress);
+
+        safeAjax({
+            type: "GET",
+            url:
+                "/_api/contacts" +
+                "?$select=cat_persona,emailaddress1" +
+                "&$filter=emailaddress1 eq '" +
+                emailAddress +
+                "'",
+
+            success: function(res) {
+
+                const persona =
+                    res.value?.[0]?.[
+                        "cat_persona@OData.Community.Display.V1.FormattedValue"
+                    ] || "";
+
+                // Dealer validation
+                if (
+                    isDealerUser &&
+                    (
+                        persona === "Customer" ||
+                        persona === "Miscellaneous"
+                    )
+                ) {
+
+                    // alert(
+                    //     "Dealer cannot directly message customer."
+                    // );
+                    alert("{{ snippets['CAT_Error_DeaNoMsgCust'] }}");
+
+                    return;
+                }
+
+                // Internal Customer validation
+                if (
+                    isInternalCustomerUser &&
+                    persona === "Customer"
+                ) {
+
+                    alert(
+                        "Internal Customer Persona users cannot Reply All to Customer recipients."
+                    );
+
+                    return;
+                }
+
+                openReplyAll(emailId, caseId);
+            },
+
+            error: function() {
+
+                // alert(
+                //     "Unable to validate recipient persona."
+                // );
+                alert("{{ snippets['CAT_Error_UnableReceipient'] }}");
+            }
+        });
+    }
+);
+
+function openReplyAll(emailId, caseId) {
+
+    if(
+        window.parent &&
+        window.parent !== window &&
+        typeof window.parent.openReplyAllModal === "function"
+    ){
+
+        window.parent.openReplyAllModal(
+            emailId,
+            caseId
+        );
+
+        return;
+    }
+
+    currentReplyAllUrl =
+        window.location.origin +
+        "/en-US/handup-email-reply-all" +
+        "?emailid=" + encodeURIComponent(emailId) +
+        "&caseid=" + encodeURIComponent(caseId) +
+        "&mode=popup";
+
+    $("#replyAllPopupFrame")
+        .attr("src", currentReplyAllUrl);
+
+    $("#replyAllPopupModal")
+        .css("display","flex")
+        .hide()
+        .fadeIn(200);
+}
+// CLOSE (X)
+
+$(document).on("click", "#closeReplyAllBtn", function () {
+
+    $("#replyAllPopupModal").fadeOut(200);
+    $("#replyAllPopupFrame").attr("src", "");
+
+});
+
+// CLOSE (bottom button)
+
+$(document).on("click", ".close-replyall-btn", function () {
+
+    $("#replyAllPopupModal").fadeOut(200);
+    $("#replyAllPopupFrame").attr("src", "");
+
+});
+
+// OPEN IN NEW TAB
+
+$(document).on("click", "#popupSendBtn", function () {
+
+    const iframe =
+        document.getElementById("replyAllPopupFrame");
+
+    if (
+        iframe &&
+        iframe.contentWindow &&
+        typeof iframe.contentWindow.triggerReplyAllSend === "function"
+    ) {
+
+        iframe.contentWindow.triggerReplyAllSend();
+
+    } else {
+
+        // alert("Reply form is still loading.");
+        alert("{{ snippets['CAT_Error_ReplyLoading'] }}");
+
+    }
+
+});
+// CLICK OUTSIDE TO CLOSE
+
+$(document).on("click", "#replyAllPopupModal", function (e) {
+
+    if (e.target === this) {
+
+        $("#replyAllPopupModal").fadeOut(200);
+        $("#replyAllPopupFrame").attr("src", "");
+
+    }
+
+});
+
+
+
+
+  function loadResolution(panel) {
+
+     $.ajax({
+        url: "/_api/incidentresolutions?$filter=_incidentid_value eq " + caseId,
+        method: "GET",
+        headers: { "Accept": "application/json" },
+
+        success: function (res) {
+
+           if (!res.value.length) {
+              panel.html("No resolution found");
+              return;
+           }
+
+           const r = res.value[0];
+
+           panel.html(`
+              <div>
+                 <h4>${r.subject}</h4>
+                 <p>${r.description || "-"}</p>
+              </div>
+           `);
+
+        },
+
+        error: function () {
+           panel.html("Failed to load resolution");
+        }
+     });
+
+  }
+
+  function loadAttachments(panel) {
+
+     $.ajax({
+        url: "/_api/annotations?$filter=_objectid_value eq " + caseId,
+        method: "GET",
+        headers: { "Accept": "application/json" },
+
+        success: function (res) {
+
+           if (!res.value.length) {
+              panel.html("No attachments");
+              return;
+           }
+
+           let html = "";
+
+           res.value.forEach(file => {
+              html += `
+                 <div>📎 ${file.filename}</div>
+              `;
+           });
+
+           panel.html(html);
+
+        },
+
+        error: function () {
+           panel.html("Failed to load attachments");
+        }
+     });
+
+  }
+
+  // ===========================  Attachments  =========================
+
+  window.portalCurrentContact = {
+      id: "{{ user.id | default: '' }}",
+      name: "{{ user.fullname | default: user.name | default: '' | escape }}"
+  };
+
+  function escapeHtml(value) {
+      if (value === null || value === undefined) return "";
+
+      return String(value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "'")
+          .replace(/'/g, "&#039;");
+  }
+
+  function escapeAttribute(value) {
+      return escapeHtml(value);
+  }
+
+  // ==================== CASE ATTACHMENTS - BUTTON ONLY ====================
+
+  function safeAjax(ajaxOptions) {
+      var deferredAjax = $.Deferred();
+
+      shell.getTokenDeferred()
+          .done(function (token) {
+              ajaxOptions.headers = ajaxOptions.headers || {};
+              ajaxOptions.headers["__RequestVerificationToken"] = token;
+
+              $.ajax(ajaxOptions)
+                  .done(deferredAjax.resolve)
+                  .fail(deferredAjax.reject);
+          })
+          .fail(deferredAjax.reject);
+
+      return deferredAjax.promise();
+  }
+
+  // Raw content snippet value.
+  // Snippet name: CAT Webform Upload Allow File Type
+  // Example value: jpg,jpeg,png,gif,svg,js,css,zip,doc,docx,xls,xlsx,ppt,pptx,pdf,woff,ttf
+  window.caseAttachmentAllowedFileTypesRaw = "{{ snippets['CAT Document Upload Allow File Type'] | default: '' }}";
+
+  const CASE_ATTACHMENT_API = {
+      entitySetName: "annotations",
+      logicalName: "annotation",
+
+      caseEntitySetName: "incidents",
+
+      // Annotation -> Case relationship/schema name used in Web API.
+      // This binds the uploaded attachment to the Case.
+      caseBindProperty: "objectid_incident@odata.bind"
+  };
+
+  const CASE_ATTACHMENT_ALLOWED_EXT = buildAllowedExtensionSet(
+      window.caseAttachmentAllowedFileTypesRaw
+  );
+
+  const CASE_ATTACHMENT_MIME_TYPES = {
+      jpg: "image/jpeg",
+      jpeg: "image/jpeg",
+      png: "image/png",
+      gif: "image/gif",
+      svg: "image/svg+xml",
+
+      js: "text/javascript",
+      css: "text/css",
+
+      zip: "application/zip",
+
+      doc: "application/msword",
+      docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      xls: "application/vnd.ms-excel",
+      xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      ppt: "application/vnd.ms-powerpoint",
+      pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+
+      pdf: "application/pdf",
+
+      woff: "font/woff",
+      ttf: "font/ttf"
+  };
+
+  // Adjust if your Dataverse / Power Pages limit is different.
+  const CASE_ATTACHMENT_MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
+
+
+  // ==================== LOAD ATTACHMENTS WHEN TAB OPENS ====================
+
+  // $(document).on("click", ".case-tab[data-tab='attachments']", function () {
+  //     const container = $(this).closest(".case-expand");
+  //     const panel = container.find(".case-attachments-panel");
+  //     const caseId = panel.attr("data-case-id");
+
+  //     if (!caseId) {
+  //         console.error("Case Id not found for attachment panel.");
+  //         return;
+  //     }
+
+  //     setAttachmentInputAccept(panel);
+  //     loadCaseAttachments(caseId, panel);
+  // });
+
+
+  // ==================== ADD NEW BUTTON ====================
+
+  $(document).on("click", ".case-add-attachment-btn", function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const panel = $(this).closest(".case-attachments-panel");
+
+      setAttachmentInputAccept(panel);
+
+      panel.find(".case-attachment-file-input").trigger("click");
+  });
+
+
+  // ==================== FILE SELECTED ====================
+
+  $(document).on("change", ".case-attachment-file-input", function () {
+      const input = this;
+      const panel = $(input).closest(".case-attachments-panel");
+      const caseId = panel.attr("data-case-id");
+      const files = Array.from(input.files || []);
+
+      input.value = "";
+
+      if (!caseId || files.length === 0) return;
+
+      handleCaseAttachmentFiles(caseId, files, panel);
+  });
+
+
+  // ==================== LOAD EXISTING ATTACHMENTS ====================
+
+  function getPortalUploadedByName(noteText) {
+      if (!noteText) return "";
+
+      const match = String(noteText).match(/PortalUploadedBy=([^;]+)/i);
+
+      if (!match || !match[1]) return "";
+
+      return match[1].trim();
+  }
+
+  function loadCaseAttachments(caseId, panel) {
+      const tbody = panel.find(".case-attachments-table tbody");
+      const summary = panel.find(".case-attachments-summary");
+
+      const cleanCaseId = cleanGuid(caseId);
+
+      panel.find(".case-attachment-message")
+          .removeClass("error success info")
+          .text("");
+
+      summary.text("Attachments");
+      tbody.html(`<tr><td colspan="5">Loading...</td></tr>`);
+
+      const url =
+          "/_api/annotations" +
+          "?$select=annotationid,subject,notetext,filename,filesize,modifiedon,mimetype,isdocument,_ownerid_value,_objectid_value" +
+          "&$filter=_objectid_value eq " + cleanCaseId + " and isdocument eq true" +
+          "&$orderby=modifiedon desc";
+
+      safeAjax({
+          type: "GET",
+          url: url,
+          contentType: "application/json",
+          headers: {
+              "Accept": "application/json",
+              "Prefer": 'odata.include-annotations="OData.Community.Display.V1.FormattedValue"'
+          },
+          success: function (response) {
+              renderCaseAttachmentRows(response.value || [], panel);
+          },
+          error: function (xhr) {
+              console.error("Attachment load failed");
+              console.error("Status:", xhr.status);
+              console.error("Response:", xhr.responseText);
+
+              summary.text("Attachments");
+
+              tbody.html(`
+                  <tr>
+                    <td colspan="5" class="case-attachments-empty">
+                        {{ snippets['CAT_Error_UnableToLoad'] }}
+                    </td>
+                  </tr>
+              `);
+
+            //   showCaseAttachmentMessage(
+            //       panel,
+            //       "error",
+            //       "Unable to load attachments. Status: " +
+            //       xhr.status +
+            //       ". Check console responseText for the exact Web API error."
+            //   );
+            showCaseAttachmentMessage(
+                panel,
+                "error",
+                "{{ snippets['CAT_Error_UnableToLoad'] }}" +
+                " " +
+                xhr.status +
+                ". Check console responseText for the exact Web API error."
+            );
+          }
+      });
+  }
+
+  function cleanGuid(value) {
+      return String(value || "")
+          .replace("{", "")
+          .replace("}", "")
+          .trim();
+  }
+
+  function renderCaseAttachmentRows(records, panel) {
+      const tbody = panel.find(".case-attachments-table tbody");
+      const summary = panel.find(".case-attachments-summary");
+
+     if (!records || records.length === 0) {
+        summary.text("");
+
+        panel.find(".case-attachments-table").hide();
+        panel.find(".case-attachments-empty-message")
+           .show()
+           .text("No attachments found.");
+
+        tbody.empty();
+
+        return;
+     }
+
+     panel.find(".case-attachments-table").show();
+
+     panel.find(".case-attachments-empty-message").hide();
+
+      const totalSize = records.reduce(function (sum, item) {
+          return sum + Number(item.filesize || 0);
+      }, 0);
+
+      summary.text(
+          records.length +
+          " file" +
+          (records.length === 1 ? "" : "s") +
+          " | Total size: " +
+          formatCaseAttachmentSize(totalSize)
+      );
+
+      let html = "";
+
+      records.forEach(function (item) {
+          const title =
+              item.subject ||
+              removeCaseAttachmentExtension(item.filename) ||
+              item.filename ||
+              "-";
+
+          let owner =
+              getPortalUploadedByName(item.notetext) ||
+              item["_ownerid_value@OData.Community.Display.V1.FormattedValue"] ||
+              "-";
+
+          // Optional: hide managed identity-looking owner names
+          if (owner.indexOf("PPMI-") >= 0 || owner.indexOf("powerpagesmanagedidentity") >= 0) {
+              owner =
+                  window.portalCurrentContact && window.portalCurrentContact.name
+                      ? window.portalCurrentContact.name
+                      : "-";
+          }
+          const modifiedOn =
+              item["modifiedon@OData.Community.Display.V1.FormattedValue"] ||
+              formatCaseAttachmentDate(item.modifiedon);
+
+          html += `
+              <tr>
+                  <td>
+                      <span class="case-file-icon">
+                          ${escapeHtml(getCaseAttachmentExtensionLabel(item.filename))}
+                      </span>
+                      <span class="case-file-title">
+                          ${escapeHtml(title)}
+                      </span>
+                  </td>
+
+                  <td>${escapeHtml(owner)}</td>
+
+                  <td>${escapeHtml(modifiedOn)}</td>
+
+                  <td>${escapeHtml(formatCaseAttachmentSize(item.filesize))}</td>
+
+                  <td>
+                      <button
+                          type="button"
+                          class="case-download-attachment-btn"
+                          title="Download"
+                          data-annotation-id="${escapeAttribute(item.annotationid)}">
+                          <span class="download-icon-svg" aria-hidden="true">
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                                  <path d="M12 3V15" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                                  <path d="M7 10L12 15L17 10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+                                  <path d="M5 20H19" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                              </svg>
+                          </span>
+                      </button>
+                  </td>
+              </tr>
+          `;
+      });
+
+      tbody.html(html);
+  }
+
+
+  // ==================== DOWNLOAD ONLY - NO EYE ICON ====================
+
+  $(document).on("click", ".case-download-attachment-btn", function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const annotationId = $(this).attr("data-annotation-id");
+
+      if (!annotationId) return;
+
+      downloadCaseAttachment(annotationId);
+  });
+
+  function downloadCaseAttachment(annotationId) {
+      const url =
+          "/_api/" + CASE_ATTACHMENT_API.entitySetName +
+          "(" + annotationId + ")" +
+          "?$select=documentbody,filename,mimetype";
+
+      safeAjax({
+          type: "GET",
+          url: url,
+          contentType: "application/json",
+          headers: {
+              "Accept": "application/json"
+          },
+          success: function (record) {
+              if (!record || !record.documentbody) {
+                //   alert("File content was not found.");
+                alert("{{ snippets['CAT_Error_FileNotFound'] }}");
+                  return;
+              }
+
+              const fileName = record.filename || "attachment";
+              const mimeType = record.mimetype || "application/octet-stream";
+
+              const blob = base64ToCaseAttachmentBlob(record.documentbody, mimeType);
+              const blobUrl = URL.createObjectURL(blob);
+
+              const link = document.createElement("a");
+              link.href = blobUrl;
+              link.download = fileName;
+
+              document.body.appendChild(link);
+              link.click();
+
+              document.body.removeChild(link);
+              URL.revokeObjectURL(blobUrl);
+          },
+          error: function (xhr) {
+              console.error("Attachment download failed:", xhr);
+            //   alert("Unable to download attachment.");
+            alert("{{ snippets['CAT_Error_UnableDownload'] }}");
+          }
+      });
+  }
+
+
+  // ==================== VALIDATE + UPLOAD ====================
+
+  function handleCaseAttachmentFiles(caseId, files, panel) {
+      panel.find(".case-attachment-message").removeClass("error success info").text("");
+
+      console.log("Allowed attachment extensions:", Array.from(CASE_ATTACHMENT_ALLOWED_EXT));
+
+      const rejectedType = [];
+      const rejectedTooBig = [];
+      const validFiles = [];
+
+      files.forEach(function (file) {
+          const ext = getCaseAttachmentExt(file.name);
+
+          console.log("Selected file:", file.name, "Extension:", ext);
+
+          if (!CASE_ATTACHMENT_ALLOWED_EXT.has(ext)) {
+              rejectedType.push(file.name);
+              return;
+          }
+
+          if ((file.size || 0) > CASE_ATTACHMENT_MAX_FILE_SIZE_BYTES) {
+              rejectedTooBig.push(file.name + " (" + formatCaseAttachmentSize(file.size) + ")");
+              return;
+          }
+
+          validFiles.push(file);
+      });
+
+      if (rejectedType.length > 0) {
+          showCaseAttachmentMessage(
+              panel,
+              "error",
+              "These file types are not allowed: " +
+              rejectedType.join(", ") +
+              ". Allowed types: " +
+              Array.from(CASE_ATTACHMENT_ALLOWED_EXT).join(", ")
+          );
+          return;
+      }
+
+      if (rejectedTooBig.length > 0) {
+          showCaseAttachmentMessage(
+              panel,
+              "error",
+              "These files exceed the per-file size limit of " +
+              formatCaseAttachmentSize(CASE_ATTACHMENT_MAX_FILE_SIZE_BYTES) +
+              ": " +
+              rejectedTooBig.join(", ")
+          );
+          return;
+      }
+
+      if (validFiles.length === 0) return;
+
+      uploadCaseAttachments(caseId, validFiles, panel);
+  }
+
+  function uploadCaseAttachments(caseId, files, panel) {
+      showCaseAttachmentMessage(panel, "info", "Uploading attachment...");
+
+      const uploadPromises = files.map(function (file) {
+          return uploadSingleCaseAttachment(caseId, file);
+      });
+
+      Promise.all(uploadPromises)
+          .then(function () {
+              showCaseAttachmentMessage(panel, "success", "Attachment uploaded successfully.");
+
+              // Mark attachment panel as needing refresh
+              panel.attr("data-attachments-loaded", "false");
+
+              // Reload attachments after upload
+              loadCaseAttachments(caseId, panel);
+
+              // Mark as loaded again
+              panel.attr("data-attachments-loaded", "true");
+          })
+          .catch(function (error) {
+              console.error("Attachment upload failed:", error);
+              showCaseAttachmentMessage(panel, "error", "Unable to upload attachment.");
+          });
+  }
+
+  function uploadSingleCaseAttachment(caseId, file) {
+      return new Promise(function (resolve, reject) {
+          const reader = new FileReader();
+
+          reader.onload = function (e) {
+              const base64Content = String(e.target.result).split(",")[1];
+              const ext = getCaseAttachmentExt(file.name);
+
+              const mimeType =
+                  file.type ||
+                  CASE_ATTACHMENT_MIME_TYPES[ext] ||
+                  "application/octet-stream";
+
+              const cleanCaseId = cleanGuid(caseId);
+
+              const portalContactName =
+                  window.portalCurrentContact && window.portalCurrentContact.name
+                      ? window.portalCurrentContact.name
+                      : "";
+
+              const portalContactId =
+                  window.portalCurrentContact && window.portalCurrentContact.id
+                      ? window.portalCurrentContact.id
+                      : "";
+
+              const payload = {
+                  "filename": file.name,
+                  "documentbody": base64Content,
+                  "subject": removeCaseAttachmentExtension(file.name),
+                  "mimetype": mimeType,
+                  "isdocument": true,
+
+                  // Store portal contact info for display in the custom grid
+                  "notetext":
+                      "*WEB* " +
+                      "PortalUploadedBy=" + portalContactName +
+                      "; PortalUploadedByContactId=" + portalContactId,
+
+                  "objectid_incident@odata.bind": "/incidents(" + cleanCaseId + ")"
+              };
+              console.log("Uploading annotation payload:", payload);
+
+              safeAjax({
+                  type: "POST",
+                  url: "/_api/annotations",
+                  contentType: "application/json",
+                  data: JSON.stringify(payload),
+                  processData: false,
+                  headers: {
+                      "Accept": "application/json"
+                  },
+                  success: function (data, textStatus, xhr) {
+                      console.log("Attachment uploaded successfully.");
+                      console.log("Created record:", xhr.getResponseHeader("entityid"));
+                      resolve();
+                  },
+                  error: function (xhr) {
+                      console.error("Attachment upload failed");
+                      console.error("Status:", xhr.status);
+                      console.error("Response:", xhr.responseText);
+                      reject(xhr);
+                  }
+              });
+          };
+
+          reader.onerror = function (error) {
+              reject(error);
+          };
+
+          reader.readAsDataURL(file);
+      });
+  }
+
+  // ==================== HELPERS ====================
+
+  function buildAllowedExtensionSet(rawValue) {
+      return new Set(
+          String(rawValue || "")
+              .replace(/\r/g, ",")
+              .replace(/\n/g, ",")
+              .split(",")
+              .map(function (value) {
+                  return value
+                      .trim()
+                      .toLowerCase()
+                      .replace(/^\./, "");
+              })
+              .filter(Boolean)
+      );
+  }
+
+  function setAttachmentInputAccept(panel) {
+      const acceptValue = Array.from(CASE_ATTACHMENT_ALLOWED_EXT)
+          .map(function (ext) {
+              return "." + ext;
+          })
+          .join(",");
+
+      panel.find(".case-attachment-file-input").attr("accept", acceptValue);
+  }
+
+  function showCaseAttachmentMessage(panel, type, text) {
+      panel.find(".case-attachment-message")
+          .removeClass("error success info")
+          .addClass(type)
+          .text(text);
+  }
+
+  function getCaseAttachmentExt(fileName) {
+      if (!fileName || fileName.indexOf(".") === -1) return "";
+
+      return fileName
+          .substring(fileName.lastIndexOf(".") + 1)
+          .toLowerCase()
+          .trim();
+  }
+
+  function getCaseAttachmentExtensionLabel(fileName) {
+      const ext = getCaseAttachmentExt(fileName);
+
+      if (!ext) return "FILE";
+
+      return ext.substring(0, 4).toUpperCase();
+  }
+
+  function removeCaseAttachmentExtension(fileName) {
+      if (!fileName) return "";
+
+      const index = fileName.lastIndexOf(".");
+
+      if (index <= 0) return fileName;
+
+      return fileName.substring(0, index);
+  }
+
+  function formatCaseAttachmentSize(bytes) {
+      bytes = Number(bytes || 0);
+
+      if (bytes < 1024) {
+          return bytes + " bytes";
+      }
+
+      if (bytes < 1024 * 1024) {
+          return (bytes / 1024).toFixed(2) + " KB";
+      }
+
+      return (bytes / (1024 * 1024)).toFixed(2) + " MB";
+  }
+
+  function formatCaseAttachmentDate(value) {
+      if (!value) return "-";
+
+      const date = new Date(value);
+
+      if (isNaN(date.getTime())) return "-";
+
+      return date.toLocaleDateString();
+  }
+
+  function base64ToCaseAttachmentBlob(base64, mimeType) {
+      const byteCharacters = atob(base64);
+      const byteArrays = [];
+
+      for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+          const slice = byteCharacters.slice(offset, offset + 512);
+          const byteNumbers = new Array(slice.length);
+
+          for (let i = 0; i < slice.length; i++) {
+              byteNumbers[i] = slice.charCodeAt(i);
+          }
+
+          byteArrays.push(new Uint8Array(byteNumbers));
+      }
+
+      return new Blob(byteArrays, { type: mimeType });
+  }
+
+  // ===========================  Attachments end  ========================================
+</script>
+
+
+<script>
+$(document).ready(function () {
+
+    setTimeout(function () {
+
+        var container = $("#caseDetailsContainer");
+
+        if (!container.text().includes("Failed to load data")) {
+            return;
+        }
+
+        function cleanLocalGuid(value) {
+            return String(value || "")
+                .replace("{", "")
+                .replace("}", "")
+                .trim();
+        }
+
+        function displayValue(value) {
+            return value === null || value === undefined || value === ""
+                ? "-"
+                : value;
+        }
+
+        var params = new URLSearchParams(window.location.search);
+        var caseId = cleanLocalGuid(params.get("id"));
+
+        if (!caseId) {
+            container.html(`
+                <div style="color:red;">
+                    Failed to load data<br>
+                    Reason: No Case ID found in URL.
+                </div>
+            `);
+            return;
+        }
+
+        function optionalGet(url) {
+            return $.ajax({
+                url: url,
+                method: "GET",
+                headers: {
+                    "Accept": "application/json",
+                    "Prefer": 'odata.include-annotations="OData.Community.Display.V1.FormattedValue"'
+                }
+            }).then(
+                function (data) {
+                    return data || {};
+                },
+                function (xhr) {
+                    console.warn("Optional Handup related API failed:", url, xhr.status, xhr.responseText);
+                    return {};
+                }
+            );
+        }
+
+        $.ajax({
+            url:
+                "/_api/incidents(" + caseId + ")" +
+                "?$select=ticketnumber,title,description,createdon,caseorigincode," +
+                "_entitlementid_value,_productid_value,_customerid_value,_parentcaseid_value," +
+                "isescalated,escalatedon,cat_assigneeemail,cat_assigneename,cat_actionrequested,cat_helpcenterstatus",
+            method: "GET",
+            headers: {
+                "Accept": "application/json",
+                "Prefer": 'odata.include-annotations="OData.Community.Display.V1.FormattedValue"'
+            },
+            success: function (data) {
+
+                var contactId = data._customerid_value;
+                var parentCaseId = data._parentcaseid_value;
+
+                var contactPromise = contactId
+                    ? optionalGet("/_api/contacts(" + contactId + ")?$select=fullname,emailaddress1,address1_telephone1")
+                    : $.Deferred().resolve({}).promise();
+
+                var parentPromise = parentCaseId
+                    ? optionalGet("/_api/incidents(" + parentCaseId + ")?$select=ticketnumber,title")
+                    : $.Deferred().resolve({}).promise();
+
+                $.when(contactPromise, parentPromise).done(function (contact, parentCase) {
+
+                    container.html(`
+                        <div class="case-tabs">
+                            <div class="case-tab active" data-tab="details">Handup Details</div>
+                            <div class="case-tab" data-tab="asset">Asset Details</div>
+                            <div class="case-tab" data-tab="email">Email Feed</div>
+                            ${typeof isCustomer !== "undefined" && !isCustomer ? `<div class="case-tab" data-tab="resolution">Resolution Details</div>` : ``}
+                            <div class="case-tab" data-tab="attachments">Attachments</div>
+                        </div>
+
+                        <div class="case-panel active" id="details">
+                            <div class="case-grid">
+
+                                <div>
+                                    <label>Handup Number</label>
+                                    <p>${displayValue(data.ticketnumber)}</p>
+                                </div>
+
+                                <div>
+                                    <label>Case Number</label>
+                                    <p>${displayValue(parentCase.ticketnumber || data["_parentcaseid_value@OData.Community.Display.V1.FormattedValue"])}</p>
+                                </div>
+
+                                <div>
+                                    <label>Title</label>
+                                    <p>${displayValue(data.title)}</p>
+                                </div>
+
+                                <div>
+                                    <label>Description</label>
+                                    <p>${displayValue(data.description)}</p>
+                                </div>
+
+                                <div>
+                                    <label>Created On</label>
+                                    <p>${data.createdon ? new Date(data.createdon).toLocaleDateString() : "-"}</p>
+                                </div>
+
+                                <div>
+                                    <label>Case Origin</label>
+                                    <p>${displayValue(data["caseorigincode@OData.Community.Display.V1.FormattedValue"])}</p>
+                                </div>
+
+                                <div>
+                                    <label>Product</label>
+                                    <p>${displayValue(data["_productid_value@OData.Community.Display.V1.FormattedValue"])}</p>
+                                </div>
+
+                                <div>
+                                    <label>Entitlement</label>
+                                    <p>${displayValue(data["_entitlementid_value@OData.Community.Display.V1.FormattedValue"])}</p>
+                                </div>
+
+                                <div>
+                                    <label>Contact Name</label>
+                                    <p>${displayValue(data["_customerid_value@OData.Community.Display.V1.FormattedValue"] || contact.fullname)}</p>
+                                </div>
+
+                                <div>
+                                    <label>Contact Email</label>
+                                    <p>${displayValue(contact.emailaddress1)}</p>
+                                </div>
+
+                                <div>
+                                    <label>Contact Phone</label>
+                                    <p>${displayValue(contact.address1_telephone1)}</p>
+                                </div>
+
+                                <div>
+                                    <label>Parent Case</label>
+                                    <p>${displayValue(data["_parentcaseid_value@OData.Community.Display.V1.FormattedValue"] || parentCase.title)}</p>
+                                </div>
+
+                                <div>
+                                    <label>Is Escalated</label>
+                                    <p>${data.isescalated ? "Yes" : "No"}</p>
+                                </div>
+
+                                <div>
+                                    <label>Escalated On</label>
+                                    <p>${data.escalatedon ? new Date(data.escalatedon).toLocaleDateString() : "-"}</p>
+                                </div>
+
+                                <div>
+                                    <label>Assignee Email</label>
+                                    <p>${displayValue(data.cat_assigneeemail)}</p>
+                                </div>
+
+                                <div>
+                                    <label>Assignee Name</label>
+                                    <p>${displayValue(data.cat_assigneename)}</p>
+                                </div>
+
+                                <div>
+                                    <label>Action Requested</label>
+                                    <p>${displayValue(data.cat_actionrequested)}</p>
+                                </div>
+
+                                <div>
+                                    <label>Handup Status</label>
+                                    <p>${displayValue(data["cat_helpcenterstatus@OData.Community.Display.V1.FormattedValue"])}</p>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <div class="case-panel" id="asset">Asset content...</div>
+                        <div class="case-panel" id="email" data-case-id="${caseId}">Email content...</div>
+                        ${typeof isCustomer !== "undefined" && !isCustomer ? `<div class="case-panel" id="resolution">Resolution content...</div>` : ``}
+
+                        <div class="case-panel case-attachments-panel" id="attachments" data-case-id="${caseId}">
+                            <div class="case-attachments-top">
+                                <div class="case-attachments-summary">
+                                    Loading attachments...
+                                </div>
+
+                                <button type="button" class="case-add-attachment-btn">
+                                    + Add New
+                                </button>
+
+                                <input
+                                    type="file"
+                                    class="case-attachment-file-input"
+                                    multiple
+                                    style="display:none;"
+                                />
+                            </div>
+
+                            <div class="case-attachment-message"></div>
+
+                            <div class="case-attachments-empty-message" style="display:none;">
+                                No attachments found.
+                            </div>
+
+                            <table class="case-attachments-table">
+                                <thead>
+                                    <tr>
+                                        <th>Title</th>
+                                        <th>Owner</th>
+                                        <th>Last Modified</th>
+                                        <th>Size</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="5">Loading...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    `);
+                });
+            },
+            error: function (xhr) {
+                console.error("Handup Details fallback failed");
+                console.error("Status:", xhr.status);
+                console.error("Response:", xhr.responseText);
+
+                container.html(`
+                    <div style="color:red;">
+                        Failed to load data<br>
+                        Status: ${xhr.status}<br>
+                        Check browser console for response details.
+                    </div>
+                `);
+            }
+        });
+
+    }, 1000);
+
+});
+</script>
+
+
+<!-- Reply All Popup -->
+<div id="replyAllPopupModal" class="case-popup-overlay">
+
+    <div class="case-popup-content">
+
+        <div class="case-popup-header">
+
+            <h3>Compose Email</h3>
+
+            <div class="popup-actions">
+                <button id="closeReplyAllBtn">✕</button>
+            </div>
+
+        </div>
+
+        <iframe id="replyAllPopupFrame"></iframe>
+
+        <div class="button-container">
+
+            <button id="popupSendBtn">
+                Send
+            </button>
+
+            <button class="close-replyall-btn">
+                Close
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- attachment popup -->
+
+<div id="attachmentPreviewModal" class="attachment-preview-modal">
+    <div class="attachment-preview-content">
+
+        <div class="attachment-preview-header">
+            <span id="attachmentPreviewTitle">Attachment Preview</span>
+
+            <button
+                type="button"
+                id="closeAttachmentPreview"
+                class="attachment-preview-close">
+                ✕
+            </button>
+        </div>
+
+        <div class="attachment-preview-body">
+            <iframe
+                id="attachmentPreviewFrame"
+                width="100%"
+                height="100%"
+                frameborder="0">
+            </iframe>
+        </div>
+
+    </div>
+</div>
+
+
