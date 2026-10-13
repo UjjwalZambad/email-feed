@@ -1,0 +1,882 @@
+<script>
+    $(".table-wrapper").after($("#dealerPagination"));
+
+  document.addEventListener("DOMContentLoaded", function() {
+    const seen={};
+
+    document.querySelectorAll("#dealerCasesTable tbody tr[data-id]").forEach(function(row){
+      const id= row.getAttribute("data-id");
+      if(!id) return;
+      if(seen[id]){
+        row.remove();
+      }else{
+        seen[id]= true;
+      }
+    });
+  });
+
+  var isCustomer = { isCustomer};
+
+  var isDealerUser =
+{% if user.roles contains "Cat_Dealer Persona Role" %}
+true
+{% else %}
+false
+{% endif %};
+
+var isInternalCustomerUser =
+{% if user.roles contains "Cat_Internal Customer Persona Role" %}
+true
+{% else %}
+false
+{% endif %};
+
+// ==================== SAFE PARALLEL LOADER (NEW) ====================
+
+const HANDUP_INCIDENT_SELECT =
+    "incidentid,ticketnumber,title,description,createdon,caseorigincode," +
+    "_entitlementid_value,_productid_value,_customerid_value,_parentcaseid_value," +
+    "isescalated,escalatedon,cat_assigneeemail,cat_assigneename,cat_actionrequested," +
+    "cat_helpcenterstatus,cat_additionalassigneename,cat_additionalassigneeemail," +
+    "_cat_secondaryproducttechnology_id_value,_cat_secondarysupporttype_id_value," +
+    "_cat_requestedfrom_value,_cat_supporttype_id_value,cat_language," +
+    "cat_additionalemail2,cat_additionalemail1,_cat_tertiarysupporttype_value," +
+    "_cat_additionalapplications_value,cat_elevationtype";
+
+// Always resolves: returns null when the id is missing or the call fails
+function fetchOptionalRecord(entitySet, id, select) {
+    const d = $.Deferred();
+
+    if (!id) {
+        d.resolve(null);
+        return d.promise();
+    }
+
+    $.ajax({
+        url: "/_api/" + entitySet + "(" + id + ")?$select=" + select,
+        method: "GET",
+        headers: {
+            "Accept": "application/json",
+            "Prefer": 'odata.include-annotations="OData.Community.Display.V1.FormattedValue"'
+        }
+    })
+    .done(function (res) { d.resolve(res || null); })
+    .fail(function (xhr) {
+        console.warn("Optional lookup failed:", entitySet, id, xhr && xhr.status);
+        d.resolve(null);
+    });
+
+    return d.promise();
+}
+
+// Loads the incident, then contact / requested-by / parent case in parallel
+function loadHandupData(recordId) {
+    const d = $.Deferred();
+
+    $.ajax({
+        url: "/_api/incidents(" + recordId + ")?$select=" + HANDUP_INCIDENT_SELECT,
+        method: "GET",
+        headers: { "Accept": "application/json" }
+    })
+    .done(function (data) {
+        $.when(
+            fetchOptionalRecord("contacts", data._customerid_value,
+                "fullname,firstname,lastname,emailaddress1,address1_telephone1"),
+            fetchOptionalRecord("contacts", data._cat_requestedfrom_value,
+                "fullname,firstname,lastname,emailaddress1,address1_telephone1,cat_persona"),
+            fetchOptionalRecord("incidents", data._parentcaseid_value, "ticketnumber")
+        ).done(function (contact, requestedBy, parentCase) {
+            data.contact = contact;
+            data.requestedBy = requestedBy;
+            data.parentCaseTicketNumber = parentCase ? parentCase.ticketnumber : "";
+            console.log("ElevationType:", data.cat_elevationtype);
+            d.resolve(data);
+        });
+    })
+    .fail(function (xhr) {
+        console.error("Incident load failed:", xhr);
+        d.reject(xhr);
+    });
+
+    return d.promise();
+}
+
+// ==================== END SAFE PARALLEL LOADER ====================
+
+  let expandedRow = null;
+  let cache = {};
+
+  $(document).on("click", "#dealerCasesContainer table tbody tr", function () {
+
+      if ($(this).hasClass("no-filter-results-row")) {
+          return;
+      }
+
+      if (window.innerWidth < 768) {
+          $("body").addClass("mobile-detail-view");
+      }
+
+      const row = $(this);
+      const recordId = row.attr("data-id");
+
+      // ---------- MOBILE ----------
+      if (window.innerWidth <= 768) {
+
+          $("#dealerCasesContainer").hide();
+          $("#mobile-case-view")
+              .show()
+              .html("<div style='padding:20px'>Loading...</div>");
+
+          loadHandupData(recordId)
+              .done(function (data) {
+                  $("#mobile-case-view").html(buildMobileCaseHtml(data, recordId));
+              })
+              .fail(function () {
+                  $("#mobile-case-view").html(
+                      "<div class='mobile-case-container'><div class='mobile-header'>" +
+                      "<span class='back-btn'>←</span><h3>Handup</h3></div>" +
+                      "<div style='padding:20px;color:#a00;'>Unable to load handup details.</div></div>"
+                  );
+              });
+
+          return;
+      }
+
+      // ---------- DESKTOP ----------
+      if (!recordId) return;
+
+      // Toggle collapse
+      if (expandedRow && expandedRow.is(row)) {
+          row.next(".case-details").stop(true, true).slideUp(200, function () {
+              $(this).remove();
+          });
+          expandedRow = null;
+          return;
+      }
+
+      $(".case-details").stop(true, true).slideUp(200, function () {
+          $(this).remove();
+      });
+      expandedRow = row;
+
+      if (cache[recordId]) {
+          renderRow(row, cache[recordId]);
+          return;
+      }
+
+      // Loading skeleton
+      row.after(`
+  <tr class="case-details">
+  <td colspan="10">
+  <div style="padding:20px;">Loading...</div>
+  </td>
+  </tr>
+      `);
+
+      loadHandupData(recordId)
+          .done(function (data) {
+              cache[recordId] = data;
+              row.next(".case-details").remove();
+              renderRow(row, data);
+          })
+          .fail(function () {
+              row.next(".case-details").html(
+                  '<td colspan="10"><div style="padding:20px;color:#a00;">Unable to load handup details.</div></td>'
+              );
+              expandedRow = null;
+          });
+  });
+
+
+  // Mobile template (moved from the old nested ajax, content unchanged)
+  function buildMobileCaseHtml(data, recordId) {
+  const html = `
+  <div class="mobile-case-container">
+  <div class="mobile-header">
+  <span class="back-btn">←</span>
+  <h3>${data.ticketnumber}</h3>
+  </div>
+  <div class="accordion">
+  <!-- Case Details -->
+  <div class="accordion-item active">
+  <div class="accordion-header">
+    <span class="accordion-chevron">›</span>
+    <span>Handup Details</span>
+  </div>
+  <div class="accordion-body">
+  <div class="field">
+  <div class="label">Handup Number</div>
+  <div class="value">${data.ticketnumber|| "-"}</div>
+  </div>
+  <div class="field">
+  <div class="label">Case Number</div>
+  <div class="value">${data.parentCaseTicketNumber || "-"}</div>
+  </div>
+  <div class="field">
+  <div class="label">Handup Status</div>
+  <div class="value">${data["cat_helpcenterstatus@OData.Community.Display.V1.FormattedValue"] || "-"}</div>
+  </div>
+  <div class="field">
+  <div class="label">Case Contact Full Name</div>
+  <div class="value">${data["_customerid_value@OData.Community.Display.V1.FormattedValue"] || "-"}</div>
+  </div>
+  <div class="field">
+  <div class="label">Case Contact Email</div>
+  <div class="value">${data.contact?.emailaddress1 || "-"}</div>
+  </div>
+  <div class="field">
+  <div class="label">Case Contact Phone</div>
+  <div class="value">${data.contact?.address1_telephone1 || "-"}</div>
+  </div>
+  <div class="field">
+  <div class="label">Assignee Name</div>
+  <div class="value">${data.cat_assigneename || "-"}</div>
+  </div>
+  <div class="field">
+  <div class="label">Assignee Email</div>
+  <div class="value">${data.cat_assigneeemail|| "-"}</div>
+  </div>
+  <div class="field">
+  <div class="label">Additional Assignee Name</div>
+  <div class="value">${data.cat_additionalassigneename || "-"}</div>
+  </div>
+  <div class="field">
+  <div class="label">Additional Assignee Email</div>
+  <div class="value">${data.cat_additionalassigneeemail|| "-"}</div>
+  </div>
+  <div class="field">
+  <div class="label">Action Requested</div>
+  <div class="value">${data.cat_actionrequested || "-"}</div>
+  </div>
+  <div class="field">
+  <div class="label">Description</div>
+  <div class="value">${data.description || "-"}</div>
+  </div>
+  </div>
+  </div>
+   <!-- Casedetails -->
+  <div class="accordion-item">
+  <div class="accordion-header">
+    <span class="accordion-chevron">›</span>
+    <span>Case Details</span>
+  </div>
+  <div class="accordion-body"> <div class="field">
+     <label class="label">Contact Name</label>
+     <div class="value">${data.requestedBy?.fullname || "-"}</div>
+  </div>
+
+  <div class="field">
+    <label class="label">Persona</label>
+    <div class="value">${data.requestedBy?.["cat_persona@OData.Community.Display.V1.FormattedValue"] || "-"}</div>
+    </div>
+
+      <div class="field">
+     <label class="label">Account Name</label>
+     <div class="value">${data["_customerid_value@OData.Community.Display.V1.FormattedValue"] || "-"}</div>
+  </div>
+
+
+   <div class="field">
+     <label class="label">First Name</label>
+     <div class="value">${data.requestedBy?.firstname || "-"}</div>
+  </div>
+   <div class="field">
+   <label class="label">Last Name</label>
+   <div class="value">${data.requestedBy?.lastname || "-"}</div>
+</div>
+ <div class="field">
+   <label class="label">Email</label>
+   <div class="value">${data.requestedBy?.emailaddress1 || "-"}</div>
+</div>
+ 
+   <div class="field">
+     <label class="label">Phone</label>
+     <div class="value">${data.requestedBy?.address1_telephone1 || "-"}</div>
+  </div>
+  
+
+   <div class="field">
+     <label class="label">Product Technology</label>
+     <div class="value">${data["_productid_value@OData.Community.Display.V1.FormattedValue"] || "-"}</div>
+  </div>
+
+   <div class="field">
+     <label class="label">Additional Applications</label>
+     <div class="value">${data.cat_additionalapplications || "-"}</div>
+  </div>
+
+  
+   <div class="field">
+     <label class="label">Secondary Product Technology</label>
+     <div class="value">${data["_cat_secondaryproducttechnology_id_value@OData.Community.Display.V1.FormattedValue"]	 || "-"}</div>
+  </div>
+
+     <div class="field">
+     <label class="label">Support Type</label>
+     <div class="value">${data["_cat_supporttype_id_value@OData.Community.Display.V1.FormattedValue"] || "-"}</div>
+  </div>
+ 
+   <div class="field">
+     <label class="label">Secondary Support Type</label>
+     <div class="value">${data["_cat_secondarysupporttype_id_value@OData.Community.Display.V1.FormattedValue"] || "-"}</div> 
+  </div>
+ 
+   <div class="field">
+     <label class="label">Tertiary Support Type</label>
+     <div class="value">${data["_cat_tertiarysupporttype_value@OData.Community.Display.V1.FormattedValue"] || "-"}</div>
+  </div>
+  
+     <div class="field">
+     <label class="label">Asset Administration</label>
+     <div class="value"></div>
+  </div>
+  
+    <div class="field">
+     <label class="label">Subject</label>
+     <div class="value">${data.title || "-"}</div>
+  </div>
+  
+    <div class="field">
+     <label class="label">Description</label>
+     <div class="value">${data.description || "-"}</div>
+  </div>
+  
+    <div class="field">
+     <label class="label">Channel</label>
+     <div class="value">${data["caseorigincode@OData.Community.Display.V1.FormattedValue"] || "-"}</div>
+  </div>
+  
+    <div class="field">
+     <label class="label">Language</label>
+     <div class="value">${data["cat_language@OData.Community.Display.V1.FormattedValue"] || "-"}</div>
+  </div>
+  
+    <div class="field">
+     <label class="label">Additional Email 1</label>
+     <div class="value">${data.cat_additionalemail1 || "-"}</div>
+  </div>
+  
+    <div class="field">
+     <label class="label">Additional Email 2</label>
+     <div class="value">${data.cat_additionalemail2 || "-"}</div>
+  </div></div>
+  </div>
+  <!-- Asset -->
+  <div class="accordion-item mobile-assets-accordion">
+
+    <div class="accordion-header"
+         data-mobile-tab="assets">
+        <span class="accordion-chevron">›</span>
+        <span>Asset Details</span>
+    </div>
+
+    <div class="accordion-body">
+
+        <div class="case-assets-panel mobile-case-assets-panel"
+             data-case-id="${recordId}">
+
+            <div class="case-assets-top">
+                <div class="case-assets-summary">
+                    Assets
+                </div>
+            </div>
+
+            <div class="case-assets-message"></div>
+
+            <table class="case-assets-table mobile-assets-table">
+
+                <thead>
+                    <tr>
+                        <th>Serial Number</th>
+                        <th>Make</th>
+                        <th>Equipment List</th>
+                        <th>Device Model</th>
+                        <th>Radio Serial Number</th>
+                        <th>SMU Hours</th>
+                        <th>SMU Value</th>
+                        <th>Latest Status</th>
+                        <th>Last Location</th>
+                        <th>Geo Location</th>
+                        <th>Model</th>
+                        <th>Dealer Code</th>
+                        <th>Ownership</th>
+                        <th>DCN</th>
+                        <th>CCID</th>
+                        <th>CCID Name</th>
+                        <th>Latest Reported Date</th>
+                        <th>Asset Type</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    <tr>
+                        <td colspan="18">Loading...</td>
+                    </tr>
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+</div>
+  <!-- Email -->
+<div class="accordion-item">
+    <div class="accordion-header mobile-email-feed-header"
+         data-caseid="${recordId}">
+         <span class="accordion-chevron">›</span>
+        <span>Email Feed</span>
+    </div>
+
+    <div class="accordion-body">
+
+        <div class="mobile-email-feed-content"
+             id="mobileEmailFeed_${recordId}">
+            Loading emails...
+        </div>
+
+    </div>
+</div>
+  </div>
+  <!-- Resolution -->
+  <div class="accordion-item">
+  ${!isCustomer ? `
+    <div class="accordion-header">
+        <span class="accordion-chevron">›</span>
+        <span>Resolution Details</span>
+    </div>
+    ` : ``}
+  <div class="accordion-body">Resolution content...</div>
+  </div>
+  <!-- Attachments -->
+  <div class="accordion-item mobile-attachments-accordion">
+      <div class="accordion-header" data-mobile-tab="attachments">
+            <span class="accordion-chevron">›</span>
+            <span>Attachments/Files</span>
+      </div>
+
+      <div class="accordion-body">
+          <div class="case-attachments-panel mobile-case-attachments-panel"
+               data-case-id="${recordId}">
+
+              <div class="case-attachments-top">
+                  <div class="case-attachments-summary">
+                      Attachments
+                  </div>
+
+                  <button type="button" class="case-add-attachment-btn">
+                      + Add New
+                  </button>
+
+                  <input
+                      type="file"
+                      class="case-attachment-file-input"
+                      multiple
+                      style="display:none;"
+                  />
+              </div>
+
+              <div class="case-attachment-message"></div>
+
+              <div class="case-attachments-empty-message" style="display:none;">
+                  No attachments found.
+              </div>
+
+              <table class="case-attachments-table mobile-attachments-table">
+                  <thead>
+                      <tr>
+                          <th>Title</th>
+                          <th>Owner</th>
+                          <th>Last Modified</th>
+                          <th>Size</th>
+                          <th>Actions</th>
+                      </tr>
+                  </thead>
+
+                  <tbody>
+                      <tr>
+                          <td colspan="5">Loading...</td>
+                      </tr>
+                  </tbody>
+              </table>
+
+          </div>
+      </div>
+  </div>
+
+  </div>
+  </div>
+  `;
+  return html;
+  }
+
+
+  // Render function
+  function renderRow(row, data) {
+
+  let hideResolution = isCustomer;
+
+
+     const html = `
+  <tr class="case-details" style="display:none;">
+  <td colspan="10">
+  <div class="case-expand">
+
+        <div class="expand-actions">
+          <button class="open-popup-btn"
+                  data-id="${row.attr("data-id")}">
+            <i class="fa-solid fa-up-right-and-down-left-from-center" style = "font-variant: all-petite-caps;"></i>
+          </button>
+        </div>
+  <!-- Tabs -->
+  <div class="case-tabs">
+  <div class="case-tab active" data-tab="details">Handup Details</div>
+  <div class="case-tab" data-tab="updatestatus" id="updatestatus">Update Status</div>
+  <div class="case-tab" data-tab="casedetails">Case Details</div>
+  <div class="case-tab" data-tab="asset">Asset Details</div>
+  <div class="case-tab email-feed-tab"
+  data-tab="email" data-caseid="${data.incidentid}">Email Feed</div>
+  ${!isCustomer ? `<div class="case-tab" data-tab="resolution">Resolution Details</div>` : ``}
+  <div class="case-tab" data-tab="attachments">Attachments</div>
+  </div>
+  <!-- Panels -->
+  <div class="case-panel active" id="details">
+  <div class="case-grid">
+  <div>
+     <label>Handup Number</label>
+     <p>${data.ticketnumber || "-"}</p>
+  </div>
+
+  <div>
+    <label>Case Number</label>
+    <p>${data.parentCaseTicketNumber || "-"}</p>
+    </div>
+
+     <div>
+     <label>Handup Status</label>
+     <p>${data["cat_helpcenterstatus@OData.Community.Display.V1.FormattedValue"] || "-"}</p>
+  </div>
+
+
+  <div>
+     <label>Case Contact Full Name</label>
+     <p>${data["_customerid_value@OData.Community.Display.V1.FormattedValue"] || "-"}</p>
+  </div>
+  <div>
+   <label>Case Contact Email</label>
+   <p>${data.contact?.emailaddress1 || "-"}</p>
+</div>
+<div>
+   <label>Case Contact Phone</label>
+   <p>${data.contact?.address1_telephone1 || "-"}</p>
+</div>
+ 
+  <div>
+     <label>Assignee Name</label>
+     <p>${data.cat_assigneename || "-"}</p>
+  </div>
+    <div>
+     <label for="assigneeEmail">Assignee Email</label>
+     <input type="text" id="TransparentAssigneeEmail" name="assigneeemail" value="${data.cat_assigneeemail || "-"}"/>
+          &nbsp;&nbsp;&nbsp;&nbsp; 
+     <button type="button" id="AssigneBtnSave">Re-assign</button> <div id="emailError"></div>
+
+    
+     
+  </div>
+
+  <div>
+     <label>Additional Assignee Name</label>
+     <p>${data.cat_additionalassigneename || "-"}</p>
+  </div>
+
+  <div>
+     <label>Additional Assignee Email</label>
+     <p>${data.cat_additionalassigneeemail || "-"}</p>
+  </div>
+
+  
+  <div>
+     <label>Action Requested</label>
+     <p>${data.cat_actionrequested || "-"}</p>
+  </div>
+
+    <div>
+     <label>Description</label>
+     <p>${data.description || "-"}</p>
+  </div>
+ 
+  </div>
+  </div>
+
+  <!-------UpdateStatus Pannel----->
+<div class="modal-overlay" id="updateStatusModal">
+<div class="modal-card" role="dialog" aria-model="true" aria-lableby="modelTitle">
+<!--close-->
+<button type="button" class="modal-close" id="modalCloseBtn" aria-label="Close">&times</button>
+<!--Tile-->
+<h2 class="modal-title" id="modalTitle">Update Status</h2>
+<form class="status-form" id="statusForm">
+<div class="field-group">
+   <label class="field-label" for="statusSelectModal">
+   Portal Status<span class="required-tag">(required)</span>
+  </label>
+ 
+   <select class="select-input" id="statusSelectModal" required>
+  <option value="">--Select--</option>
+  <option value="100000013">Action Completed</option>
+  <option value="100000009">Approved</option>
+  <option value="100000014">Exporter/Reseller</option>
+  <option value="100000001">In Process</option>
+  <option value="100000000">New</option>
+  <option value="100000011">Other Dealer Territory</option>
+  <option value="100000012">Pending Customer</option>
+  <option value="100000010">Rejected</option>
+  </select>
+    </div>
+  <!--Resolution Details-->
+
+  <div class="field-group">
+    <label class="field-label" for="resolutionDetailModal">
+        Resolution Detail
+    </label>
+
+    <div class="textarea-wrap">
+        <textarea
+            class="textarea-input resolution-detail-modal"
+            id="resolutionDetailModal"
+            maxlength="131072"
+            placeholder="Enter resolution details"></textarea>
+        <span class="char-count" id="charCountModal">
+            0/131072
+        </span>
+    </div>
+
+    <p class="helper-text">
+        This will be updated on both the Hand-up and the related cases.
+    </p>
+</div>
+
+   <!--Button-->
+   <div class="modal-actions">
+   <button type="button" class="btn-update" id="updateBtn">Update</button>
+   <button type="button" class="btn-cancel" id="modalCancelBtn">Cancel</button>
+   </div>
+   </form>
+   </div>
+   </div>
+
+ <!-- Panels -->
+  <div class="case-panel" id="casedetails">
+  <div class="case-grid">
+  <div>
+     <label>Contact Name</label>
+     <p>${data.requestedBy?.fullname || "-"}</p>
+  </div>
+
+  <div>
+    <label>Persona</label>
+    <p>${data.requestedBy?.["cat_persona@OData.Community.Display.V1.FormattedValue"] || "-"}</p>
+    </div>
+
+     <div>
+     <label>Account Name</label>
+     <p>${data["_customerid_value@OData.Community.Display.V1.FormattedValue"] || "-"}</p>
+  </div>
+  <div>
+     <label>Subject</label>
+     <p>${data.title || "-"}</p>
+  </div>
+  <div>
+     <label>First Name</label>
+     <p>${data.requestedBy?.firstname || "-"}</p>
+  </div>
+  <div>
+     <label>Description</label>
+     <p>${data.description || "-"}</p>
+  </div>
+  <div>
+   <label>Last Name</label>
+   <p>${data.requestedBy?.lastname || "-"}</p>
+</div>
+<div>
+   <label>Email</label>
+   <p>${data.requestedBy?.emailaddress1 || "-"}</p>
+</div>
+ 
+  <div>
+     <label>Phone</label>
+     <p>${data.requestedBy?.address1_telephone1 || "-"}</p>
+  </div>
+  
+
+  <div>
+     <label>Product Technology</label>
+     <p>${data["_productid_value@OData.Community.Display.V1.FormattedValue"] || "-"}</p>
+  </div>
+
+  <div>
+     <label>Additional Applications</label>
+       <p>${data["_cat_additionalapplications_value@OData.Community.Display.V1.FormattedValue"] || "-"}</p>
+  </div>
+
+  
+  <div>
+     <label>Secondary Product Technology</label>
+     <p>${data["_cat_secondaryproducttechnology_id_value@OData.Community.Display.V1.FormattedValue"]	 || "-"}</p>
+  </div>
+
+    <div>
+     <label>Support Type</label>
+     <p>${data["_cat_supporttype_id_value@OData.Community.Display.V1.FormattedValue"] || "-"}</p>
+  </div>
+ 
+  <div>
+     <label>Secondary Support Type</label>
+     <p>${data["_cat_secondarysupporttype_id_value@OData.Community.Display.V1.FormattedValue"] || "-"}</p> 
+  </div>
+ 
+  <div>
+     <label>Tertiary Support Type</label>
+     <p>${data["_cat_tertiarysupporttype_value@OData.Community.Display.V1.FormattedValue"] || "-"}</p>
+  </div>
+  
+    <div>
+     <label>Asset Administration</label>
+     <p></p>
+  </div>
+  
+   <div>
+     <label>Channel</label>
+     <p>${data["caseorigincode@OData.Community.Display.V1.FormattedValue"] || "-"}</p>
+  </div>
+  
+   <div>
+     <label>Language</label>
+     <p>${data["cat_language@OData.Community.Display.V1.FormattedValue"] || "-"}</p>
+  </div>
+  
+   <div>
+     <label>Additional Email 1</label>
+     <p>${data.cat_additionalemail1 || "-"}</p>
+  </div>
+  
+   <div>
+     <label>Additional Email 2</label>
+     <p>${data.cat_additionalemail2 || "-"}</p>
+  </div>
+  
+  
+  </div>
+  </div>
+
+
+  <div class="case-panel case-asset-panel"
+     id="asset"
+     data-case-id="${row.attr("data-id")}">
+
+    <div class="case-assets-top">
+        <div class="case-assets-summary">
+            Asset Details
+        </div>
+    </div>
+
+    <table class="case-assets-table">
+        <thead>
+            <tr>
+                <th>Serial Number</th>
+                <th>Make</th>
+                <th>Equipment List</th>
+                <th>Device Model</th>
+                <th>Radio Serial Number</th>
+                <th>SMU Hours</th>
+                <th>SMU Value</th>
+                <th>Latest Status</th>
+                <th>Last Location</th>
+                <th>Geo Location</th>
+                <th>Model</th>
+                <th>Dealer Code</th>
+                <th>Ownership</th>
+                <th>DCN</th>
+                <th>CCID</th>
+                <th>CCID Name</th>
+                <th>Latest Reported Date</th>
+                <th>Asset Type</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td colspan="18">Loading...</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+  
+  <div class="case-panel" id="email">Email content...</div>
+  ${!isCustomer ? `<div class="case-panel" id="resolution">Resolution content...</div>` : ``}
+  <!-- Attachments -->
+  <div class="case-panel case-attachments-panel" id="attachments" data-case-id="${row.attr("data-id")}">
+
+      <div class="case-attachments-top">
+          <div class="case-attachments-summary">
+              Loading attachments...
+          </div>
+
+          <button type="button" class="case-add-attachment-btn">
+              + Add New
+          </button>
+
+          <input
+              type="file"
+              class="case-attachment-file-input"
+              multiple
+              style="display:none;"
+          />
+      </div>
+
+      <div class="case-attachment-message"></div>
+
+      <table class="case-attachments-table">
+          <thead>
+              <tr>
+                  <th>Title</th>
+                  <th>Owner</th>
+                  <th>Last Modified</th>
+                  <th>Size</th>
+                  <th>Actions</th>
+              </tr>
+          </thead>
+
+          <tbody>
+              <tr>
+                  <td colspan="5">Loading...</td>
+              </tr>
+          </tbody>
+      </table>
+
+  </div>
+
+  </div>
+
+        </td>
+  </tr>
+     `;
+     row.after(html);
+     //Smooth expand
+     
+     row.next(".case-details").slideDown(250);
+     console.log(data);
+     caseId=data.incidentid;
+     console.log(caseId);
+     parentCaseId = data._parentcaseid_value;
+     console.log("ParentCaseID",parentCaseId);
+
+     elavationType=data.cat_elevationtype;
+         console.log("ElevationType:", elavationType);
+
+     console.log("Hide resolution:", hideResolution);
+
+
+
+  }
