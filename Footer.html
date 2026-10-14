@@ -1,0 +1,154 @@
+
+<!-- Google Tag Manager (noscript) -->
+<noscript>
+    <iframe
+        src="https://www.googletagmanager.com/ns.html?id=GTM-PV4KJLLR"
+        height="0"
+        width="0"
+        style="display:none;visibility:hidden">
+    </iframe>
+</noscript>
+<!-- End Google Tag Manager (noscript) -->
+
+<footer role="contentinfo" class="footer" data-component-theme="portalThemeColor5">
+  <div class="footer-bottom d-print-none">
+    <div class="container">
+      <div class="row">
+        <div class="col-lg-9 col-md-9 col-sm-9 text-start">
+          {% editable snippets 'Footer' type: 'html' %}
+
+          <div class="footer-legal-links">
+            <div class="footer-legal-notice">
+                  {% editable snippets 'CAT Legal Notice URL' type: 'html' %}
+            </div>
+            <div class="footer-privacy-policy">
+                  {% editable snippets 'CAT Privacy Policy URL' type: 'html' %}
+            </div>
+            <div class="footer-cookie-settings">
+            <a class="ot-sdk-show-settings" href="#">Cookie Settings</a>
+            </div>
+          </div>
+ 
+
+          <div class="footer-language-wrapper">
+            
+ 
+                <a class="footer-language-toggle"
+                   href="#"
+                   data-bs-toggle="dropdown">
+ 
+                    <span class="drop_language">
+                        {{ website.selected_language.name | escape }}
+                    </span>
+ 
+                </a>
+ 
+                {% include 'Languages Dropdown' %}
+ 
+            </div>
+        </div>
+        <div id="accessibilityLinkContainer" class="col-lg-3 col-md-3 col-sm-3 text-end">
+
+        </div>
+      </div>
+    </div>
+</footer>
+<style>
+  footer .footer-language-wrapper .dropdown-menu,
+  footer .footer-language-wrapper ul.dropdown-menu {
+    max-height: 250px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: #888 transparent;
+  }
+ 
+  footer .footer-language-wrapper .dropdown-menu::-webkit-scrollbar {
+    width: 6px;
+  }
+ 
+  footer .footer-language-wrapper .dropdown-menu::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 3px;
+  }
+ 
+  @media (max-width: 767px) {
+    footer .footer-language-wrapper .dropdown-menu {
+      max-height: 200px !important;
+    }
+  }
+</style>
+ 
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var wrapper = document.querySelector('footer .footer-language-wrapper');
+    if (!wrapper) return;
+ 
+    var menu = wrapper.querySelector('.dropdown-menu, ul');
+    if (!menu) return;
+ 
+    function applyScroll() {
+      var h = window.innerWidth <= 767 ? '200px' : '250px';
+      menu.style.setProperty('max-height', h, 'important');
+      menu.style.setProperty('overflow-y', 'auto', 'important');
+      menu.style.setProperty('overflow-x', 'hidden', 'important');
+    }
+ 
+    applyScroll();
+    wrapper.addEventListener('shown.bs.dropdown', applyScroll);
+    window.addEventListener('resize', applyScroll);
+  });
+</script>
+ 
+
+{% unless request.path contains '/testcatai' %}
+  {% include 'CAT AI Assistant Global' %}
+{% endunless %}
+
+<!-- 
+<script type="text/javascript">
+  window.onload = function () {
+    const accessibilityLinkContainer = document.getElementById("accessibilityLinkContainer");
+    switch (window.navigator.language) {
+      case "fr":
+        if (accessibilityLinkContainer != null) {
+          const accessibilityText = "Accessibilité : partiellement conforme";
+          const frenchAccessibilityAnchor = document.createElement("a");
+          frenchAccessibilityAnchor.id = "frenchAccesssibleLink";
+          frenchAccessibilityAnchor.target = "_blank";
+          frenchAccessibilityAnchor.href = "https://go.microsoft.com/fwlink/?linkid=2163806";
+          frenchAccessibilityAnchor.title = accessibilityText;
+          frenchAccessibilityAnchor.innerText = accessibilityText;
+          accessibilityLinkContainer.appendChild(frenchAccessibilityAnchor);
+        }
+        break;
+      case "it":
+        if (accessibilityLinkContainer != null) {
+          const accessibilityText = "Accessibilità: parzialmente conforme";
+          const italianAccessibilityAnchor = document.createElement("a");
+          italianAccessibilityAnchor.id = "italianAccesssibleLink";
+          italianAccessibilityAnchor.target = "_blank";
+          italianAccessibilityAnchor.href = "https://go.microsoft.com/fwlink/?linkid=2208177";
+          italianAccessibilityAnchor.title = accessibilityText;
+          italianAccessibilityAnchor.innerText = accessibilityText;
+          accessibilityLinkContainer.appendChild(italianAccessibilityAnchor);
+        }
+        break;
+      default:
+        accessibilityLinkContainer.remove();
+    }
+  };
+</script>
+<style>
+  .footer-custom {
+    background-color: black;
+    color: white;
+    padding: 10px;
+    text-align: center;
+  }
+ 
+
+</style> -->
+
