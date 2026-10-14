@@ -1,0 +1,176 @@
+[
+ {
+   "Name": "English - United States",
+   "Code": "en-us",
+   "LocalID": 1033,
+   "LanguageLocaleId": "56940b3e-300f-4070-a559-5a6a4d11a8a3"
+ },
+ {
+   "Name": "Arabic - Saudi Arabia",
+   "Code": "ar-sa",
+   "LocalID": 1025,
+   "LanguageLocaleId": "3b62a075-a8b9-4aa9-9b73-2420ac32e4c8"
+ },
+ {
+   "Name": "Bulgarian - Bulgaria",
+   "Code": "bg-bg",
+   "LocalID": 1026,
+   "LanguageLocaleId": "53c073f4-905b-4534-a2cb-46286519e7a8"
+ },
+ {
+   "Name": "Chinese (Simplified) - China",
+   "Code": "zh-cn",
+   "LocalID": 2052,
+   "LanguageLocaleId": "25a9e954-527b-4681-a4f1-6929e273825a"
+ },
+ {
+   "Name": "Chinese (Taiwan)",
+   "Code": "zh-tw",
+   "LocalID": 1028,
+   "LanguageLocaleId": "d41d9897-9401-4c56-bc33-d4a00b506f51"
+ },
+ {
+   "Name": "Czech - Czech Republic",
+   "Code": "cs-cz",
+   "LocalID": 1029,
+   "LanguageLocaleId": "5dc7908c-a699-42e8-b816-5810f1d2e8fd"
+ },
+ {
+   "Name": "Danish - Denmark",
+   "Code": "da-dk",
+   "LocalID": 1030,
+   "LanguageLocaleId": "06ed618c-1a06-438a-be26-41ecc92dad41"
+ },
+ {
+   "Name": "Dutch - Netherlands",
+   "Code": "nl-nl",
+   "LocalID": 1043,
+   "LanguageLocaleId": "a1d43acc-d8c6-46cf-b93b-93f8467fc638"
+ },
+ {
+   "Name": "Finnish - Finland",
+   "Code": "fi-fi",
+   "LocalID": 1035,
+   "LanguageLocaleId": "37e9aa4f-559b-4c50-bb28-c930f3b7c41e"
+ },
+ {
+   "Name": "French - France",
+   "Code": "fr-fr",
+   "LocalID": 1036,
+   "LanguageLocaleId": "bb2f2ae8-89e1-40bc-9d2e-b52d5985ca3d"
+ },
+ {
+   "Name": "German - Germany",
+   "Code": "de-de",
+   "LocalID": 1031,
+   "LanguageLocaleId": "a76d1907-7b34-4e96-920c-53c0e7a4139f"
+ },
+ {
+   "Name": "Greek - Greece",
+   "Code": "el-gr",
+   "LocalID": 1032,
+   "LanguageLocaleId": "ebf41182-c179-4782-b641-3a3a5dc6255b"
+ },
+ {
+   "Name": "Hindi - India",
+   "Code": "hi-in",
+   "LocalID": 1081,
+   "LanguageLocaleId": "d026c011-4c03-4bfd-93d7-017f480ed54d"
+ },
+ {
+   "Name": "Hungarian - Hungary",
+   "Code": "hu-hu",
+   "LocalID": 1038,
+   "LanguageLocaleId": "f2ca8883-fabe-414d-9a3e-c8bc9edbf1aa"
+ },
+ {
+   "Name": "Indonesian - Indonesia",
+   "Code": "id-id",
+   "LocalID": 1057,
+   "LanguageLocaleId": "2a9f4b6f-8f6c-4470-8558-39ce34379d23"
+ },
+ {
+   "Name": "Italian - Italy",
+   "Code": "it-it",
+   "LocalID": 1040,
+   "LanguageLocaleId": "6b721876-e6fb-426b-9d8f-54286f3077b7"
+ },
+ {
+   "Name": "Japanese - Japan",
+   "Code": "ja-jp",
+   "LocalID": 1041,
+   "LanguageLocaleId": "be6f816a-534f-475f-a2fb-e80f01200f48"
+ },
+ {
+   "Name": "Korean - Korea",
+   "Code": "ko-kr",
+   "LocalID": 1042,
+   "LanguageLocaleId": "68ee7d49-dcc3-43f1-897c-8752793a5828"
+ },
+ {
+   "Name": "Norwegian Bokmål - Norway",
+   "Code": "nb-no",
+   "LocalID": 1044,
+   "LanguageLocaleId": "df62ca53-6dcb-4dc9-8617-cf6daa90b5a6"
+ },
+ {
+   "Name": "Polish - Poland",
+   "Code": "pl-pl",
+   "LocalID": 1045,
+   "LanguageLocaleId": "ab2df79c-352a-4a1d-8c40-d08a5586ee29"
+ },
+ {
+   "Name": "Portuguese - Portugal",
+   "Code": "pt-pt",
+   "LocalID": 2070,
+   "LanguageLocaleId": "c4ea5f94-1b9c-45ef-92b1-65555af858e9"
+ },
+ {
+   "Name": "Romanian - Romania",
+   "Code": "ro-ro",
+   "LocalID": 1048,
+   "LanguageLocaleId": "f537961a-68a2-4fed-8ffa-8a53360d9938"
+ },
+ {
+   "Name": "Russian - Russia",
+   "Code": "ru-ru",
+   "LocalID": 1049,
+   "LanguageLocaleId": "3bdd4225-3ede-4e38-92c2-c8138348e8db"
+ },
+ {
+   "Name": "Spanish - Spain",
+   "Code": "es-es",
+   "LocalID": 3082,
+   "LanguageLocaleId": "debe1880-e106-4bdd-b19d-78b52f73c865"
+ },
+ {
+   "Name": "Swedish - Sweden",
+   "Code": "sv-se",
+   "LocalID": 1053,
+   "LanguageLocaleId": "7b0774ec-546f-4b91-af7b-07c819fbf9fc"
+ },
+ {
+   "Name": "Thai - Thailand",
+   "Code": "th-th",
+   "LocalID": 1054,
+   "LanguageLocaleId": "6dd5b0cf-f58c-4a43-85c1-74d4b092eb04"
+ },
+ {
+   "Name": "Turkish - Turkey",
+   "Code": "tr-tr",
+   "LocalID": 1055,
+   "LanguageLocaleId": "2208bbd6-c21a-401e-aa16-e88100eb3420"
+ },
+ {
+   "Name": "Ukrainian - Ukraine",
+   "Code": "uk-ua",
+   "LocalID": 1058,
+   "LanguageLocaleId": "15d9ee30-251e-4022-9913-12fe50f61c3b"
+ },
+ {
+   "Name": "Vietnamese - Vietnam",
+   "Code": "vi-vn",
+   "LocalID": 1066,
+   "LanguageLocaleId": "22439684-53ab-4205-9b76-ee83080a1bce"
+ }
+]
