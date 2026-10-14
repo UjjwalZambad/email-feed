@@ -1,0 +1,81 @@
+<script>
+(function () {
+    "use strict";
+
+    var PENDING_KEY = "CAT_PendingLanguageLcid";
+    var isAuthenticated = {% if user %}true{% else %}false{% endif %};
+
+    function norm(c) { return String(c || "").trim().replace(/_/g, "-").toLowerCase(); }
+
+    function firstSegment(href) {
+        try {
+            return new URL(href, window.location.origin).pathname.split("/").filter(Boolean)[0] || "";
+        } catch (e) { return ""; }
+    }
+
+    document.addEventListener("click", function (event) {
+        var link = event.target.closest(
+            ".footer-language-wrapper .dropdown-menu a, " +
+            ".footer-language-wrapper ul a, " +
+            ".nav-item.dropdown .dropdown-menu a"
+        );
+        if (!link) return;
+
+        var href = link.getAttribute("href") || "";
+        var seg  = firstSegment(href);
+
+        var siteCode = (window.CAT_SupportedLanguages || []).find(function (c) {
+            return norm(c) === norm(seg);
+        });
+        if (!siteCode) return; // not a language link (Profile, Sign out, etc.)
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        /* Destination without any ?language= so it cannot override the choice */
+        var dest = new URL(href, window.location.origin);
+        Array.from(dest.searchParams.keys()).forEach(function (k) {
+            if (k.toLowerCase() === "language") dest.searchParams.delete(k);
+        });
+        var go = function () {
+            window.location.href = dest.pathname + dest.search + dest.hash;
+        };
+
+        /* Anonymous: tab-only preference, no Dataverse access */
+        if (!isAuthenticated) {
+            sessionStorage.setItem("CAT_AnonLanguage", siteCode);
+            go();
+            return;
+        }
+
+        /* Authenticated: find LocalID (by code, then by link text) */
+        var cfg = window.CAT_ConfigByCode ? window.CAT_ConfigByCode(siteCode) : null;
+        if (!cfg) {
+            try {
+                var text = (link.textContent || "").trim().toLowerCase();
+                var all = JSON.parse(document.getElementById("catWebLanguagesConfig").textContent || "[]");
+                cfg = all.find(function (x) { return String(x.Name).trim().toLowerCase() === text; }) || null;
+            } catch (e) {}
+        }
+
+        if (!cfg || !cfg.LocalID || !window.CAT_ForceSaveLcid) {
+            console.warn("Footer: language not found in CAT_Web_Languages:", siteCode);
+            go();
+            return;
+        }
+
+        /* Mark as pending; Block A will retry on the next page if this save fails */
+        sessionStorage.setItem(PENDING_KEY, String(cfg.LocalID));
+
+        window.CAT_ForceSaveLcid(cfg.LocalID)
+            .then(function () {
+                sessionStorage.removeItem(PENDING_KEY);
+                console.log("Footer: language saved to Contact =", cfg.LocalID);
+            })
+            .catch(function (err) {
+                console.error("Footer: save failed, will retry on next page.", err);
+            })
+            .then(go);
+    }, true);
+})();
+</script>
