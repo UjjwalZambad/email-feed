@@ -1,0 +1,40 @@
+<script>
+document.addEventListener("click", function (event) {
+    var link = event.target.closest(
+        ".footer-language-wrapper .dropdown-menu a, .nav-item.dropdown .dropdown-menu a"
+    );
+    if (!link) return;
+
+    var href = link.getAttribute("href") || "";
+    var firstSegment;
+    try {
+        firstSegment = new URL(href, window.location.origin).pathname.split("/").filter(Boolean)[0] || "";
+    } catch (e) { return; }
+
+    var siteCode = (window.CAT_SupportedLanguages || []).find(function (c) {
+        return c.toLowerCase() === firstSegment.toLowerCase();
+    });
+    if (!siteCode) return; // not a language link
+
+    var dest = new URL(href, window.location.origin);
+    dest.searchParams.delete("language");
+    var go = function () {
+        window.location.href = dest.pathname + dest.search + dest.hash;
+    };
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    {% if user %}
+    var cfg = window.CAT_ConfigByCode(siteCode);
+    if (cfg) {
+        window.CAT_SavePreferredLcid(cfg.LocalID).then(go);
+    } else {
+        go();
+    }
+    {% else %}
+    sessionStorage.setItem("CAT_AnonLanguage", siteCode);
+    go();
+    {% endif %}
+}, true);
+</script>
