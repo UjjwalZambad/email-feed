@@ -1,0 +1,144 @@
+// ==================== SAFE PARALLEL LOADER (NEW) ====================
+
+const HANDUP_INCIDENT_SELECT =
+    "incidentid,ticketnumber,title,description,createdon,caseorigincode," +
+    "_entitlementid_value,_productid_value,_customerid_value,_parentcaseid_value," +
+    "isescalated,escalatedon,cat_assigneeemail,cat_assigneename,cat_actionrequested," +
+    "cat_helpcenterstatus,cat_additionalassigneename,cat_additionalassigneeemail," +
+    "_cat_secondaryproducttechnology_id_value,_cat_secondarysupporttype_id_value," +
+    "_cat_requestedfrom_value,_cat_supporttype_id_value,cat_language," +
+    "cat_additionalemail2,cat_additionalemail1,_cat_tertiarysupporttype_value," +
+    "_cat_additionalapplications_value,cat_elevationtype";
+
+const HANDUP_CONTACT_SELECT =
+    "fullname,firstname,lastname,emailaddress1,address1_telephone1";
+
+const HANDUP_ACCOUNT_SELECT =
+    "name,emailaddress1,telephone1,address1_telephone1";
+
+// Always resolves: returns null when the id is missing or the call fails
+function fetchOptionalRecord(entitySet, id, select) {
+    const d = $.Deferred();
+
+    if (!id) {
+        d.resolve(null);
+        return d.promise();
+    }
+
+    $.ajax({
+        url: "/_api/" + entitySet + "(" + id + ")?$select=" + select,
+        method: "GET",
+        headers: {
+            "Accept": "application/json",
+            "Prefer": 'odata.include-annotations="OData.Community.Display.V1.FormattedValue"'
+        }
+    })
+    .done(function (res) { d.resolve(res || null); })
+    .fail(function (xhr) {
+        console.warn("Optional lookup failed:", entitySet, id, xhr && xhr.status);
+        d.resolve(null);
+    });
+
+    return d.promise();
+}
+
+// Maps an account into the same shape the templates expect from a contact
+function mapAccountToContactShape(account) {
+    if (!account) return null;
+
+    return {
+        fullname: account.name || "",
+        firstname: "",
+        lastname: "",
+        emailaddress1: account.emailaddress1 || "",
+        address1_telephone1: account.telephone1 || account.address1_telephone1 || "",
+        entityType: "account"
+    };
+}
+
+// Resolves the polymorphic customerid (contact OR account). Always resolves.
+function fetchCustomerRecord(data) {
+    const d = $.Deferred();
+    const customerId = data._customerid_value;
+
+    if (!customerId) {
+        d.resolve(null);
+        return d.promise();
+    }
+
+    const logicalName = String(
+        data["_customerid_value@Microsoft.Dynamics.CRM.lookuplogicalname"] || ""
+    ).toLowerCase();
+
+    if (logicalName === "account") {
+        fetchOptionalRecord("accounts", customerId, HANDUP_ACCOUNT_SELECT)
+            .done(function (account) {
+                d.resolve(mapAccountToContactShape(account));
+            });
+        return d.promise();
+    }
+
+    if (logicalName === "contact") {
+        fetchOptionalRecord("contacts", customerId, HANDUP_CONTACT_SELECT)
+            .done(function (contact) {
+                if (contact) contact.entityType = "contact";
+                d.resolve(contact);
+            });
+        return d.promise();
+    }
+
+    // Annotation not returned: try contact first, then fall back to account
+    fetchOptionalRecord("contacts", customerId, HANDUP_CONTACT_SELECT)
+        .done(function (contact) {
+            if (contact) {
+                contact.entityType = "contact";
+                d.resolve(contact);
+                return;
+            }
+
+            fetchOptionalRecord("accounts", customerId, HANDUP_ACCOUNT_SELECT)
+                .done(function (account) {
+                    d.resolve(mapAccountToContactShape(account));
+                });
+        });
+
+    return d.promise();
+}
+
+// Loads the incident, then customer / requested-by / parent case in parallel
+function loadHandupData(recordId) {
+    const d = $.Deferred();
+
+    $.ajax({
+        url: "/_api/incidents(" + recordId + ")?$select=" + HANDUP_INCIDENT_SELECT,
+        method: "GET",
+        headers: {
+            "Accept": "application/json",
+            // "*" returns formatted values AND the lookuplogicalname annotation
+            "Prefer": 'odata.include-annotations="*"'
+        }
+    })
+    .done(function (data) {
+        $.when(
+            fetchCustomerRecord(data),
+            fetchOptionalRecord("contacts", data._cat_requestedfrom_value,
+                HANDUP_CONTACT_SELECT + ",cat_persona"),
+            fetchOptionalRecord("incidents", data._parentcaseid_value, "ticketnumber")
+        ).done(function (customer, requestedBy, parentCase) {
+            data.contact = customer;   // contact OR account (account mapped to contact shape)
+            data.requestedBy = requestedBy;
+            data.parentCaseTicketNumber = parentCase ? parentCase.ticketnumber : "";
+            console.log("Customer type:", customer ? customer.entityType : "none");
+            console.log("ElevationType:", data.cat_elevationtype);
+            d.resolve(data);
+        });
+    })
+    .fail(function (xhr) {
+        console.error("Incident load failed:", xhr);
+        d.reject(xhr);
+    });
+
+    return d.promise();
+}
+
+// ==================== END SAFE PARALLEL LOADER ====================

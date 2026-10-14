@@ -1,0 +1,457 @@
+  // ==================== SAFE PARALLEL LOADER (NEW) ====================
+
+  const HANDUP_INCIDENT_SELECT =
+      "incidentid,ticketnumber,title,description,createdon,caseorigincode," +
+      "_entitlementid_value,_productid_value,_customerid_value,_parentcaseid_value," +
+      "isescalated,escalatedon,cat_assigneeemail,cat_assigneename,cat_actionrequested," +
+      "cat_helpcenterstatus,cat_additionalassigneename,cat_additionalassigneeemail," +
+      "_cat_secondaryproducttechnology_id_value,_cat_secondarysupporttype_id_value," +
+      "_cat_requestedfrom_value,_cat_supporttype_id_value,cat_language," +
+      "cat_additionalemail2,cat_additionalemail1,_cat_tertiarysupporttype_value,cat_elevationtype";
+
+  const HANDUP_CONTACT_SELECT =
+      "fullname,firstname,lastname,emailaddress1,address1_telephone1";
+
+  const HANDUP_ACCOUNT_SELECT =
+      "name,emailaddress1,telephone1,address1_telephone1";
+
+  // Always resolves: returns null when the id is missing or the call fails
+  function fetchOptionalRecord(entitySet, id, select) {
+      const d = $.Deferred();
+
+      if (!id) {
+          d.resolve(null);
+          return d.promise();
+      }
+
+      $.ajax({
+          url: "/_api/" + entitySet + "(" + id + ")?$select=" + select,
+          method: "GET",
+          headers: {
+              "Accept": "application/json",
+              "Prefer": 'odata.include-annotations="OData.Community.Display.V1.FormattedValue"'
+          }
+      })
+      .done(function (res) { d.resolve(res || null); })
+      .fail(function (xhr) {
+          console.warn("Optional lookup failed:", entitySet, id, xhr && xhr.status);
+          d.resolve(null);
+      });
+
+      return d.promise();
+  }
+
+  // Maps an account into the same shape the template expects from a contact
+  function mapAccountToContactShape(account) {
+      if (!account) return null;
+
+      return {
+          fullname: account.name || "",
+          firstname: "",
+          lastname: "",
+          emailaddress1: account.emailaddress1 || "",
+          address1_telephone1: account.telephone1 || account.address1_telephone1 || "",
+          entityType: "account"
+      };
+  }
+
+  // Resolves the polymorphic customerid (contact OR account). Always resolves.
+  function fetchCustomerRecord(data) {
+      const d = $.Deferred();
+      const customerId = data._customerid_value;
+
+      if (!customerId) {
+          d.resolve(null);
+          return d.promise();
+      }
+
+      const logicalName = String(
+          data["_customerid_value@Microsoft.Dynamics.CRM.lookuplogicalname"] || ""
+      ).toLowerCase();
+
+      if (logicalName === "account") {
+          fetchOptionalRecord("accounts", customerId, HANDUP_ACCOUNT_SELECT)
+              .done(function (account) {
+                  d.resolve(mapAccountToContactShape(account));
+              });
+          return d.promise();
+      }
+
+      if (logicalName === "contact") {
+          fetchOptionalRecord("contacts", customerId, HANDUP_CONTACT_SELECT)
+              .done(function (contact) {
+                  if (contact) contact.entityType = "contact";
+                  d.resolve(contact);
+              });
+          return d.promise();
+      }
+
+      // Annotation not returned: try contact first, then fall back to account
+      fetchOptionalRecord("contacts", customerId, HANDUP_CONTACT_SELECT)
+          .done(function (contact) {
+              if (contact) {
+                  contact.entityType = "contact";
+                  d.resolve(contact);
+                  return;
+              }
+
+              fetchOptionalRecord("accounts", customerId, HANDUP_ACCOUNT_SELECT)
+                  .done(function (account) {
+                      d.resolve(mapAccountToContactShape(account));
+                  });
+          });
+
+      return d.promise();
+  }
+
+  // Loads the incident, then customer / requested-by / parent case in parallel
+  function loadHandupData(recordId) {
+      const d = $.Deferred();
+
+      $.ajax({
+          url: "/_api/incidents(" + recordId + ")?$select=" + HANDUP_INCIDENT_SELECT,
+          method: "GET",
+          headers: {
+              "Accept": "application/json",
+              // "*" returns formatted values AND the lookuplogicalname annotation
+              "Prefer": 'odata.include-annotations="*"'
+          }
+      })
+      .done(function (data) {
+          $.when(
+              fetchCustomerRecord(data),
+              fetchOptionalRecord("contacts", data._cat_requestedfrom_value,
+                  HANDUP_CONTACT_SELECT + ",cat_persona"),
+              fetchOptionalRecord("incidents", data._parentcaseid_value, "ticketnumber")
+          ).done(function (customer, requestedBy, parentCase) {
+              data.contact = customer;   // contact OR account (account mapped to contact shape)
+              data.requestedBy = requestedBy;
+              data.parentCaseTicketNumber = parentCase ? parentCase.ticketnumber : "";
+              console.log("Customer type:", customer ? customer.entityType : "none");
+              d.resolve(data);
+          });
+      })
+      .fail(function (xhr) {
+          console.error("Incident load failed:", xhr);
+          d.reject(xhr);
+      });
+
+      return d.promise();
+  }
+
+  // ==================== END SAFE PARALLEL LOADER ====================
+
+  $(document).ready(function () {
+
+     const caseId = pageCaseId;
+     console.log("Popup caseId:", caseId);
+
+     if (!caseId) {
+        $("#caseDetailsContainer").html("No Case ID found");
+        return;
+     }
+
+     loadHandupData(caseId)
+        .done(function (data) {
+
+           window.parentCaseId = data._parentcaseid_value;
+           window.elevationType = data.cat_elevationtype;
+           console.log("Parent Case ID:", window.parentCaseId);
+           console.log("Elevation Type:", window.elevationType);
+
+           $("#caseDetailsContainer").html(`
+
+  <!-- Tabs -->
+  <div class="case-tabs">
+  <div class="case-tab active" data-tab="details">Handup Details</div>
+  <div class="case-tab" data-tab="updatestatus">Update Status</div>
+  <div class="case-tab" data-tab="casedetails">Case Details</div>
+  <div class="case-tab" data-tab="asset">Asset Details</div>
+  <div class="case-tab" data-tab="email">Email Feed</div>
+  ${!isCustomer ? `<div class="case-tab" data-tab="resolution">Resolution Details</div>` : ``}
+  <div class="case-tab" data-tab="attachments">Attachments</div>
+  </div>
+  <!-- Panels -->
+  <div class="case-panel active" id="details">
+  <div class="case-grid">
+  <div>
+     <label>Handup Number</label>
+     <p>${data.ticketnumber || "-"}</p>
+  </div>
+  <div>
+        <label>Case Number</label>
+        <p>${data.parentCaseTicketNumber || "-"}</p>
+    </div>
+
+     <div>
+     <label>Handup Status</label>
+     <p>${data["cat_helpcenterstatus@OData.Community.Display.V1.FormattedValue"] || "-"}</p>
+  </div>
+
+
+  <div>
+     <label>Case Contact Full Name</label>
+     <p>${data["_customerid_value@OData.Community.Display.V1.FormattedValue"] || "-"}</p>
+  </div>
+
+  <div>
+    <label>Case Contact Email</label>
+    <p>${data.contact?.emailaddress1 || "-"}</p>
+  </div>
+
+  <div>
+    <label>Case Contact Phone</label>
+    <p>${data.contact?.address1_telephone1 || "-"}</p>
+  </div>
+
+  <div>
+     <label>Assignee Email</label>
+     <p>${data.cat_assigneeemail || "-"}</p>
+  </div>
+  <div>
+     <label>Assignee Name</label>
+     <p>${data.cat_assigneename || "-"}</p>
+  </div>
+  <div>
+     <label>Additional Assignee Email</label>
+     <p>${data.cat_additionalassigneeemail || "-"}</p>
+  </div>
+  <div>
+     <label>Additional Assignee Name</label>
+     <p>${data.cat_additionalassigneename || "-"}</p>
+  </div>
+    
+  <div>
+     <label>Action Requested</label>
+     <p>${data.cat_actionrequested || "-"}</p>
+  </div>
+   <div>
+     <label>Description</label>
+     <p>${data.description || "-"}</p>
+  </div>
+ 
+
+  </div>
+  </div>
+
+
+<!----Update Status Panel-->
+<div class="case-panel" id="updatestatus" data-case-id="${caseId}">
+
+<form class="status-form" id="statusForm">
+<div class="field-group">
+   <label class="field-label" for="statusSelectModal">
+   Portal Status<span class="required-tag">(required)</span>
+  </label>
+ 
+   <select class="select-input" id="statusSelectModal" required>
+  <option value="">--Select--</option>
+  <option value="100000013">Action Completed</option>
+  <option value="100000009">Approved</option>
+  <option value="100000014">Exporter/Reseller</option>
+  <option value="100000001">In Process</option>
+  <option value="100000000">New</option>
+  <option value="100000011">Other Dealer Territory</option>
+  <option value="100000012">Pending Customer</option>
+  <option value="100000010">Rejected</option>
+  </select>
+    </div>
+  <!--Resolution Details-->
+
+  <div class="field-group">
+    <label class="field-label" for="resolutionDetailModal">
+        Resolution Detail
+    </label>
+
+    <div class="textarea-wrap">
+        <textarea
+            class="textarea-input resolution-detail-modal"
+            id="resolutionDetailModal"
+            maxlength="131072"
+            placeholder="Enter resolution details"></textarea>
+        <span class="char-count" id="charCountModal">
+            0/131072
+        </span>
+    </div>
+
+    <p class="helper-text">
+        This will be updated on both the Hand-up and the related cases.
+    </p>
+</div>
+
+   <!--Button-->
+   <div class="modal-actions">
+   <button type="button" class="btn-update" id="updateBtn">Update</button>
+   <button type="button" class="btn-cancel" id="modalCancelBtn">Cancel</button>
+   </div>
+   </form>
+   </div>
+   </div>
+
+
+  
+<!-- Panels -->
+  <div class="case-panel" id="casedetails">
+  <div class="case-grid">
+  <div>
+     <label>Contact Name</label>
+     <p>${data.requestedBy?.fullname || "-"}</p>
+  </div>
+
+  <div>
+    <label>Persona</label>
+    <p>${data.requestedBy?.["cat_persona@OData.Community.Display.V1.FormattedValue"] || "-"}</p>
+    </div>
+
+     <div>
+     <label>Account Name</label>
+     <p>${data["_customerid_value@OData.Community.Display.V1.FormattedValue"] || "-"}</p>
+  </div>
+<div>
+     <label>Subject</label>
+     <p>${data.title || "-"}</p>
+  </div>
+
+  <div>
+     <label>First Name</label>
+     <p>${data.requestedBy?.firstname || "-"}</p>
+  </div>
+  <div>
+     <label>Description</label>
+     <p>${data.description || "-"}</p>
+  </div>
+  
+  <div>
+   <label>Last Name</label>
+   <p>${data.requestedBy?.lastname || "-"}</p>
+</div>
+<div>
+   <label>Email</label>
+   <p>${data.requestedBy?.emailaddress1 || "-"}</p>
+</div>
+ 
+  <div>
+     <label>Phone</label>
+     <p>${data.requestedBy?.address1_telephone1 || "-"}</p>
+  </div>
+  
+
+  <div>
+     <label>Product Technology</label>
+     <p>${data["_productid_value@OData.Community.Display.V1.FormattedValue"] || "-"}</p>
+  </div>
+
+  <div>
+     <label>Additional Applications</label>
+     <p>${data.cat_additionalapplications || "-"}</p>
+  </div>
+
+  
+  <div>
+     <label>Secondary Product Technology</label>
+     <p>${data["_cat_secondaryproducttechnology_id_value@OData.Community.Display.V1.FormattedValue"]	 || "-"}</p>
+  </div>
+
+    <div>
+     <label>Support Type</label>
+     <p>${data["_cat_supporttype_id_value@OData.Community.Display.V1.FormattedValue"] || "-"}</p>
+  </div>
+ 
+  <div>
+     <label>Secondary Support Type</label>
+     <p>${data["_cat_secondarysupporttype_id_value@OData.Community.Display.V1.FormattedValue"] || "-"}</p> 
+  </div>
+ 
+  <div>
+     <label>Tertiary Support Type</label>
+     <p>${data["_cat_tertiarysupporttype_value@OData.Community.Display.V1.FormattedValue"] || "-"}</p>
+  </div>
+  
+    <div>
+     <label>Asset Administration</label>
+     <p></p>
+  </div>
+  
+   <div>
+     <label>Channel</label>
+     <p>${data["caseorigincode@OData.Community.Display.V1.FormattedValue"] || "-"}</p>
+  </div>
+  
+   <div>
+     <label>Language</label>
+     <p>${data["cat_language@OData.Community.Display.V1.FormattedValue"] || "-"}</p>
+  </div>
+  
+   <div>
+     <label>Additional Email 1</label>
+     <p>${data.cat_additionalemail1 || "-"}</p>
+  </div>
+  
+   <div>
+     <label>Additional Email 2</label>
+     <p>${data.cat_additionalemail2 || "-"}</p>
+  </div>
+  
+  
+  </div>
+  </div>
+
+  <div class="case-panel" id="asset">Asset content...</div>
+  <div class="case-panel" id="email" data-case-id="${caseId}">Email content...</div>
+  ${!isCustomer ? `<div class="case-panel" id="resolution">Resolution content...</div>` : ``}
+  <div class="case-panel case-attachments-panel" id="attachments" data-case-id="${caseId}">
+
+      <div class="case-attachments-top">
+          <div class="case-attachments-summary">
+              Loading attachments...
+          </div>
+
+          <button type="button" class="case-add-attachment-btn">
+              + Add New
+          </button>
+
+          <input
+              type="file"
+              class="case-attachment-file-input"
+              multiple
+              style="display:none;"
+          />
+      </div>
+
+      <div class="case-attachment-message"></div>
+      <div class="case-attachments-empty-message" style="display:none;">
+        No attachments found.
+     </div>
+
+      <table class="case-attachments-table">
+          <thead>
+              <tr>
+                  <th>Title</th>
+                  <th>Owner</th>
+                  <th>Last Modified</th>
+                  <th>Size</th>
+                  <th>Actions</th>
+              </tr>
+          </thead>
+
+          <tbody>
+              <tr>
+                  <td colspan="5">Loading...</td>
+              </tr>
+          </tbody>
+      </table>
+
+  </div>
+
+  </div>
+
+           `);
+        })
+        .fail(function (err) {
+           console.error("Popup API error:", err);
+
+           // Keeps the existing fallback script working (it looks for this text)
+           $("#caseDetailsContainer")
+              .html("<div style='color:red;'>Failed to load data</div>");
+        });
+  });//end document.ready
