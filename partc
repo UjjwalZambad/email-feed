@@ -1,0 +1,308 @@
+<!-- ===================== LANGUAGE CONFIG (authenticated only) ===================== -->
+{% if user %}
+  {% fetchxml catLangConfig %}
+  <fetch top="1">
+    <entity name="cat_ccs_configuration">
+      <attribute name="cat_value" />
+      <filter>
+        <condition attribute="cat_key" operator="eq" value="CAT_Web_Languages" />
+      </filter>
+    </entity>
+  </fetch>
+  {% endfetchxml %}
+  <script type="application/json" id="catWebLanguagesConfig">
+  {{ catLangConfig.results.entities[0].cat_value | default: '[]' }}
+  </script>
+{% else %}
+  <script type="application/json" id="catWebLanguagesConfig">[]</script>
+{% endif %}
+
+<!-- ===================== Analytics URL parameter capture (OneTrust gated) ===================== -->
+<script type="text/plain" class="optanon-category-C0003">
+(function () {
+    var map = {
+        "primeproductfamily":"Prime Product Family","machinemodel":"Machine Model","url":"URL",
+        "userstate":"User State","language":"Language","esite":"eSite","currentpage":"Current Page",
+        "serialnumber":"Serial Number","dcn":"DCN","referenceid":"Reference ID","geoloc":"Geolocation",
+        "usertype":"User Type","dealercode":"Dealer Code","trackingid":"Tracking ID",
+        "applicationversion":"Application Version","currentscreenname":"Current Screen Name",
+        "selecteddealerid":"Selected Dealer ID","selecteddealername":"Selected Dealer Name",
+        "selecteddealerstoreid":"Selected Dealer Store ID","selecteddealerstorename":"Selected Dealer Store Name",
+        "customeraccountnumber":"Customer Account Number","selectedassetname":"Selected Asset Name",
+        "selectedassetpartnumber":"Selected Asset Part Number","selectedassetserialnumber":"Selected Asset Serial Number",
+        "devicemodel":"Device Model","operatingsystem":"Operating System",
+        "operatingsystemversion":"Operating System Version","devicebuildnumber":"Device Build Number",
+        "devicediskcapacitystorage":"Device Disk Capacity (Storage)","deviceorientation":"Device Orientation",
+        "featureflags":"Feature Flags"
+    };
+    new URLSearchParams(window.location.search).forEach(function (v, k) {
+        var key = map[k.toLowerCase()];
+        if (key && key !== "Language" && v && v.trim()) sessionStorage.setItem(key, v.trim());
+    });
+})();
+</script>
+
+<!-- ===================== Language resolution + Contact preference + auto sign-in ===================== -->
+<script>
+(function () {
+    "use strict";
+
+    var DEFAULT_LCID = 1033;
+    var ANON_KEY     = "CAT_AnonLanguage";
+    var PENDING_KEY  = "CAT_PendingLanguageLcid";
+
+    var isAuthenticated = {% if user %}true{% else %}false{% endif %};
+    var contactId   = "{{ user.id }}";
+    var contactLcid = parseInt("{{ user.mspp_userpreferredlcid }}", 10) || null;
+
+    var siteLanguages = [
+        {% for language in page.languages %}"{{ language.code | escape }}"{% unless forloop.last %},{% endunless %}{% endfor %}
+    ];
+    window.CAT_SupportedLanguages = siteLanguages.slice();
+
+    var config = [];
+    try {
+        config = JSON.parse(document.getElementById("catWebLanguagesConfig").textContent || "[]");
+    } catch (e) {
+        console.error("CAT_Web_Languages configuration is not valid JSON.", e);
+    }
+
+    /* ======================= HELPERS ======================= */
+    function norm(code) {
+        return String(code || "").trim().replace(/_/g, "-").toLowerCase();
+    }
+    function configByCode(code) {
+        var c = norm(code);
+        if (!c) return null;
+        return config.find(function (x) { return norm(x.Code) === c; }) || null;
+    }
+    function configByLcid(lcid) {
+        if (!lcid) return null;
+        return config.find(function (x) { return Number(x.LocalID) === Number(lcid); }) || null;
+    }
+    function siteCodeByCode(code) {
+        var c = norm(code);
+        if (!c) return null;
+        return siteLanguages.find(function (s) { return norm(s) === c; }) || null;
+    }
+    function resolve(cfg) {
+        if (!cfg) return null;
+        var site = siteCodeByCode(cfg.Code);
+        return site ? { cfg: cfg, site: site } : null;
+    }
+    /* Authenticated: config entry required (LocalID needed for Contact)
+       Anonymous: site language match only (no Dataverse access) */
+    function resolveCode(code) {
+        if (isAuthenticated) return resolve(configByCode(code));
+        var site = siteCodeByCode(code);
+        return site ? { cfg: { Code: site, LocalID: null }, site: site } : null;
+    }
+    /* English fallback that works even if config fails to load */
+    function englishTarget() {
+        var fromConfig = resolve(configByLcid(DEFAULT_LCID));
+        if (fromConfig) return fromConfig;
+        var site = siteCodeByCode("en-us");
+        return site ? { cfg: { Code: site, LocalID: DEFAULT_LCID }, site: site } : null;
+    }
+    function pathLanguage() {
+        var seg = window.location.pathname.split("/").filter(Boolean);
+        return seg.length ? seg[0] : "";
+    }
+    function buildLanguageUrl(target) {
+        var seg = window.location.pathname.split("/").filter(Boolean);
+        var localized = siteLanguages.some(function (s) { return norm(s) === norm(seg[0]); });
+        if (localized) seg[0] = target; else seg.unshift(target);
+        var path = "/" + seg.join("/") + (window.location.pathname.endsWith("/") ? "/" : "");
+        return path + window.location.search + window.location.hash;
+    }
+    function stripLanguageParam() {
+        try {
+            var u = new URL(window.location.href);
+            var keys = [];
+            u.searchParams.forEach(function (v, k) { if (k.toLowerCase() === "language") keys.push(k); });
+            keys.forEach(function (k) { u.searchParams.delete(k); });
+            window.history.replaceState(window.history.state, document.title,
+                u.pathname + u.search + u.hash);
+        } catch (e) {}
+    }
+
+    /* ======================= WEB API ======================= */
+    function getToken() {
+        return new Promise(function (ok, fail) {
+            if (window.shell && typeof shell.getTokenDeferred === "function") {
+                shell.getTokenDeferred().done(ok).fail(fail);
+                return;
+            }
+            fetch("/_layout/tokenhtml", { cache: "no-store" })
+                .then(function (r) { return r.text(); })
+                .then(function (html) {
+                    var m = html.match(/value="([^"]+)"/);
+                    m ? ok(m[1]) : fail(new Error("Token not found"));
+                })
+                .catch(fail);
+        });
+    }
+
+    /* Always PATCHes. Rejects on failure. */
+    function patchLcid(lcid) {
+        if (!isAuthenticated || !contactId || !lcid) {
+            return Promise.reject(new Error("Not authenticated or invalid LCID"));
+        }
+        return getToken().then(function (token) {
+            return fetch("/_api/contacts(" + contactId + ")", {
+                method: "PATCH",
+                keepalive: true,
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                    "OData-MaxVersion": "4.0",
+                    "OData-Version": "4.0",
+                    "If-Match": "*",
+                    "__RequestVerificationToken": token
+                },
+                body: JSON.stringify({ mspp_userpreferredlcid: Number(lcid) })
+            });
+        }).then(function (r) {
+            if (!r.ok) {
+                return r.text().then(function (t) { throw new Error("PATCH " + r.status + ": " + t); });
+            }
+            contactLcid = Number(lcid);
+            console.log("Contact.mspp_userpreferredlcid saved =", lcid);
+        });
+    }
+
+    /* Skips if unchanged. Never rejects. */
+    function savePreferredLcid(lcid) {
+        if (!isAuthenticated || !contactId || !lcid) return Promise.resolve();
+        if (Number(lcid) === Number(contactLcid)) return Promise.resolve();
+        return patchLcid(lcid).catch(function (err) {
+            console.error("Unable to save preferred language:", err);
+        });
+    }
+
+    /* Fresh read of the Contact (avoids the Liquid user cache) */
+    function readContactLcid() {
+        if (!isAuthenticated || !contactId) return Promise.resolve(null);
+        return fetch("/_api/contacts(" + contactId + ")?$select=mspp_userpreferredlcid", {
+            method: "GET",
+            cache: "no-store",
+            headers: {
+                "Accept": "application/json",
+                "OData-MaxVersion": "4.0",
+                "OData-Version": "4.0"
+            }
+        })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (d) {
+            if (!d) return contactLcid;                     // API failed -> Liquid value
+            return d.mspp_userpreferredlcid ? Number(d.mspp_userpreferredlcid) : null;
+        })
+        .catch(function () { return contactLcid; });
+    }
+
+    /* Used by Block B (footer selector) */
+    window.CAT_ConfigByCode   = configByCode;
+    window.CAT_ConfigByLcid   = configByLcid;
+    window.CAT_ForceSaveLcid  = patchLcid;
+    window.CAT_SavePreferredLcid = savePreferredLcid;
+
+    /* ======================= READ URL ======================= */
+    var urlLanguage = "", userState = "", product = "";
+    new URLSearchParams(window.location.search).forEach(function (v, k) {
+        var key = k.toLowerCase();
+        if (key === "language")  urlLanguage = v;
+        if (key === "userstate") userState = v;
+        if (key === "product")   product = v;
+    });
+
+    var target  = null;
+    var fromUrl = false;
+
+    function applyTarget() {
+        if (!target) target = englishTarget();
+        console.log("Effective language:", target ? target.site : "(none)", "| from URL:", fromUrl);
+
+        if (target && norm(target.site) !== norm(pathLanguage())) {
+            window.location.replace(buildLanguageUrl(target.site));
+            return;
+        }
+        autoSignIn();
+    }
+
+    /* ============ PRIORITY: URL -> (pending footer) -> Contact -> English ============ */
+    var urlResolved = resolveCode(urlLanguage);
+
+    if (urlResolved) {
+        /* 1. Valid URL language: save to Contact, then display */
+        target  = urlResolved;
+        fromUrl = true;
+        sessionStorage.removeItem(PENDING_KEY);
+
+        if (isAuthenticated) {
+            readContactLcid().then(function (lcid) {
+                contactLcid = lcid;
+                return savePreferredLcid(target.cfg.LocalID);
+            }).then(applyTarget);
+        } else {
+            sessionStorage.setItem(ANON_KEY, target.site);
+            applyTarget();
+        }
+
+    } else {
+        /* 2. Missing / invalid URL language */
+        if (urlLanguage) {
+            console.warn("Invalid/unsupported URL language:", urlLanguage);
+            stripLanguageParam();
+        }
+
+        if (isAuthenticated) {
+            var pendingLcid = Number(sessionStorage.getItem(PENDING_KEY)) || null;
+            sessionStorage.removeItem(PENDING_KEY);
+
+            if (pendingLcid && resolve(configByLcid(pendingLcid))) {
+                /* Footer choice whose save did not finish: show it and retry once */
+                target = resolve(configByLcid(pendingLcid));
+                patchLcid(pendingLcid)
+                    .catch(function (err) { console.error("Pending language save failed:", err); })
+                    .then(applyTarget);
+            } else {
+                /* Contact.mspp_userpreferredlcid -> English */
+                readContactLcid().then(function (lcid) {
+                    contactLcid = lcid;
+                    target = lcid ? resolve(configByLcid(lcid)) : null;
+                    if (lcid && !target) {
+                        console.warn("Contact LCID not in CAT_Web_Languages / site languages:", lcid);
+                    }
+                    applyTarget();   // null -> English
+                });
+            }
+        } else {
+            /* Anonymous: this tab's footer choice -> English */
+            target = resolveCode(sessionStorage.getItem(ANON_KEY));
+            applyTarget();
+        }
+    }
+
+    /* ======================= AUTO SIGN-IN (userstate=loggedin) ======================= */
+    function autoSignIn() {
+        if (isAuthenticated) return;
+        if (String(userState).trim().toLowerCase() !== "loggedin") return;
+
+        var active = (target && target.site) || "en-US";
+        var attemptKey = "pp_userstate_login_attempted_" + active.toLowerCase();
+        if (sessionStorage.getItem(attemptKey) === "1") return;
+        sessionStorage.setItem(attemptKey, "1");
+
+        var provider = "https://signin.cat.com/cwslogin.onmicrosoft.com/oauth2/v2.0/authorize?p=b2c_1a_p2_v1_signin_nonprod";
+        var rp = new URLSearchParams();
+        if (product) rp.set("product", product);
+        if (fromUrl) rp.set("language", target.cfg.Code); // URL language still wins after login
+
+        var returnUrl = "/" + active + "/" + (rp.toString() ? "?" + rp.toString() : "");
+        window.location.replace(
+            "/" + active + "/Account/Login/ExternalLogin?returnUrl=" +
+            encodeURIComponent(returnUrl) + "&provider=" + encodeURIComponent(provider)
+        );
+    }
+})();
+</script>
