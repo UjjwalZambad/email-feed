@@ -1,0 +1,88 @@
+CONTACT LANGUAGE STORAGE REQUIREMENT
+
+The user's preferred language must always be stored on the logged-in Contact record.
+
+Dataverse Entity:
+Contact
+
+Field:
+mspp_userpreferredlcid (Preferred Language)
+
+Source of truth for user preference:
+Contact.mspp_userpreferredlcid
+
+Behavior:
+
+1. When a valid language is received from the URL:
+   - Match the language against CAT_Web_Languages configuration.
+   - Retrieve the corresponding LocalID.
+   - Update Contact.mspp_userpreferredlcid with the LocalID.
+   - Display the Help Center in that language.
+
+Example:
+
+URL:
+?language=hi_IN
+
+Configuration:
+Code = hi-in
+LocalID = 1081
+
+Result:
+Contact.mspp_userpreferredlcid = 1025
+
+2. If URL language is missing or invalid:
+   - Read Contact.mspp_userpreferredlcid.
+   - Find the corresponding language from CAT_Web_Languages.
+   - Display the Help Center in that language.
+
+3. If URL language is missing/invalid AND Contact.mspp_userpreferredlcid is empty:
+   - Default to English.
+   - Use LocalID = 1033.
+
+4. When the user changes language from the footer selector:
+   - Immediately update Contact.mspp_userpreferredlcid.
+   - Reload the page in the selected language.
+   - Persist this preference across sessions.
+
+5. On every login:
+   - The system must read Contact.mspp_userpreferredlcid.
+   - Resolve the language from CAT_Web_Languages configuration.
+   - Display the Help Center in that language unless a valid URL language parameter is provided.
+   - URL parameter always takes precedence over Contact.PreferredLanguage.
+
+Language Priority Order:
+
+1. URL Language Parameter
+2. Contact.mspp_userpreferredlcid
+3. English (LocalID 1033)
+
+Browser language must never be used.
+
+Data Flow:
+
+URL Language
+      ↓
+Configuration Lookup (CAT_Web_Languages)
+      ↓
+Retrieve LocalID
+      ↓
+Update Contact.mspp_userpreferredlcid
+      ↓
+Set Help Center Language
+      ↓
+Update Footer Language Selector
+
+If URL Language Missing/Invalid:
+
+Contact.mspp_userpreferredlcid
+      ↓
+Configuration Lookup
+      ↓
+Set Help Center Language
+
+If Contact Empty:
+
+English (1033)
+      ↓
+Set Help Center Language
