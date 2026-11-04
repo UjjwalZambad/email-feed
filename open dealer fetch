@@ -1,0 +1,107 @@
+{% fetchxml testcases1 %}
+<fetch version="1.0" mapping="logical" distinct="true">
+  <entity name="incident">
+    <attribute name="incidentid" />
+    <attribute name="ticketnumber" />
+    <attribute name="title" />
+    <attribute name="createdon" />
+    <attribute name="customerid" />
+    <attribute name="cat_requestedfrom" />
+    <attribute name="cat_dealername" />
+    <attribute name="statuscode" />
+    <attribute name="statecode" />
+    <attribute name="description" />
+    <attribute name="cat_subject" />
+    <order attribute="createdon" descending="true" />
+    <filter type="and">
+      {% if selectedCreatedFrom != '' %}
+      <condition attribute="createdon" operator="on-or-after" value="{{ selectedCreatedFrom | escape }}" />
+      {% endif %}
+      {% if selectedCreatedTo != '' %}
+      <condition attribute="createdon" operator="on-or-before" value="{{ selectedCreatedTo | escape }}" />
+      {% endif %}
+      {% if selectedStatusCsv != '' %}
+      <condition attribute="cat_helpcenterstatus" operator="in">
+        {% for statusValue in selectedStatusValues %}
+        {% if statusValue != '' %}
+        <value>{{ statusValue | escape }}</value>
+        {% endif %}
+        {% endfor %}
+      </condition>
+      {% endif %}
+      {% if selectedDealerCodeCsv != '' %}
+      <condition attribute="cat_dealercode" operator="in">
+        {% for dealerCode in selectedDealerCodeValues %}
+        {% assign cleanDealerCode = dealerCode | strip %}
+        {% if cleanDealerCode != '' %}
+        <value>{{ cleanDealerCode | escape }}</value>
+        {% endif %}
+        {% endfor %}
+      </condition>
+      {% endif %}
+      {% if selectedProductCsv != '' %}
+      <condition attribute="productid" operator="in">
+        {% for productValue in selectedProductValues %}
+        {% if productValue != '' %}
+        <value>{{ productValue | escape }}</value>
+        {% endif %}
+        {% endfor %}
+      </condition>
+      {% endif %}
+      {% if selectedSupportTypeCsv != '' %}
+      <condition attribute="cat_supporttype_id" operator="in">
+        {% for supportTypeValue in selectedSupportTypeValues %}
+        {% assign cleanSupportTypeValue = supportTypeValue | strip %}
+        {% if cleanSupportTypeValue != '' %}
+        <value>{{ cleanSupportTypeValue | escape }}</value>
+        {% endif %}
+        {% endfor %}
+      </condition>
+      {% endif %}
+      {% if selectedSecondarySupportTypeCsv != '' %}
+      <condition attribute="cat_secondarysupporttype_id" operator="in">
+        {% for secondarySupportTypeValue in selectedSecondarySupportTypeValues %}
+        {% assign cleanSecondarySupportTypeValue = secondarySupportTypeValue | strip %}
+        {% if cleanSecondarySupportTypeValue != '' %}
+        <value>{{ cleanSecondarySupportTypeValue | escape }}</value>
+        {% endif %}
+        {% endfor %}
+      </condition>
+      {% endif %}
+      {% if selectedCaseOriginCsv != '' %}
+      <condition attribute="caseorigincode" operator="in">
+        {% for caseOriginValue in selectedCaseOriginValues %}
+        {% assign cleanCaseOriginValue = caseOriginValue | strip %}
+        {% if cleanCaseOriginValue != '' %}
+        <value>{{ cleanCaseOriginValue | escape }}</value>
+        {% endif %}
+        {% endfor %}
+      </condition>
+      {% endif %}
+
+      <condition attribute="statecode" operator="eq" value="0" />
+      <!--Exclude 'Not In Portal'-->
+      <condition attribute="cat_helpcenterstatus" operator="ne" value="100000006" />
+      <condition attribute="parentcaseid" operator="null" />
+      <condition attribute="cat_elevationtype" operator="null" />
+    </filter>
+
+    {% if selectedPersonaCsv != '' %}
+    <link-entity name="contact" from="contactid" to="cat_requestedfrom" alias="homepagepersonafilter" link-type="inner">
+      <filter type="and">
+        <condition attribute="cat_persona" operator="in">
+          {% for personaValue in selectedPersonaValues %}
+          {% assign cleanPersonaValue = personaValue | strip %}
+          {% if cleanPersonaValue != '' %}
+          <value>{{ cleanPersonaValue | escape }}</value>
+          {% endif %}
+          {% endfor %}
+        </condition>
+      </filter>
+    </link-entity>
+    {% endif %}
+  </entity>
+</fetch>
+{% endfetchxml %}
+
+
