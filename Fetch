@@ -1,0 +1,67 @@
+// Account name of the contact's Company Name (parentcustomerid), only if it is an account
+function getContactAccountName(contact) {
+    var lookupType = contact["_parentcustomerid_value@Microsoft.Dynamics.CRM.lookuplogicalname"];
+    if (contact._parentcustomerid_value && (!lookupType || lookupType === "account")) {
+        return contact["_parentcustomerid_value@OData.Community.Display.V1.FormattedValue"] || "-";
+    }
+    return "-";
+}
+
+function getContactDetails(contactId, callback) {
+    const empty = {
+        firstname: "-",
+        lastname: "-",
+        fullname: "-",
+        email: "-",
+        phone: "-",
+        personaLabel: "-",
+        accountName: "-"
+    };
+
+    if (!contactId) {
+        callback(empty);
+        return;
+    }
+
+    $.ajax({
+        url: "/_api/contacts(" + cleanGuid(contactId) + ")" +
+             "?$select=fullname,firstname,lastname,emailaddress1,cat_persona,address1_telephone1,_parentcustomerid_value",
+        method: "GET",
+        headers: {
+            "Accept": "application/json",
+            "Prefer": "odata.include-annotations=*"
+        },
+        success: function (contact) {
+            const firstName = contact.firstname || "";
+            const lastName = contact.lastname || "";
+            const fullName = contact.fullname || (firstName + " " + lastName).trim() || "-";
+
+            callback({
+                firstname: firstName || "-",
+                lastname: lastName || "-",
+                fullname: fullName,
+                email: contact.emailaddress1 || "-",
+                phone: contact.address1_telephone1 || "-",
+                personaLabel: contact["cat_persona@OData.Community.Display.V1.FormattedValue"] || "-",
+                accountName: getContactAccountName(contact)
+            });
+        },
+        error: function () {
+            callback(empty);
+        }
+    });
+}
+
+
+
+getContactDetails(data._cat_requestedfrom_value, function (contactDetails) {
+    $("#rfPersona").text(contactDetails.personaLabel);
+    $("#rfFullName").text(contactDetails.fullname);
+    $("#rfAccountName").text(contactDetails.accountName);   // ADD
+    $("#rfFirstName").text(contactDetails.firstname);
+    $("#rfLastName").text(contactDetails.lastname);
+    $("#rfEmail").text(contactDetails.email);
+    $("#rfPhone").text(contactDetails.phone);
+});
+
+<div class="value" id="rfAccountName">Loading...</div>
