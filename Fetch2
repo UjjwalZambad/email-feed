@@ -91,3 +91,50 @@ const contactDetails = data.requestedFromContact || {};
     <div class="value">${details.accountName || "-"}</div>
 </div>
 
+
+
+
+/* ===== PINNED CASES: FIXED COLUMNS + ELLIPSIS ===== */
+#dealerCasesTable {
+    table-layout: fixed !important;
+    width: 100% !important;
+    min-width: 1400px !important;
+}
+
+#dealerCasesTable thead th:nth-child(1) { width: 170px; }  /* Case Number */
+#dealerCasesTable thead th:nth-child(2) { width: 130px; }  /* Status */
+#dealerCasesTable thead th:nth-child(3) { width: 130px; }  /* Dealer Code */
+#dealerCasesTable thead th:nth-child(4) { width: 210px; }  /* Date Opened */
+#dealerCasesTable thead th:nth-child(5) { width: 200px; }  /* Product Technology */
+#dealerCasesTable thead th:nth-child(6),
+#dealerCasesTable thead th:nth-child(7) { width: auto; }   /* Subject / Description */
+#dealerCasesTable thead th:nth-child(8) { width: 150px; }  /* Case Channel */
+
+#dealerCasesTable td.truncate-cell {
+    overflow: hidden !important;
+    vertical-align: middle !important;
+}
+
+#dealerCasesTable .cell-ellipsis {
+    display: block;
+    width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-family: "NotoSans", "Noto Sans", sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 20px;
+    color: #3f3f3f;
+}
+
+/* Expanded details row must not inherit nowrap/ellipsis */
+#dealerCasesTable tr.case-details > td {
+    white-space: normal !important;
+    overflow: visible !important;
+}
+
+.case-details span {
+    background-color: transparent !important;
+}
+
