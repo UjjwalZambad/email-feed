@@ -1,0 +1,93 @@
+function getContactDetails(contactId, callback) {
+
+    var empty = {
+        contactName: "-",
+        accountName: "-",
+        firstname: "-",
+        lastname: "-",
+        email: "-",
+        phone: "-",
+        personaLabel: "-"
+    };
+
+    if (!contactId) {
+        callback(empty);
+        return;
+    }
+
+    $.ajax({
+        url: "/_api/contacts(" + contactId + ")" +
+             "?$select=fullname,firstname,lastname,emailaddress1,address1_telephone1,cat_persona,_parentcustomerid_value",
+        method: "GET",
+        headers: {
+            "Accept": "application/json",
+            "Prefer": "odata.include-annotations=*"
+        },
+        success: function (contact) {
+            // Company of the Requested From contact (only if it is an Account)
+            var parentType = contact["_parentcustomerid_value@Microsoft.Dynamics.CRM.lookuplogicalname"];
+            var parentName = contact["_parentcustomerid_value@OData.Community.Display.V1.FormattedValue"];
+
+            callback({
+                contactName: contact.fullname ||
+                             ((contact.firstname || "") + " " + (contact.lastname || "")).trim() || "-",
+                accountName: (parentType === "account" && parentName) ? parentName : "-",
+                firstname: contact.firstname || "-",
+                lastname: contact.lastname || "-",
+                email: contact.emailaddress1 || "-",
+                phone: contact.address1_telephone1 || "-",
+                personaLabel: contact["cat_persona@OData.Community.Display.V1.FormattedValue"] || "-"
+            });
+        },
+        error: function () {
+            callback(empty);
+        }
+    });
+}
+
+
+const contactDetails = data.requestedFromContact || {};
+
+
+
+
+
+
+       success: function (data) {
+           getContactDetails(data._cat_requestedfrom_value, function (details) {
+               data.requestedFromContact = details;   // stored with the case, so cache stays correct
+               cache[recordId] = data;
+               row.next(".case-details").remove();
+               renderRow(row, data);
+           });
+       }
+
+
+
+
+
+<div>
+   <label>Contact Name</label>
+   <p>${contactDetails.contactName || "-"}</p>
+</div>
+<div>
+   <label>Persona</label>
+   <p>${contactDetails.personaLabel || "-"}</p>
+</div>
+<div>
+   <label>Account Name</label>
+   <p>${contactDetails.accountName || "-"}</p>
+</div>
+
+
+
+
+<div class="field">
+    <div class="label">Contact Name</div>
+    <div class="value">${details.contactName || "-"}</div>
+</div>
+<div class="field">
+    <div class="label">Account Name</div>
+    <div class="value">${details.accountName || "-"}</div>
+</div>
+
