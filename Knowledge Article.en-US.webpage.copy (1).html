@@ -1,0 +1,779 @@
+<!-- Google Tag Manager -->
+<script>
+(function(w,d,s,l,i){
+    w[l]=w[l]||[];
+
+    w[l].push({
+        'gtm.start': new Date().getTime(),
+        event: 'gtm.js'
+    });
+
+    var f=d.getElementsByTagName(s)[0],
+        j=d.createElement(s),
+        dl=l!='dataLayer' ? '&l='+l : '';
+
+    j.async=true;
+    j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;
+    f.parentNode.insertBefore(j,f);
+
+})(window,document,'script','dataLayer','GTM-PV4KJLLR');
+</script>
+<!-- End Google Tag Manager -->
+
+<!-- Google Tag Manager (noscript) -->
+<noscript>
+    <iframe
+        src="https://www.googletagmanager.com/ns.html?id=GTM-PV4KJLLR"
+        height="0"
+        width="0"
+        style="display:none;visibility:hidden">
+    </iframe>
+</noscript>
+<!-- End Google Tag Manager (noscript) -->
+
+
+  <!-- <link rel="stylesheet" href="/customkacss.css?v=1" /> -->
+   <link rel="stylesheet" href="/{{ website.selected_language.code }}/customkacss.css?v=2" />
+ 
+
+
+<div class="row sectionBlockLayout text-start" style="min-height: auto; padding: 8px;">
+  <div class="container" style="display: flex; flex-wrap: nowrap;">
+
+    <script>
+      const urlParams = new URLSearchParams(window.location.search);
+      window.currentProduct = urlParams.get("product") || "";
+      window.currentDcn = urlParams.get("dcn") || "";
+      window.currentSn = urlParams.get("sn") || "";
+
+      window.languageCode = window.location.pathname.split('/').filter(Boolean)[0];
+
+      if (window.languageCode) {
+        sessionStorage.setItem("languageCode", window.languageCode);
+      }
+
+      if (window.currentProduct) {
+        sessionStorage.setItem("currentProduct", window.currentProduct);
+      }
+      if (window.currentDcn) {
+        sessionStorage.setItem("currentDcn", window.currentDcn);
+      }
+
+      if (window.currentSn) {
+        sessionStorage.setItem("currentSn", window.currentSn);
+      }
+
+    </script>
+
+    <!--Persona filter-->
+    {% assign userPersona = 'Guest' %}
+    
+    {% if user %}
+    {% for role in user.roles %}
+    
+    {% assign roleText = role | append: '' %}
+    
+    {% if roleText contains 'Cat_Internal Customer Persona Role' %}
+    {% assign userPersona = 'Internal' %}
+    {% break %}
+    
+    {% elsif roleText contains 'Cat_Customer Persona Role' %}
+    {% assign userPersona = 'Customer' %}
+    {% break %}
+    
+    {% elsif roleText contains 'Cat_Dealer Persona Role' %}
+    {% assign userPersona = 'Dealer' %}
+    {% break %}
+    
+    {% endif %}
+    
+    {% endfor %}
+    {% endif %}
+    
+    {% assign personaValue = '' %}
+    
+    {% case userPersona %}
+    {% when 'Customer' %}
+    {% assign personaValue = '100000000' %}
+    
+    {% when 'Dealer' %}
+    {% assign personaValue = '100000001' %}
+    
+    {% when 'Guest' %}
+    {% assign personaValue = '100000002' %}
+
+    {% when 'Internal' %}
+    {% assign personaValue = '100000003' %}
+    {% endcase %}
+    
+    <!-- Knowledge Article language filter -->
+    {% assign portalLanguageCode = website.selected_language.code | default: 'en-US' %}
+    {% assign kaLcid = 1033 %}
+    {% case portalLanguageCode %}
+      {% when 'hi-IN' %}
+        {% assign kaLcid = 1081 %}
+      {% when 'fr-FR' %}
+        {% assign kaLcid = 1036 %}
+      {% when 'en-US' %}
+        {% assign kaLcid = 1033 %}
+    {% endcase %}
+
+    <!-- Category Filter -->
+    {% assign selectedCategories = request.params['categoryids'] | default:'' | split: ',' %}
+
+    {% fetchxml allcategories %}
+    <fetch>
+      <entity name="category">
+
+        <attribute name="title" />
+        <attribute name="categoryid" />
+        <attribute name="parentcategoryid" />
+        <!-- Category to display alphabetically -->
+        <order attribute="title" descending="false" /> 
+
+      </entity>
+    </fetch>
+    {% endfetchxml %}
+
+    {% fetchxml allArticleCategories %}
+      <fetch distinct="true">
+      <entity name="knowledgearticle">
+      <attribute name="knowledgearticleid" />
+      <filter type="and">
+        <condition attribute="statuscode" operator="eq" value="7" />
+        <condition attribute="cat_ispublicfacing" operator="eq" value="1" />
+        <condition attribute="cat_persona" operator="contain-values">
+          <value>{{ personaValue }}</value>
+        </condition>
+      </filter>
+      <link-entity name="knowledgearticlescategories"
+                      from="knowledgearticleid"
+                      to="knowledgearticleid"
+                      intersect="true">
+      <attribute name="categoryid" alias="categoryid" />
+      </link-entity>
+      <link-entity name="languagelocale" from="languagelocaleid" to="languagelocaleid" link-type="inner" alias="kalang1">
+        <filter>
+          <condition attribute="localeid" operator="eq" value="{{ kaLcid }}" />
+        </filter>
+      </link-entity>
+      </entity>
+      </fetch>
+    {% endfetchxml %}
+
+     <div id="filterSidebar" class="kb-sidebar">
+
+      <div class="filter-header">
+        <h3>{{ snippets['CAT_Search_FilterBy'] }}</h3>
+        <div class="filter-actions">
+          <a id="clearAllLink" href="#" class="top-clear-link" onclick="clearFilters(); return false;">
+           {{ snippets['CAT_Search_ClearAll'] }}
+          </a>
+          <span id="closeFilterPanel" class="mobile-close"> x </span>
+        </div>
+      </div>
+
+      <div class="filter-section">
+
+        <h4>{{ snippets['CAT_Search_ProductCategory'] }}</h4>
+
+        {% for parent in allcategories.results.entities %}
+        {% if parent.parentcategoryid == null %}
+
+          {% comment %} Collect parent + child + grandchild ids once {% endcomment %}
+          {% assign hasChildren = false %}
+          {% assign descKeys = "|" | append: parent.categoryid | append: "|" %}
+          {% for c in allcategories.results.entities %}
+            {% if c.parentcategoryid.id == parent.categoryid %}
+              {% assign hasChildren = true %}
+              {% assign descKeys = descKeys | append: c.categoryid | append: "|" %}
+              {% for gc in allcategories.results.entities %}
+                {% if gc.parentcategoryid.id == c.categoryid %}
+                  {% assign descKeys = descKeys | append: gc.categoryid | append: "|" %}
+                {% endif %}
+              {% endfor %}
+            {% endif %}
+          {% endfor %}
+          {% assign descKeys = descKeys | downcase %}
+
+          {% comment %} Single pass over article-category links {% endcomment %}
+          {% assign articleIds = "|" %}
+          {% assign count = 0 %}
+          {% for rel in allArticleCategories.results.entities %}
+            {% assign relKey = "|" | append: rel.categoryid | append: "|" | downcase %}
+            {% if descKeys contains relKey %}
+              {% assign articleKey = "|" | append: rel.knowledgearticleid | append: "|" %}
+              {% unless articleIds contains articleKey %}
+                {% assign articleIds = articleIds | append: rel.knowledgearticleid | append: "|" %}
+                {% assign count = count | plus: 1 %}
+              {% endunless %}
+            {% endif %}
+          {% endfor %}
+
+          {% if count > 0 %}
+          <div class="category-node">
+            <!-- Parent -->
+            <div class="category-row">
+              {% if hasChildren %}
+              <span class="expand-icon" onclick="toggleCategory('cat-{{ parent.categoryid }}', this)">
+                <i class="fa fa-chevron-right"></i>
+              </span>
+              {% else %}
+              <span class="expand-placeholder"></span>
+              {% endif %}
+              <label class="filter-item">
+                <input type="checkbox" class="cat-checkbox parent-cat" data-id="{{ parent.categoryid }}" data-parent=""
+                  data-title="{{ parent.title | downcase }}" onchange="categoryChanged(this)"
+                  {% if selectedCategories contains parent.categoryid %} checked {% endif %}>
+                <div class="category-text">
+                  <span class="category-title">{{ parent.title }}</span>
+                  <span class="category-count">{{ count }}</span>
+                </div>
+              </label>
+            </div>
+
+            <!-- Children -->
+            <div class="child-container" data-parent="{{ parent.categoryid }}" id="cat-{{ parent.categoryid }}">
+              {% for child in allcategories.results.entities %}
+              {% if child.parentcategoryid.id == parent.categoryid %}
+              <div class="category-node">
+
+                {% assign childHasChildren = false %}
+                {% assign childDescKeys = "|" | append: child.categoryid | append: "|" %}
+                {% for gc in allcategories.results.entities %}
+                  {% if gc.parentcategoryid.id == child.categoryid %}
+                    {% assign childHasChildren = true %}
+                    {% assign childDescKeys = childDescKeys | append: gc.categoryid | append: "|" %}
+                  {% endif %}
+                {% endfor %}
+                {% assign childDescKeys = childDescKeys | downcase %}
+
+                {% assign childArticleIds = "|" %}
+                {% assign childCount = 0 %}
+                {% for rel in allArticleCategories.results.entities %}
+                  {% assign relKey = "|" | append: rel.categoryid | append: "|" | downcase %}
+                  {% if childDescKeys contains relKey %}
+                    {% assign articleKey = "|" | append: rel.knowledgearticleid | append: "|" %}
+                    {% unless childArticleIds contains articleKey %}
+                      {% assign childArticleIds = childArticleIds | append: rel.knowledgearticleid | append: "|" %}
+                      {% assign childCount = childCount | plus: 1 %}
+                    {% endunless %}
+                  {% endif %}
+                {% endfor %}
+
+                {% if childCount > 0 %}
+                <div class="category-row">
+                  {% if childHasChildren %}
+                  <span class="expand-icon" onclick="toggleCategory('cat-{{ child.categoryid }}', this)">
+                    <i class="fa fa-chevron-right"></i>
+                  </span>
+                  {% else %}
+                  <span class="expand-placeholder"></span>
+                  {% endif %}
+                  <label class="filter-item">
+                    <input type="checkbox" class="cat-checkbox child-cat" data-id="{{ child.categoryid }}"
+                      data-parent="{{ parent.categoryid }}" data-title="{{ child.title | downcase }}"
+                      onchange="categoryChanged(this)"
+                      {% if selectedCategories contains child.categoryid %} checked {% endif %}>
+                    <span>{{ child.title }}</span>
+                    <span class="category-count">{{ childCount }}</span>
+                  </label>
+                </div>
+
+                <!-- Grandchildren -->
+                <div class="child-container" data-parent="{{ child.categoryid }}" id="cat-{{ child.categoryid }}">
+                  {% if childHasChildren %}
+                  {% for grandchild in allcategories.results.entities %}
+                  {% if grandchild.parentcategoryid.id == child.categoryid %}
+                  {% fetchxml gcCountResult %}
+                  <fetch aggregate="true">
+                    <entity name="knowledgearticle">
+                      <attribute name="knowledgearticleid" alias="articlecount" aggregate="count" />
+                      <link-entity name="knowledgearticlescategories" from="knowledgearticleid" to="knowledgearticleid" intersect="true">
+                        <filter>
+                          <condition attribute="categoryid" operator="eq" value="{{ grandchild.categoryid }}" />
+                        </filter>
+                      </link-entity>
+                      <filter type="and">
+                        <condition attribute="statuscode" operator="eq" value="7" />
+                        <condition attribute="cat_ispublicfacing" operator="eq" value="1" />
+                        <condition attribute="cat_persona" operator="contain-values">
+                          <value>{{ personaValue }}</value>
+                        </condition>
+                      </filter>
+                    </entity>
+                  </fetch>
+                  {% endfetchxml %}
+                  {% assign grandChildCount = gcCountResult.results.entities[0].articlecount | default: 0 %}
+                  {% if grandChildCount > 0 %}
+                  <label class="filter-item child-item">
+                    <input type="checkbox" class="cat-checkbox grandchild-cat" data-id="{{ grandchild.categoryid }}"
+                      data-parent="{{ child.categoryid }}" data-title="{{ grandchild.title | downcase }}"
+                      onchange="categoryChanged(this)"
+                      {% if selectedCategories contains grandchild.categoryid %} checked {% endif %}>
+                    <span>{{ grandchild.title }}</span>
+                    <span class="category-count">{{ grandChildCount }}</span>
+                  </label>
+                  {% endif %}
+                  {% endif %}
+                  {% endfor %}
+                  {% endif %}
+                </div>
+                {% endif %}
+              </div>
+              {% endif %}
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+
+        {% endif %}
+        {% endfor %}
+
+      </div> <!-- Filter Section -->
+
+    <div class="mobile-filter-footer">
+    <button type="button"
+              class="mobile-clear-btn"
+              onclick="clearFilters()">
+          {{ snippets['CAT_Search_ClearAll'] }}
+    </button>
+    <button type="button"
+              id="applyFiltersBtn"
+              class="mobile-apply-btn">
+          Apply
+    </button>
+    </div>
+
+    </div>
+
+    <div id="kbOverlay" class="kb-overlay"></div>
+
+
+
+    <!-- Category Article Ends -->
+
+
+    <!-- Category Filter Logic -->
+    {% assign selectedCategories = request.params['categoryids'] | default:'' | split: ',' %}
+    {% assign pageSize = snippets['CAT Most Popular Articles Display Limit'] | default: 8 %}
+    {% assign currentPage = request.params['page'] | default: 1 %}
+
+{% fetchxml articles %}
+<fetch distinct="true">
+  <entity name="knowledgearticle">
+
+    <attribute name="knowledgearticleid" />
+    <attribute name="articlepublicnumber" />
+    <attribute name="title" />
+    <attribute name="description" />
+    <attribute name="content" />
+    <attribute name="publishon" />
+    <attribute name="knowledgearticleviews" />
+
+    <order attribute="knowledgearticleviews"
+           descending="true" />
+
+    <filter type="and">
+      <condition attribute="statuscode" operator="eq" value="7" />
+      <condition attribute="cat_ispublicfacing" operator="eq" value="1" />
+      <condition attribute="cat_persona" operator="contain-values">
+        <value>{{ personaValue }}</value>
+      </condition>
+    </filter>
+
+    {% if selectedCategories.size > 0 and selectedCategories[0] != '' %}
+    <link-entity name="knowledgearticlescategories"
+                 from="knowledgearticleid"
+                 to="knowledgearticleid"
+                 intersect="true">
+      <filter type="or">
+        {% for catId in selectedCategories %}
+        <condition attribute="categoryid"
+                   operator="eq"
+                   value="{{ catId }}" />
+        {% endfor %}
+      </filter>
+    </link-entity>
+    {% endif %}
+
+    <link-entity name="languagelocale" from="languagelocaleid" to="languagelocaleid" link-type="inner" alias="kalang2">
+      <filter>
+        <condition attribute="localeid" operator="eq" value="{{ kaLcid }}" />
+      </filter>
+    </link-entity>
+  </entity>
+</fetch>
+{% endfetchxml %} 
+<!-- Category Filter Logic Ends -->
+
+    {% fetchxml articleCount %}
+    <fetch aggregate="true">
+      <entity name="knowledgearticle">
+      <attribute name="knowledgearticleid"
+                    alias="totalarticles"
+                    aggregate="countcolumn"
+                    distinct="true" />
+      <filter type="and">
+      <condition attribute="statuscode"
+                      operator="eq"
+                      value="7" />
+      <condition attribute="cat_ispublicfacing" operator="eq" value="1" />
+      <condition attribute="cat_persona" operator="contain-values">
+        <value>{{ personaValue }}</value>
+      </condition>
+      </filter>
+        {% if selectedCategories.size > 0 and selectedCategories[0] != '' %}
+      <link-entity name="knowledgearticlescategories"
+                      from="knowledgearticleid"
+                      to="knowledgearticleid"
+                      intersect="true">
+      <filter type="or">
+            {% for catId in selectedCategories %}
+      <condition attribute="categoryid"
+                        operator="eq"
+                        value="{{ catId }}" />
+            {% endfor %}
+      </filter>
+      </link-entity>
+        {% endif %}
+      <link-entity name="languagelocale" from="languagelocaleid" to="languagelocaleid" link-type="inner" alias="kalang3">
+        <filter>
+          <condition attribute="localeid" operator="eq" value="{{ kaLcid }}" />
+        </filter>
+      </link-entity>
+      </entity>
+      </fetch>
+    {% endfetchxml %}
+ 
+
+    {% assign totalArticles = 0 %}
+
+    {% if articleCount.results.entities.size > 0 %}
+      {% assign totalArticlesRaw = articleCount.results.entities[0].totalarticles %}
+      {% if totalArticlesRaw %}
+        {% assign totalArticles = totalArticlesRaw | plus: 0 %}
+      {% endif %}
+    {% endif %}
+
+    {% assign totalArticlesNumber = totalArticles | plus: 0 %}
+    {% assign pageSizeNumber = 8 %}
+
+    {% assign totalPages = totalArticlesNumber | divided_by: pageSizeNumber %}
+    {% assign remainder = totalArticlesNumber | modulo: pageSizeNumber %}
+    {% if remainder > 0 %}
+      {% assign totalPages = totalPages | plus: 1 %}
+    {% endif %}
+    
+
+
+    <div class="kb-wrapper">
+      <h1 class="kb-main-title">{{ snippets['CAT_Search_HelpArticles'] }}</h1>
+
+    <button id="mobileFilterBtn" class="mobile-filter-btn">
+      <i class="fa fa-filter"></i> {{ snippets['CAT_Search_FilterBy'] }}
+    </button>
+
+      <h3 class="kb-sub-title">{{ snippets['CAT Most Popular Articles'] }}</h3>
+      <div class="kb-grid-area">
+  <div id="kbLoader" class="kb-loader" aria-hidden="true">
+    <div class="kb-spinner"></div>
+    <span>Loading articles...</span>
+  </div>
+ 
+      <div id="articleGrid">
+      
+        <div class="kb-grid">
+
+          <!-- Limit is added to fetch top 8 -->
+          {% for article in articles.results.entities %}
+       
+
+          <div class="kb-card">
+            <!-- <a href="/Knowledge-Article-Details" class="kb-card-link"></a> -->
+
+            <a href="/Knowledge-Article-Details?articleId={{ article.knowledgearticleid }}" class="kb-card-link"></a>
+
+            <div class="kb-header">
+              <div class="kb-title">
+                <!-- <a href="/help-articles/article/?id={{ article.knowledgearticleid }}">
+                  {{ article.title }}
+                </a> -->
+                <a href="/Knowledge-Article-Details?articleId={{ article.knowledgearticleid }}"
+                  class="kb-title-preview-trigger">
+
+                  {{ article.title }}
+                </a>
+               
+                 {% assign newArticleCutoffDate = now | date_add_days: -14 %}
+                {% if article.publishon %}
+                  {% assign publishedDate = article.publishon %}
+                  {% if publishedDate >= newArticleCutoffDate and publishedDate <= now %}
+                    <span class="kb-badge-new">New</span>
+                  {% endif %}
+                {% endif %}
+              </div>        
+
+              <div class="kb-views">
+                <!-- <i class="fa fa-eye"></i> -->
+                 <img src="/ViewIcon" alt="view"/>
+                {{article.knowledgearticleviews}}
+              </div>
+            </div>
+
+            <!-- Tag Logic Starts -->
+            <div class="kb-tag">
+              {% fetchxml articleCategories %}
+              <fetch top="1">
+                <entity name="category">
+                  <attribute name="title" />
+                  <attribute name="categoryid" />
+                  <attribute name="parentcategoryid" />
+                  <link-entity name="knowledgearticlescategories" intersect="true" from="categoryid" to="categoryid">
+                    <filter>
+                      <condition attribute="knowledgearticleid" operator="eq"
+                        value="{{ article.knowledgearticleid }}" />
+                    </filter>
+                  </link-entity>
+                </entity>
+              </fetch>
+              {% endfetchxml %}
+              {% assign printedTags = "|" %}
+              {% for cat in articleCategories.results.entities %}
+              {% if cat.parentcategoryid == nil %}
+              {% assign tagName = cat.title %}
+              {% unless printedTags contains tagName %}
+              <span class="kb-category-badge">
+                {{ tagName }}
+              </span>
+              {% assign printedTags = printedTags | append: tagName | append: "|" %}
+              {% endunless %}
+              {% else %}
+              {% fetchxml parentCategory %}
+              <fetch top="1">
+                <entity name="category">
+                  <attribute name="title" />
+                  <attribute name="parentcategoryid" />
+                  <filter>
+                    <condition attribute="categoryid" operator="eq" value="{{ cat.parentcategoryid.id }}" />
+                  </filter>
+                </entity>
+              </fetch>
+              {% endfetchxml %}
+              {% assign parent = parentCategory.results.entities[0] %}
+              {% if parent.parentcategoryid == nil %}
+              {% assign tagName = parent.title %}
+              {% unless printedTags contains tagName %}
+              <span class="kb-category-badge">
+                {{ tagName }}
+              </span>
+              {% assign printedTags = printedTags | append: tagName | append: "|" %}
+              {% endunless %}
+              {% else %}
+              {% fetchxml grandParentCategory %}
+              <fetch top="1">
+                <entity name="category">
+                  <attribute name="title" />
+                  <filter>
+                    <condition attribute="categoryid" operator="eq" value="{{ parent.parentcategoryid.id }}" />
+                  </filter>
+                </entity>
+              </fetch>
+              {% endfetchxml %}
+              {% assign tagName = grandParentCategory.results.entities[0].title %}
+              {% unless printedTags contains tagName %}
+              <span class="kb-category-badge">
+                {{ tagName }}
+              </span>
+              {% assign printedTags = printedTags | append: tagName | append: "|" %}
+              {% endunless %}
+              {% endif %}
+              {% endif %}
+              {% endfor %}
+            </div>
+            <!-- Tag Logic Ends -->
+
+            <div class="kb-desc">
+              <a href="/Knowledge-Article-Details/article/?id={{ article.knowledgearticleid }}">
+                {{ article.description | truncate: 140 }}
+              </a>
+            </div>
+            <div class="kb-footer">
+              <a href="/Knowledge-Article-Details/article/?id={{ article.knowledgearticleid }}" target="_blank"
+                class="read-more-link">
+                {{ snippets['CAT Read more'] }}
+                <span class="external-icon">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M14 3H21V10" stroke="currentColor" stroke-width="2" />
+                    <path d="M21 3L10 14" stroke="currentColor" stroke-width="2" />
+                    <path d="M21 14V21H3V3H10" stroke="currentColor" stroke-width="2" />
+                  </svg>
+                </span>
+              </a>
+            </div>
+
+            <!-- Hover Functionality -->
+            <div class="kb-preview-source" style="display:none;">
+              <div class="kb-preview-source-title">
+                {{ article.title | escape }}
+              </div>
+
+              <div class="kb-preview-source-content">
+                {{ article.content | default: article.description }}
+              </div>
+            </div>
+
+          </div>
+
+          {% endfor %}
+          <!-- <p>Current CategoryIds = {{ request.params.categoryids }}</p> -->
+        
+<!-- Total Records: {{ articles.results.total_record_count }} -->
+<div id="articlePagination" class="custom-pagination"></div>
+        </div>
+      </div>
+      </div>
+
+      <!-- Hover -->
+      <div id="kbArticlePreviewPopup" class="kb-article-preview-popup" aria-hidden="true">
+        <div class="kb-preview-popup-title"></div>
+        <div class="kb-preview-popup-content"></div>
+      </div>
+
+
+      <div class="col-lg-12 columnBlockLayout" style="padding:16px; margin: 60px 0px; min-height: 0;"></div>
+    </div>
+   
+
+
+   
+
+
+<!-- <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const popup = document.getElementById("kbArticlePreviewPopup");
+
+        if (!popup) return;
+
+        const popupTitle = popup.querySelector(".kb-preview-popup-title");
+        const popupContent = popup.querySelector(".kb-preview-popup-content");
+
+        // Hover only on article title
+        const titleLinks = document.querySelectorAll(".kb-title-preview-trigger");
+
+        function placePopupNearTile(titleLink) {
+          const card = titleLink.closest(".kb-card");
+          if (!card) return;
+
+          const cardRect = card.getBoundingClientRect();
+
+          const popupWidth = popup.offsetWidth || 420;
+          const popupHeight = popup.offsetHeight || 300;
+          const gap = 14;
+
+          let left = cardRect.right + gap;
+          let top = cardRect.top;
+
+          // If there is no space on right, show on left side of tile
+          if (left + popupWidth > window.innerWidth - 16) {
+            left = cardRect.left - popupWidth - gap;
+          }
+
+          // If left side also has no space, keep inside viewport
+          if (left < 16) {
+            left = 16;
+          }
+
+          // Keep popup inside bottom viewport
+          if (top + popupHeight > window.innerHeight - 16) {
+            top = window.innerHeight - popupHeight - 16;
+          }
+
+          if (top < 16) {
+            top = 16;
+          }
+
+          popup.style.left = left + "px";
+          popup.style.top = top + "px";
+        }
+
+        titleLinks.forEach(function (titleLink) {
+          titleLink.addEventListener("mouseenter", function () {
+            const card = titleLink.closest(".kb-card");
+            if (!card) return;
+
+            const source = card.querySelector(".kb-preview-source");
+            if (!source) return;
+
+            const titleElement = source.querySelector(".kb-preview-source-title");
+            const contentElement = source.querySelector(".kb-preview-source-content");
+
+            const title = titleElement ? titleElement.textContent.trim() : "";
+            // const content = contentElement ? contentElement.textContent.trim() : "";
+            
+const content = contentElement
+  ? contentElement.innerHTML
+  : "";
+popupContent.innerHTML = content;
+
+            popupTitle.textContent = title;
+            // popupContent.textContent = content;
+
+
+            
+
+            popup.classList.add("active");
+            popup.setAttribute("aria-hidden", "false");
+
+            // Static placement near the tile - calculated only once on hover
+            placePopupNearTile(titleLink);
+          });
+
+          // titleLink.addEventListener("mouseleave", function () {
+          //   popup.classList.remove("active");
+          //   popup.setAttribute("aria-hidden", "true");
+          // });
+          let hideTimeout;
+
+function showPopup() {
+  clearTimeout(hideTimeout);
+  popup.classList.add("active");
+  popup.setAttribute("aria-hidden", "false");
+}
+
+function hidePopup() {
+  hideTimeout = setTimeout(() => {
+    popup.classList.remove("active");
+    popup.setAttribute("aria-hidden", "true");
+  }, 200);
+}
+  popup.addEventListener("mouseenter", function () {
+  clearTimeout(hideTimeout);
+});
+
+popup.addEventListener("mouseleave", hidePopup);   
+});
+
+        window.addEventListener("scroll", function () {
+          popup.classList.remove("active");
+          popup.setAttribute("aria-hidden", "true");
+        });
+
+        window.addEventListener("resize", function () {
+          popup.classList.remove("active");
+          popup.setAttribute("aria-hidden", "true");
+        });
+      });
+    </script> -->
+
+
+<!-- <script src="/customka.js?v=1"></script> -->
+<script src="/{{ website.selected_language.code }}/customka.js?v=2"></script>
+ 
+
+ 
+
+ 
+  </div>
+</div>
+</div>
