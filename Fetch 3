@@ -1,0 +1,259 @@
+<td class="truncate-cell subject-cell">
+  <div class="cell-ellipsis" title="{{ case.title | default: '' | escape }}">{{ case.title | default: '' | escape }}</div>
+</td>
+<td class="truncate-cell description-cell">
+  <div class="cell-ellipsis" title="{{ case.description | default: '' | strip_html | replace: '&nbsp;', ' ' | strip_newlines | escape }}">{{ case.description | default: '' | strip_html | replace: '&nbsp;', ' ' | strip_newlines }}</div>
+</td>
+
+
+
+<div class="case-description-value">${data.description || "-"}</div>
+
+
+
+/* ===== LIST: only Subject / Description truncated ===== */
+#dealerCasesTable tbody tr:hover td {
+    background-color: #ffffff !important;
+}
+
+#dealerCasesTable {
+    table-layout: auto !important;
+    width: 100% !important;
+}
+
+#dealerCasesTable tbody tr[data-id] > td {
+    white-space: nowrap !important;
+}
+
+#dealerCasesTable td.truncate-cell {
+    overflow: hidden !important;
+    vertical-align: middle !important;
+}
+
+#dealerCasesTable .cell-ellipsis {
+    display: block;
+    width: 300px;
+    max-width: 300px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-family: "NotoSans", "Noto Sans", sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 20px;
+    color: #3f3f3f;
+}
+
+#dealerCasesTable tr.case-details > td {
+    white-space: normal !important;
+    overflow: visible !important;
+}
+
+/* ===== EXPANDED / MOBILE: Description same style as other values ===== */
+.case-description-value {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    margin: 4px 0 0 0;
+    font-family: "NotoSans", "Noto Sans", sans-serif !important;
+    font-size: 14px !important;
+    line-height: 20px !important;
+    font-weight: 400 !important;
+    color: #3f3f3f !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
+    word-break: break-word !important;
+}
+
+.case-description-value * {
+    font-family: inherit !important;
+    font-size: inherit !important;
+    line-height: inherit !important;
+    color: inherit !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
+    word-break: break-word !important;
+    width: auto !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+}
+
+.case-description-value p,
+.case-description-value div {
+    margin: 0 0 6px 0 !important;
+    padding: 0 !important;
+}
+
+
+
+
+/* ===== HANDUP DETAILS POPUP (outer frame) ===== */
+#casePopupModal .case-popup-content {
+    width: min(1200px, 92vw);
+    height: 90vh;
+    max-height: 90vh;
+    border-radius: 8px;
+}
+
+#casePopupModal .case-popup-header {
+    flex: 0 0 auto;
+    padding: 14px 24px;
+}
+
+#casePopupModal .case-popup-header h3 {
+    margin: 0;
+    font-family: "NotoSans", "Noto Sans", sans-serif;
+    font-size: 20px;
+    font-weight: 600;
+    color: #1a1a1a;
+}
+
+#casePopupModal #casePopupFrame {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: block;
+}
+
+#casePopupModal .button-container {
+    flex: 0 0 auto;
+    padding: 14px 24px;
+    border-top: 1px solid #ddd;
+    background: #fff;
+}
+
+
+
+
+
+
+<script>
+  if (window.self !== window.top) {
+      document.documentElement.classList.add("handup-in-popup");
+  }
+</script>
+
+
+
+
+
+<div class="case-description-value">${data.description || "-"}</div>
+<div class="case-description-value">${displayValue(data.description)}</div>
+
+
+
+
+.case-grid {
+   display: grid;
+   grid-template-columns: repeat(2, minmax(0, 1fr));
+   gap: 18px 40px;
+   align-items: start;
+}
+
+.case-grid > div {
+   min-width: 0;
+}
+
+.case-grid label {
+   display: block;
+   margin: 0 0 4px 0;
+   font-family: "NotoSans", "Noto Sans", sans-serif;
+   font-size: 14px;
+   font-weight: 600;
+   color: #1a1a1a;
+}
+
+.case-grid p {
+   margin: 0;
+   font-family: "NotoSans", "Noto Sans", sans-serif;
+   font-size: 14px;
+   line-height: 20px;
+   color: #3f3f3f;
+   overflow-wrap: anywhere;
+}
+
+.case-tabs {
+   flex-wrap: wrap;
+}
+
+
+
+
+
+/* ===== Description same style as other values ===== */
+.case-description-value {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    font-family: "NotoSans", "Noto Sans", sans-serif !important;
+    font-size: 14px !important;
+    line-height: 20px !important;
+    font-weight: 400 !important;
+    color: #3f3f3f !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
+    word-break: break-word !important;
+}
+
+.case-description-value * {
+    font-family: inherit !important;
+    font-size: inherit !important;
+    line-height: inherit !important;
+    color: inherit !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
+    word-break: break-word !important;
+    max-width: 100% !important;
+}
+
+.case-description-value p,
+.case-description-value div {
+    margin: 0 0 6px 0 !important;
+    padding: 0 !important;
+}
+
+/* ===== Layout when shown inside the Handup Details popup ===== */
+.handup-in-popup body {
+    margin: 0 !important;
+    background: #fff;
+}
+
+.handup-in-popup .row.sectionBlockLayout,
+.handup-in-popup .container {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+.handup-in-popup #caseDetailsContainer {
+    flex: 1 1 auto;
+    width: 100%;
+    padding: 0 28px 28px 28px;
+    box-sizing: border-box;
+}
+
+.handup-in-popup #caseTopHeader .case-header {
+    font-size: 32px !important;
+    line-height: 40px !important;
+    margin: 20px 28px 16px 28px !important;
+}
+
+.handup-in-popup #caseTopHeader .case-header::after {
+    width: 48px;
+    height: 4px;
+    margin-top: 10px;
+}
+
+.handup-in-popup a.back-btn#caseBackBtn {
+    margin-left: 28px;
+}
+
+.handup-in-popup .case-tabs {
+    margin-bottom: 20px;
+}
