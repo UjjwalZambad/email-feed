@@ -257,3 +257,103 @@
 .handup-in-popup .case-tabs {
     margin-bottom: 20px;
 }
+
+
+
+
+
+
+<td class="truncate-cell subject-cell">
+  <div class="cell-ellipsis" title="{{ case.title | default: '' | escape }}">{{ case.title | default: '' | escape }}</div>
+</td>
+<td class="truncate-cell description-cell">
+  <div class="cell-ellipsis" title="{{ case.description | default: '' | strip_html | replace: '&nbsp;', ' ' | strip_newlines | escape }}">{{ case.description | default: '' | strip_html | replace: '&nbsp;', ' ' | strip_newlines }}</div>
+</td>
+
+
+
+<div class="case-description-value">${data.description || "-"}</div>
+
+
+<div class="value case-description-value">${data.description || "-"}</div>
+
+
+
+/* ===== ALL CASES LIST: only Subject / Description truncated ===== */
+#dealerCasesTable tbody tr:hover td {
+    background-color: #ffffff !important;
+}
+
+/* Columns size to their content; table scrolls sideways if needed */
+#dealerCasesTable {
+    table-layout: auto !important;
+    width: 100% !important;
+    max-width: none !important;
+}
+
+#dealerCasesTable tbody tr[data-id] > td {
+    white-space: nowrap !important;
+}
+
+#dealerCasesTable td.truncate-cell {
+    overflow: hidden !important;
+    vertical-align: middle !important;
+}
+
+#dealerCasesTable .cell-ellipsis {
+    display: block;
+    width: 300px;
+    max-width: 300px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-family: "NotoSans", "Noto Sans", sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 20px;
+    color: #3f3f3f;
+}
+
+/* Expanded row must not inherit nowrap/ellipsis */
+#dealerCasesTable tr.case-details > td {
+    white-space: normal !important;
+    overflow: visible !important;
+}
+
+/* ===== EXPANDED / MOBILE: Description same style as other values ===== */
+.case-description-value {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    margin: 4px 0 0 0;
+    font-family: "NotoSans", "Noto Sans", sans-serif !important;
+    font-size: 14px !important;
+    line-height: 20px !important;
+    font-weight: 400 !important;
+    color: #3f3f3f !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
+    word-break: break-word !important;
+}
+
+.case-description-value * {
+    font-family: inherit !important;
+    font-size: inherit !important;
+    line-height: inherit !important;
+    color: inherit !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
+    word-break: break-word !important;
+    width: auto !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+}
+
+.case-description-value p,
+.case-description-value div {
+    margin: 0 0 6px 0 !important;
+    padding: 0 !important;
+}
