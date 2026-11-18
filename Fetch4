@@ -1,0 +1,103 @@
+        box-sizing: border-box;
+        max-width: min(620px, calc(100vw - 32px));
+        max-height: min(420px, calc(100vh - 32px));
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+
+
+
+.kb-preview-popup-content {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-x: hidden;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.kb-preview-popup-content * {
+  max-width: 100% !important;
+  box-sizing: border-box;
+}
+.kb-preview-popup-content img,
+.kb-preview-popup-content video,
+.kb-preview-popup-content iframe {
+  height: auto !important;
+}
+.kb-preview-popup-content table {
+  display: block;
+  overflow-x: auto;
+}
+.kb-preview-popup-content pre {
+  white-space: pre-wrap;
+}
+
+@media (max-width: 768px) {
+  .kb-article-preview-popup {
+    padding: 14px;
+    max-height: min(420px, calc(100vh - 24px));
+  }
+}
+
+
+
+
+
+let lastTitleLink = null;
+
+function placePopupNearTile(titleLink) {
+    if (!titleLink) return;
+    lastTitleLink = titleLink;
+
+    const card = titleLink.closest(".kb-card");
+    if (!card) return;
+
+    const cardRect = card.getBoundingClientRect();
+    const titleRect = titleLink.getBoundingClientRect();
+
+    const vw = document.documentElement.clientWidth || window.innerWidth;
+    const vh = document.documentElement.clientHeight || window.innerHeight;
+    const margin = vw <= 768 ? 12 : 16;
+    const gap = 14;
+
+    popup.style.left = "0px";
+    popup.style.top = "0px";
+
+    const popupWidth = Math.min(popup.offsetWidth || 420, vw - margin * 2);
+    const popupHeight = Math.min(popup.offsetHeight || 300, vh - margin * 2);
+
+    let left, top;
+
+    if (cardRect.right + gap + popupWidth <= vw - margin) {
+        left = cardRect.right + gap;          // right of card
+        top = cardRect.top;
+    } else if (cardRect.left - gap - popupWidth >= margin) {
+        left = cardRect.left - popupWidth - gap; // left of card
+        top = cardRect.top;
+    } else {
+        left = titleRect.left;                // small screen: below title
+        top = titleRect.bottom + 8;
+        if (top + popupHeight > vh - margin) {
+            const above = titleRect.top - 8 - popupHeight;
+            top = above >= margin ? above : vh - popupHeight - margin;
+        }
+    }
+
+    left = Math.max(margin, Math.min(left, vw - popupWidth - margin));
+    top = Math.max(margin, Math.min(top, vh - popupHeight - margin));
+
+    popup.style.left = left + "px";
+    popup.style.top = top + "px";
+}
+
+// Re-position after images inside the popup load
+popup.addEventListener("load", function () {
+    if (popup.classList.contains("active") && lastTitleLink) {
+        placePopupNearTile(lastTitleLink);
+    }
+}, true);
+
+
+
+
+
+
