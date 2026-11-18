@@ -1,0 +1,71 @@
+.kb-feedback{
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  border: 1px solid #dcdcdc;
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin: 20px 0;
+  background: #fff;
+}
+
+.kb-feedback-text{
+  font-size: 14px;
+  color: #3F3F3F;
+}
+
+.kb-feedback-actions{
+  display: flex;
+  gap: 18px;
+  align-items: center;
+}
+
+.kb-btn{
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  color: #3F3F3F;
+}
+
+.kb-btn i{
+  font-size: 16px;
+}
+
+.kb-active{
+  /*color: #f2c300 !important;  ✅ Yellow when selected */
+  color:#3F3F3F;
+}
+.kb-final {
+  color: #f2c300 !important; /* Yellow after submit */
+}
+
+
+.kb-disabled{
+  opacity: 0.4;
+  pointer-events: none; /* ✅ completely blocks clicking */
+  cursor: not-allowed;
+}
+
+.kb-disabled i{
+  color: #aaa;
+}
+
+.article-content {
+    width: 100%;
+    overflow-x: auto;
+}
+
+/* Keep the exact size set in the Dynamics editor – never resize */
+.article-content img {
+    max-width: none !important;
+}
+ 
+/* Each image scrolls inside its own box, not the whole page */
+.article-content .kb-img-scroll {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+ 

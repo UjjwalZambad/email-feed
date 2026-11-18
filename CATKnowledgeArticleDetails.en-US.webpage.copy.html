@@ -1,0 +1,2395 @@
+<!-- Google Tag Manager -->
+<script>
+(function(w,d,s,l,i){
+    w[l]=w[l]||[];
+
+    w[l].push({
+        'gtm.start': new Date().getTime(),
+        event: 'gtm.js'
+    });
+
+    var f=d.getElementsByTagName(s)[0],
+        j=d.createElement(s),
+        dl=l!='dataLayer' ? '&l='+l : '';
+
+    j.async=true;
+    j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;
+    f.parentNode.insertBefore(j,f);
+
+})(window,document,'script','dataLayer','GTM-PV4KJLLR');
+</script>
+<!-- End Google Tag Manager -->
+
+<!-- Google Tag Manager (noscript) -->
+<noscript>
+    <iframe
+        src="https://www.googletagmanager.com/ns.html?id=GTM-PV4KJLLR"
+        height="0"
+        width="0"
+        style="display:none;visibility:hidden">
+    </iframe>
+</noscript>
+<!-- End Google Tag Manager (noscript) -->
+
+
+
+{% assign articleId = request.params.articleId %} {% if articleId and articleId.size == 36 and articleID contains '-' %} 
+
+{% assign kaViewPersonaValue = 100000002 %}
+
+{% if user %}
+    {% for kaRole in user.roles %}
+        {% assign kaRoleText = kaRole | append: '' %}
+
+        {% if kaRoleText contains 'Cat_Internal Customer Persona Role' %}
+            {% assign kaViewPersonaValue = 100000003 %}
+            {% break %}
+
+        {% elsif kaRoleText contains 'Cat_Customer Persona Role' %}
+            {% assign kaViewPersonaValue = 100000000 %}
+            {% break %}
+
+        {% elsif kaRoleText contains 'Cat_Dealer Persona Role' %}
+            {% assign kaViewPersonaValue = 100000001 %}
+            {% break %}
+        {% endif %}
+    {% endfor %}
+{% endif %}
+
+<script>
+    window.kaViewPersona = Number("{{ kaViewPersonaValue }}");
+</script>
+
+{% fetchxml articleDetails %}
+<fetch top="1">
+  <entity name="knowledgearticle">
+    <attribute name="knowledgearticleid" />
+    <attribute name="title" />
+    <attribute name="description" />
+    <attribute name="content" />
+    <attribute name="knowledgearticleviews" />
+       <attribute name="subjectid" />
+       <filter type="and">
+      <condition attribute="knowledgearticleid" operator="eq" value="{{ articleId }}" />
+      <condition attribute="statecode" operator="eq" value="3" />
+      <condition attribute="cat_persona" operator="contain-values">
+        <value>{{ kaViewPersonaValue }}</value>
+      </condition>
+    </filter>
+ 
+  </entity>
+ 
+</fetch>
+{% endfetchxml %}
+{% if articleDetails.results.entities.size == 0 %}
+ 
+<div style="margin: 20px;">
+  <a href="/help-articles" style="color:#0078D4; font-size:14px; text-decoration:underline;">
+    {{ snippets['Cat back to articles'] }}
+  </a>
+ 
+  <div role="alert" style="margin-top:24px; padding:24px; border:1px solid #CCC; border-left:4px solid #F2C300; border-radius:6px; background:#FFF;">
+    <h2 style="font-family:'RobotoCondensed', sans-serif; font-size:24px; font-weight:700; margin:0 0 8px 0;">
+      Article not available
+    </h2>
+    <p style="font-family:'NotoSans', sans-serif; font-size:16px; margin:0;">
+      {{ snippets['CAT_Error_ArticleNotAvailable'] | default: 'This article is no longer available or you do not have access to it.' }}
+    </p>
+  </div>
+</div>
+ 
+{% else %}
+ 
+
+
+
+<!--breadcrumbs st-->
+<div class="top-nav">
+ 
+  <h1 class="kb-main-title">{{ snippets['CAT_Search_HelpArticles'] }}</h1>
+  <!-- <a href="/help-articles" class="back-btn">← Back to Articles</a> -->
+   <a href="/help-articles" class="back-btn" id="backBtn">
+    {{ snippets['Cat back to articles'] }}
+</a>
+ 
+{% fetchxml breadcrumbFetch %}
+<fetch>
+  <entity name="knowledgearticle">
+ 
+    <filter>
+      <condition attribute="knowledgearticleid"
+                 operator="eq"
+                 value="{{ request.params.articleid }}" />
+    </filter>
+ 
+    <link-entity name="knowledgearticlescategories"
+                 intersect="true"
+                 from="knowledgearticleid"
+                 to="knowledgearticleid">
+ 
+      <link-entity name="category"
+                   alias="cat"
+                   from="categoryid"
+                   to="categoryid">
+ 
+        <attribute name="categoryid" />
+        <attribute name="title" />
+        <attribute name="parentcategoryid" />
+ 
+        <!-- Category -> Parent -->
+        <link-entity name="category"
+                     from="categoryid"
+                     to="parentcategoryid"
+                     alias="parentcat"
+                     link-type="outer">
+ 
+          <attribute name="categoryid" />
+          <attribute name="title" />
+ 
+          <!-- Parent -> Grand Parent -->
+          <link-entity name="category"
+                       from="categoryid"
+                       to="parentcategoryid"
+                       alias="grandparentcat"
+                       link-type="outer">
+ 
+            <attribute name="categoryid" />
+            <attribute name="title" />
+ 
+          </link-entity>
+        </link-entity>
+      </link-entity>
+    </link-entity>
+  </entity>
+</fetch>
+{% endfetchxml %}
+
+
+{% assign shownCategories = '' %}
+
+{% for item in breadcrumbFetch.results.entities %}
+
+    {% assign currentCategory = item['cat.categoryid'] | append: '' %}
+
+    {% unless shownCategories contains currentCategory %}
+
+        <div>
+
+        {% if item['grandparentcat.title'] %}
+
+            <a href="/help-articles?categoryid={{ item['grandparentcat.categoryid'] }}">
+                {{ item['grandparentcat.title'] }}
+            </a> /
+            <a href="/help-articles?categoryid={{ item['parentcat.categoryid'] }}">
+                {{ item['parentcat.title'] }}
+            </a> /
+            <a href="/help-articles?categoryid={{ item['cat.categoryid'] }}">
+                {{ item['cat.title'] }}
+            </a>
+
+        {% elsif item['parentcat.title'] %}
+
+            <a href="/help-articles?categoryid={{ item['parentcat.categoryid'] }}">
+                {{ item['parentcat.title'] }}
+            </a> /
+            <a href="/help-articles?categoryid={{ item['cat.categoryid'] }}">
+                {{ item['cat.title'] }}
+            </a>
+
+        {% else %}
+
+            <a href="/help-articles?categoryid={{ item['cat.categoryid'] }}">
+                {{ item['cat.title'] }}
+            </a>
+
+        {% endif %}
+
+        </div>
+
+        {% assign shownCategories = shownCategories | append: currentCategory | append: '|' %}
+
+    {% endunless %}
+
+{% endfor %}
+<!--breadcrumbs end-->
+
+<!-- Divider -->
+<div class="kb-article-divider"></div>
+
+{% for article in articleDetails.results.entities %}
+
+<h1 class="article-title">{{ article.title }}</h1>
+
+<!-- <div class="kb-summary-container">
+ 
+    <div class="kb-summary-header">
+        <h3>Article Summary</h3>
+    </div>
+ 
+    <div id="summaryLoading">
+        Generating summary...
+    </div>
+ 
+    <div id="summaryResult" style="display:none;">
+    </div>
+ 
+</div>
+ 
+<input type="hidden"
+       id="articleId"
+       value="{{ request.params.articleId }}" /> -->
+ 
+<!-- <div class="ai-summary-card">
+ 
+    <div class="ai-summary-header">
+ 
+        <div class="ai-summary-title">
+ 
+            <span class="ai-icon">✨</span>
+ 
+ <span style="font-family: 'RobotoCondensed' !important; font-size: 22px !important;">
+    Summarized by AI
+</span>
+ 
+        </div>
+ 
+        <div class="ai-summary-actions">
+ 
+            <button id="copySummaryBtn" class="icon-btn" title="Copy Summary" style="display:none;">
+                <svg width="16" height="16" viewBox="0 0 16 16">
+                    <rect x="5" y="3" width="8" height="10" rx="1"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.5"/>
+                    <rect x="3" y="1" width="8" height="10" rx="1"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.5"/>
+                </svg>
+            </button>
+ 
+<span id="copiedMessage" style="display:none;">Copied</span>
+ 
+ 
+           <button id="toggleSummaryBtn" class="icon-btn">
+ 
+    <svg id="chevronIcon"
+         class="chevron-expanded"
+         width="16"
+         height="16"
+         viewBox="0 0 16 16">
+ 
+        <path d="M3 10 L8 5 L13 10"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"/>
+ 
+    </svg>
+ 
+</button>
+ 
+ 
+        </div>
+ 
+    </div>
+ 
+    <div id="summaryContentWrapper">
+ 
+        <div id="summaryLoading">
+            Generating summary...
+        </div>
+ 
+        <div id="summaryResult"></div>
+ 
+        <div class="summary-footer">
+            AI-generated content may be incorrect
+        </div>
+ 
+    </div>
+ 
+</div> -->
+<div class="ai-summary-card">
+
+    <div class="ai-summary-header">
+
+        <div class="ai-summary-title">
+
+            <span class="ai-icon">✨</span>
+
+            <span
+                style="
+                    font-family: 'RobotoCondensed' !important;
+                    font-size: 22px !important;
+                "
+            >
+                Summarized by AI
+            </span>
+
+        </div>
+
+        <div class="ai-summary-actions">
+
+            <button
+                id="copySummaryBtn"
+                class="icon-btn"
+                type="button"
+                title="Copy summary"
+                aria-label="Copy summary"
+                style="display: none;"
+            >
+                <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 16 16"
+                    aria-hidden="true"
+                >
+                    <rect
+                        x="5"
+                        y="3"
+                        width="8"
+                        height="10"
+                        rx="1"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                    ></rect>
+
+                    <rect
+                        x="3"
+                        y="1"
+                        width="8"
+                        height="10"
+                        rx="1"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                    ></rect>
+                </svg>
+            </button>
+
+            <span
+                id="copiedMessage"
+                role="status"
+                aria-live="polite"
+                style="display: none;"
+            >
+                Copied
+            </span>
+
+            <button
+                id="toggleSummaryBtn"
+                class="icon-btn"
+                type="button"
+                title="Expand AI summary"
+                aria-label="Expand or collapse AI summary"
+                aria-expanded="false"
+                aria-controls="summaryContentWrapper"
+            >
+                <svg
+                    id="chevronIcon"
+                    class="chevron-collapsed"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 16 16"
+                    aria-hidden="true"
+                >
+                    <!-- Down arrow for the initial collapsed state -->
+                    <path
+                        d="M3 6 L8 11 L13 6"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    ></path>
+                </svg>
+            </button>
+
+        </div>
+
+    </div>
+
+    <!-- AI summary is collapsed by default -->
+    <div
+        id="summaryContentWrapper"
+        style="display: none;"
+    >
+        <div
+            id="summaryLoading"
+            role="status"
+            aria-live="polite"
+            style="display: none;"
+        >
+            Generating summary...
+        </div>
+
+        <div id="summaryResult"></div>
+
+        <div class="summary-footer">
+            <!-- AI-generated content may be incorrect -->
+             {{ snippets['CAT_Error_AiIncorrect'] }}
+        </div>
+    </div>
+
+</div>
+
+<input type="hidden"
+       id="articleId"
+       value="{{ request.params.articleId }}" /> 
+ 
+
+<!-- <div class="article-meta"><i class="fa fa-eye"></i> {{ article.knowledgearticleviews }}</div> -->
+
+<div class="article-description">{{ article.description }}</div>
+
+{% assign articleContent = article.content | replace: '<iframe', '<iframe class="optanon-category-C0004"' | replace: 'src="https://www.youtube.com/embed/', 'data-src="https://www.youtube.com/embed/' %}
+
+<div class="article-content"> {{ articleContent }} </div>
+ 
+<script>
+(function () {
+    // Put each article image in its own horizontal scroll box
+    document.querySelectorAll(".article-content img").forEach(function (img) {
+        if (img.parentNode.classList.contains("kb-img-scroll")) return;
+        var wrap = document.createElement("span");
+        wrap.className = "kb-img-scroll";
+        img.parentNode.insertBefore(wrap, img);
+        wrap.appendChild(img);
+    });
+})();
+</script>
+ 
+{% if article.content contains 'youtube.com/embed/' %}
+
+  <div id="youtube-cookie-message" style="display: none;">
+  <div class="youtube-cookie-message_title">
+  <strong>
+  MULTIMEDIA<br>
+  COOKIES ARE REQUIRED
+  </strong>
+  </div>
+  <p>
+    To enable videos you must accept the use of targeting cookies.
+  </p>
+  <a class="ot-sdk-show-settings" href="javascript:void(0);">
+    Cookie Settings
+  </a>
+  </div>
+{% endif %}
+<script>
+(function () {
+   function updateYouTubeConsent() {
+       var message = document.getElementById("youtube-cookie-message");
+       var iframes = document.querySelectorAll(
+           ".article-content iframe.optanon-category-C0004"
+       );
+       if (!message) return;
+       // Read the saved OneTrust category consent.
+       var consentCookie = document.cookie
+           .split("; ")
+           .find(function (cookie) {
+               return cookie.indexOf("OptanonConsent=") === 0;
+           });
+       var targetingAccepted = false;
+       if (consentCookie) {
+           var cookieValue = decodeURIComponent(
+               consentCookie.substring("OptanonConsent=".length)
+           );
+           var groupsMatch = cookieValue.match(
+               /(?:^|&)groups=([^&]*)/
+           );
+           if (groupsMatch) {
+               targetingAccepted = /(?:^|,)C0004:1(?:,|$)/.test(
+                   groupsMatch[1]
+               );
+           }
+       }
+       if (targetingAccepted) {
+           message.style.display = "none";
+           iframes.forEach(function (iframe) {
+               if (!iframe.getAttribute("src")) {
+                   var videoUrl = iframe.getAttribute("data-src");
+                   if (videoUrl) {
+                       iframe.setAttribute("src", videoUrl);
+                   }
+               }
+               iframe.style.display = "";
+           });
+       } else {
+           message.style.display = "block";
+           iframes.forEach(function (iframe) {
+               iframe.style.display = "none";
+               iframe.removeAttribute("src");
+           });
+       }
+   }
+   // Run on initial page load.
+   if (document.readyState === "loading") {
+       document.addEventListener(
+           "DOMContentLoaded",
+           updateYouTubeConsent
+       );
+   } else {
+       updateYouTubeConsent();
+   }
+   // Refresh the message when OneTrust updates consent.
+   window.addEventListener(
+       "OneTrustGroupsUpdated",
+       updateYouTubeConsent
+   );
+   document.addEventListener(
+       "OneTrustGroupsUpdated",
+       updateYouTubeConsent
+   );
+})();
+</script>
+<style>
+  #youtube-cookie-message {
+   width: 100%;
+   min-height: 250px;
+   padding: 40px 20px;
+   text-align: center;
+   box-sizing: border-box;
+   background: #fff;
+   color: #222;
+}
+.youtube-cookie-message_title {
+   font-weight: 700;
+   font-size: 18px;
+   line-height: 1.4;
+   margin-bottom: 12px;
+}
+#youtube-cookie-message p {
+   margin-bottom: 8px;
+}
+#youtube-cookie-message a {
+   color: #0078D4;
+   text-decoration: underline;
+   cursor: pointer;
+}
+</style>
+
+{% endfor %}
+
+<!-- Was this Article Helpful -->
+
+<div class="kb-feedback">
+  <span class="kb-feedback-text"> Was this article helpful? </span>
+
+  <div class="kb-feedback-actions">
+    <span id="likeBtn" class="kb-btn">
+      <span id="likeCount">0</span>
+      <i class="fa-regular fa-thumbs-up"></i>
+    </span>
+
+    <span id="dislikeBtn" class="kb-btn">
+      <span id="dislikeCount">0</span>
+      <i class="fa-regular fa-thumbs-down"></i>
+    </span>
+  </div>
+</div>
+
+
+<!-- One Feedback per 24hrs-->
+
+    {% fetchxml articlecheck %}
+    <fetch>
+      <entity name="knowledgearticle">
+        <attribute name="rootarticleid" />
+        <filter>
+          <condition attribute="knowledgearticleid" operator="eq" value="{{ request.params['articleId'] }}" />
+        </filter>
+      </entity>
+    </fetch>
+    {% endfetchxml %}
+    {% assign rootart = articlecheck.results.entities[0].rootarticleid.id %}
+
+    {% fetchxml feedbackCheck %}
+    <fetch>
+      <entity name="feedback">
+        <attribute name="feedbackid" />
+        <filter>
+          <condition attribute="createdon" operator="last-x-hours" value="24" />
+          <condition attribute="createdbycontact" operator="eq" value="{{ user.id }}" />
+          <condition attribute="regardingobjectid" operator="eq" value="{{ request.params['articleId'] }}" />
+        </filter>
+      </entity>
+    </fetch>
+    {% endfetchxml %}
+   {% assign feedbackExists = feedbackCheck.results.entities.size > 0 %}
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const feedbackExists = {{ feedbackExists | json }};
+
+    console.log("Feedback exists:", feedbackExists);
+
+    if (feedbackExists) {
+        disableFeedbackButtons();
+        console.log("IF Condition");
+    }
+
+    function disableFeedbackButtons() {
+      dislikeBtn.classList.add("kb-disabled");
+      likeBtn.classList.add("kb-disabled");
+      console.log("Disabling the button");
+    }
+});
+</script>
+
+<!-- One Feedback per 24hrs ends here-->
+
+<!--back to search functionality-->
+<script>
+$(document).ready(function () {
+ 
+    var params = new URLSearchParams(window.location.search);
+ 
+    if (params.get("from") === "search") {
+ 
+        var keyword = params.get("search") || "";
+ 
+        $("#backBtn")
+            .text("← Back to Search Results")
+            .attr("href",
+                  "/en-US/search-results/?search=" +
+                  encodeURIComponent(keyword));
+ 
+    }
+ 
+});
+</script>
+
+<!-- Related Article -->
+ <!-- Related Article -->
+
+
+<div class="row sectionBlockLayout text-start" style="min-height: auto; padding: 8px;">
+  <div class="container" style="display: flex; flex-wrap: wrap; max-width:100%">
+{% fetchxml currentCategory %}
+<fetch top="1">
+  <entity name="knowledgearticle">
+
+    <attribute name="knowledgearticleid" />
+
+    <filter>
+      <condition attribute="knowledgearticleid"
+                 operator="eq"
+                 value="{{ request.params.articleId }}" />
+    </filter>
+    <link-entity name="knowledgearticlescategories"
+                 intersect="true"
+                 from="knowledgearticleid"
+                 to="knowledgearticleid">
+      <link-entity name="category"
+                   alias="cat"
+                   from="categoryid"
+                   to="categoryid">
+        <attribute name="title" alias="categoryname" />
+        <attribute name="categoryid" />
+     </link-entity>
+    </link-entity>
+  </entity>
+</fetch>
+{% endfetchxml %}
+{% assign categoryIds = '' %}
+{% for item in currentCategory.results.entities %}
+  {% assign categoryIds = categoryIds | append:item['cat.categoryid'] | append:',' %}
+{% endfor %}
+
+
+
+{% assign currentCategoryId = "" %}
+
+{% if currentCategory.results.entities.size > 0 %}
+  {% assign currentCategoryId = currentCategory.results.entities[0]['cat.categoryid'] %}
+{% endif %}
+
+{% assign articleLimit = snippets["CAT Most Popular Related Articles Display Limit"] | strip | default: "2" %}
+{% assign relatedCount = 0 %}
+{% if currentCategory.results.entities.size > 0 %}
+
+<!--Persona filter-->
+    {% assign userPersona = 'Guest' %}
+    
+    {% if user %}
+    {% for role in user.roles %}
+    
+    {% assign roleText = role | string %}
+    
+    {% if roleText contains 'Cat_Internal Customer Persona Role' %}
+    {% assign userPersona = 'Internal' %}
+    {% break %}
+    
+    {% elsif roleText contains 'Cat_Customer Persona Role' %}
+    {% assign userPersona = 'Customer' %}
+    {% break %}
+    
+    {% elsif roleText contains 'Cat_Dealer Persona Role' %}
+    {% assign userPersona = 'Dealer' %}
+    {% break %}
+    
+    {% endif %}
+    
+    {% endfor %}
+    {% endif %}
+    
+    {% assign personaValue = '' %}
+    
+    {% case userPersona %}
+    {% when 'Customer' %}
+    {% assign personaValue = '100000000' %}
+    
+    {% when 'Dealer' %}
+    {% assign personaValue = '100000001' %}
+    
+    {% when 'Guest' %}
+    {% assign personaValue = '100000002' %}
+
+    {% when 'Internal' %}
+    {% assign personaValue = '100000003' %}
+    {% endcase %}
+    
+<!--Persona filter end-->
+
+<!-- Knowledge Article language filter -->
+{% assign portalLanguageCode = website.selected_language.code | default: 'en-US' %}
+{% assign kaLcid = 1033 %}
+{% case portalLanguageCode %}
+  {% when 'hi-IN' %}
+    {% assign kaLcid = 1081 %}
+  {% when 'fr-FR' %}
+    {% assign kaLcid = 1036 %}
+  {% when 'en-US' %}
+    {% assign kaLcid = 1033 %}
+{% endcase %}
+
+{% fetchxml articles %}
+<fetch count="{{articleLimit}}">
+  <entity name="knowledgearticle">
+
+    <attribute name="knowledgearticleid" />
+    <attribute name="title" />
+    <attribute name="description" />
+    <attribute name="knowledgearticleviews" />
+
+    <order attribute="knowledgearticleviews"
+           descending="true" />
+
+    <!-- <filter type="and">
+
+      
+      <condition attribute="statecode"
+                 operator="eq"
+                 value="3" />
+
+     
+      <condition attribute="knowledgearticleid"
+                 operator="ne"
+                 value="{{ request.params.articleId }}" />
+    </filter> -->
+    <filter type="and">
+
+    <condition attribute="statecode"
+               operator="eq"
+               value="3" />
+
+    <condition attribute="knowledgearticleid"
+               operator="ne"
+               value="{{ request.params.articleId }}" />
+
+    <condition attribute="cat_ispublicfacing"
+               operator="eq"
+               value="1" />
+
+    <condition attribute="cat_persona"
+               operator="contain-values">
+        <value>{{ personaValue }}</value>
+    </condition>
+
+</filter>
+
+    <link-entity name="knowledgearticlescategories"
+                 intersect="true"
+                 from="knowledgearticleid"
+                 to="knowledgearticleid">
+
+      <link-entity name="category"
+                   alias="cc"
+                   from="categoryid"
+                   to="categoryid">
+
+        <attribute name="title" alias="categoryname" />
+
+        <filter type="or">
+
+{% for item in currentCategory.results.entities %}
+    <condition
+        attribute="categoryid"
+        operator="eq"
+        value="{{ item['cat.categoryid'] }}" />
+{% endfor %}
+
+</filter>
+      </link-entity>
+    </link-entity>
+    <link-entity name="languagelocale" from="languagelocaleid" to="languagelocaleid" link-type="inner" alias="kalang1">
+      <filter>
+        <condition attribute="localeid" operator="eq" value="{{ kaLcid }}" />
+      </filter>
+    </link-entity>
+  </entity>
+</fetch>
+{% endfetchxml %}
+
+
+
+{% assign relatedCount = articles.results.entities.size %}
+{% endif %}
+
+<!-- Debug count -->
+<!-- <div>Related Articles Count: {{ relatedCount }}</div> -->
+
+{% if relatedCount == 0 %}
+    <style>
+        .kb-sub-title {
+            display: none !important;
+        }
+    </style>
+{% endif %}
+
+
+
+
+
+<div class="kb-wrapper">
+
+  <h3 class="kb-sub-title" style="padding-left: 8px ;">
+    Related Articles
+  </h3>
+
+  <div class="kb-grid">
+
+    {% for article in articles.results.entities limit:articleLimit %}
+    <div class="kb-card">
+
+      <a href="/knowledge-article-details?articleId={{ article.knowledgearticleid }}"
+         class="kb-card-link"></a>
+
+      <div class="kb-header">
+
+        <div class="kb-title">
+          {{ article.title }}
+        </div>
+
+        <div class="kb-views">
+          <i class="fa fa-eye"></i>
+          {{ article.knowledgearticleviews }}
+        </div>
+
+      </div>
+
+  <div class="kb-tag">
+              {% fetchxml articleCategories %}
+              <fetch top="1">
+                <entity name="category">
+                  <attribute name="title" />
+                  <attribute name="categoryid" />
+                  <attribute name="parentcategoryid" />
+                  <link-entity name="knowledgearticlescategories" intersect="true" from="categoryid" to="categoryid">
+                    <filter>
+                      <condition attribute="knowledgearticleid" operator="eq"
+                        value="{{ article.knowledgearticleid }}" />
+                    </filter>
+                  </link-entity>
+                </entity>
+              </fetch>
+              {% endfetchxml %}
+              {% assign printedTags = "|" %}
+              {% for cat in articleCategories.results.entities %}
+              {% if cat.parentcategoryid == nil %}
+              {% assign tagName = cat.title %}
+              {% unless printedTags contains tagName %}
+              <span class="kb-category-badge">
+                {{ tagName }}
+              </span>
+              {% assign printedTags = printedTags | append: tagName | append: "|" %}
+              {% endunless %}
+              {% else %}
+              {% fetchxml parentCategory %}
+              <fetch top="1">
+                <entity name="category">
+                  <attribute name="title" />
+                  <attribute name="parentcategoryid" />
+                  <filter>
+                    <condition attribute="categoryid" operator="eq" value="{{ cat.parentcategoryid.id }}" />
+                  </filter>
+                </entity>
+              </fetch>
+              {% endfetchxml %}
+              {% assign parent = parentCategory.results.entities[0] %}
+              {% if parent.parentcategoryid == nil %}
+              {% assign tagName = parent.title %}
+              {% unless printedTags contains tagName %}
+              <span class="kb-category-badge">
+                {{ tagName }}
+              </span>
+              {% assign printedTags = printedTags | append: tagName | append: "|" %}
+              {% endunless %}
+              {% else %}
+              {% fetchxml grandParentCategory %}
+              <fetch top="1">
+                <entity name="category">
+                  <attribute name="title" />
+                  <filter>
+                    <condition attribute="categoryid" operator="eq" value="{{ parent.parentcategoryid.id }}" />
+                  </filter>
+                </entity>
+              </fetch>
+              {% endfetchxml %}
+              {% assign tagName = grandParentCategory.results.entities[0].title %}
+              {% unless printedTags contains tagName %}
+              <span class="kb-category-badge">
+                {{ tagName }}
+              </span>
+              {% assign printedTags = printedTags | append: tagName | append: "|" %}
+              {% endunless %}
+              {% endif %}
+              {% endif %}
+              {% endfor %}
+            </div>
+
+
+<div class="kb-desc">
+        {{ article.description | truncate: 140 }}
+      </div>
+
+      <div class="kb-footer">
+        <span class="read-more-link">
+          {{ snippets['CAT Read more'] }}
+        </span>
+      </div>
+
+    </div>
+
+    {% endfor %}
+
+  </div>
+
+</div>
+
+    <style>
+      .top-nav div {
+        font-size: 14px; /* decrease font size */
+        font-weight: 400;
+        margin-top: 5px;
+      }
+
+      .top-nav div a {
+        color: #0078D4;
+        text-decoration: none;
+        font-weight: 600 !important;
+        font-size: 16px !important;
+      }
+
+      .top-nav div a:hover {
+        text-decoration: underline;
+      }
+
+      .kb-breadcrumb {
+        margin-bottom: 0 !important;
+      }
+
+      .kb-breadcrumb .breadcrumb {
+        background: transparent;
+        padding: 0;
+        margin: 0 !important;
+      }
+
+      .kb-breadcrumb .breadcrumb-item a {
+        color: #0078D4;
+        text-decoration: none;
+      }
+
+      .kb-breadcrumb .breadcrumb-item.active {
+        color: #605E5C;
+        font-weight: 500;
+
+      }
+
+      .top-nav {
+        margin: 20px;
+      }
+
+      .kb-article-divider {
+        width: 100%;
+        height: 1px;
+        background-color:rgba(0, 0, 0, 0.23);
+        margin: 24px 0 !important;
+      }
+
+      #backBtn:hover,
+      #backBtn:focus,
+      #backBtn:active,
+      #backBtn:visited {
+      text-decoration: none !important;
+      display: inline-block;
+      margin-bottom: 10px;
+      color: #0078d4;
+      }
+
+      #backBtn{
+        font-family: NotoSans,sans-serif;
+        font-weight: 400;
+        font-size: 0.875rem;
+        line-height: 20px;
+        text-decoration: underline !important
+      }
+      .article-title {
+        margin-top: 0 !important;
+        font-size: 28px;
+        font-weight: bold;
+        margin-left: auto;
+        font-family: "RobotoCondensed";
+      }
+
+      .article-meta {
+        margin: 10px 0;
+        color: #555;
+      }
+
+      .article-description {
+        margin: 15px 0;
+        font-size: 16px;
+      }
+
+            @import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&family=Roboto+Condensed:wght@400;700&display=swap');
+
+           body {
+  font-family: "NotoSans", sans-serif !important;
+}
+
+.kb-wrapper,
+.kb-grid,
+.kb-card {
+  margin-left: 2px;
+  margin-right: 2px;
+}
+
+            /* WRAPPER */
+            .kb-wrapper
+             {
+              margin: 0 ;
+              padding: 20px 0;
+              width: 100%;
+            }
+
+            .kb-feedback {
+              margin-left: 0 !important;
+            }
+
+            .row.sectionBlockLayout.text-start .container {
+              padding-left: 0 !important;
+              margin-left: 0 !important;
+            }
+
+            .kb-card-link {
+              position: absolute;
+              inset: 0;
+              /* z-index: 5; */
+              display: block;
+              text-decoration: none !important;
+              color: inherit !important;
+            }
+
+            kb-card>*:not(.kb-card-link) {
+              position: relative;
+              z-index: 10;
+            }
+
+            .kb-card:hover {
+              cursor: pointer;
+              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            }
+
+            /* GRID */
+            .kb-grid {
+              display: grid;
+              grid-template-columns: repeat(2, 2fr);
+              gap: 8px;
+              width: 100%;
+
+            }
+
+            /* CARD */
+            .kb-card {
+              position: relative;
+              display: flex !important;
+              padding: 24px 16px !important;
+              flex-direction: column !important;
+              gap: 16px !important;
+              flex: 1 0 0 !important;
+              border-radius: 6px !important;
+              border: 1px solid var(--border-default, #CCC) !important;
+              background: #FFF !important;
+
+
+            }
+
+            /* HEADER */
+            /* HEADER */
+            .kb-header {
+              display: flex !important;
+              justify-content: space-between !important;
+              align-items: center !important;
+              gap: 12px;
+              margin-top: 0px !important;
+            }
+
+            .kb-title {
+              flex: 1;
+              margin: 0;
+            }
+
+            .kb-views {
+              display: flex;
+              align-items: center;
+              gap: 4px;
+              white-space: nowrap;
+              flex-shrink: 0;
+            }
+
+            /* TITLE */
+            .kb-title a {
+              font-size: 16px !important;
+              font-weight: 600 !important;
+
+              text-decoration: none !important;
+              color: var(--content-default, #3F3F3F) !important;
+
+              /* label / large */
+              font-family: "NotoSans" !important;
+
+              font-style: normal !important;
+              /* 150% */
+            }
+
+            /* VIEWS */
+            .kb-views {
+              font-size: 14px;
+              color: #3f3f3f;
+              white-space: nowrap;
+            }
+
+            /* TAG */
+            /* .kb-tag {
+
+              width: fit-content;
+              display: flex;
+              padding: 5.5px 8.5px !important;
+              font-size: 14px !important;
+              justify-content: center;
+              align-items: center;
+              gap: 4px;
+              border-radius: 16px;
+              background: var(--component-badge-grey, #E1E1E1);
+
+            } */
+             .kb-tag{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+}
+ 
+.kb-category-badge{
+    display:inline-flex;
+    padding:5.5px 8.5px;
+    border-radius:16px;
+    background:#E1E1E1;
+    width:fit-content;
+}
+
+            /* DESCRIPTION */
+            .kb-desc {
+
+              overflow: hidden;
+              color: var(--content-default, #3F3F3F);
+              text-overflow: ellipsis;
+              white-space: normal;
+
+              /* body/small */
+              font-family: "NotoSans" !important;
+              font-size: 14px;
+              font-style: normal;
+              font-weight: 400;
+              line-height: 20px;
+              /* 142.857% */
+              height: 40px;
+              align-self: stretch;
+
+            }
+
+
+            .kb-desc a {
+              text-decoration: none !important;
+              /* body/small */
+              font-family: "NotoSans" !important;
+              font-size: 14px;
+              font-style: normal;
+              font-weight: 400;
+              line-height: 20px;
+              /* 142.857% */
+              height: 86px;
+              align-self: stretch;
+            }
+
+            /* FOOTER */
+            .kb-footer {
+              margin-top: auto;
+            }
+
+            .fa,
+            .fa * {
+              font-family: "FontAwesome" !important;
+            }
+
+            .kb-footer a {
+
+              color: var(--content-link-default, #0067B8);
+
+              /* label/default */
+              font-family: "NotoSans" !important;
+              font-size: 14px;
+              font-style: normal;
+              font-weight: 600;
+              line-height: 20px;
+              /* 142.857% */
+            }
+
+            /* MAIN TITLE */
+            .kb-main-title {
+              position: relative;
+              margin-bottom: 30px;
+              margin-top: 0px !important;
+              color: #000;
+              font-feature-settings: 'liga' off, 'clig' off;
+              font-family: "RobotoCondensed", sans-serif !important;
+              font-size: 4rem;
+              font-style: normal;
+              font-weight: 700;
+              line-height: 72px;
+              width: 100%;
+              max-width: 656px;
+            }
+
+            .kb-main-title::after {
+              content: "";
+              position: absolute;
+              left: 0;
+              bottom: -10px;
+              width: 60px;
+              /* length of yellow line */
+              height: 4px;
+              background-color: #f2c300;
+              /* CAT yellow */
+              border-radius: 2px;
+            }
+
+            /* SUB TITLE */
+            .kb-sub-title {
+
+              color: #000;
+
+              /* label / large */
+              font-family: "NotoSans";
+              font-size: 16px;
+              font-style: normal;
+              font-weight: 600;
+              line-height: 24px;
+              /* 150% */
+            }
+
+            .kb-title {
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              flex-wrap: wrap;
+            }
+
+            .kb-badge-new {
+              background-color: #f2c300;
+              /* CAT yellow */
+              color: #000;
+              font-size: 11px;
+              font-weight: 700;
+              padding: 3px 8px;
+              border-radius: 12px;
+            }
+
+            .read-more-link {
+
+              color: var(--content-link-default, #0067B8);
+
+              /* label/default */
+              font-family: "NotoSans";
+              font-size: 14px;
+              font-style: normal;
+              font-weight: 600;
+              line-height: 20px;
+              /* 142.857% */
+            }
+
+            .external-icon svg {
+              width: 14px;
+              height: 14px;
+
+            }
+            /* ai summary */
+            /* .kb-summary-container {
+    margin-top: 30px;
+    padding: 20px;
+    border: 1px solid #d9d9d9;
+    border-radius: 8px;
+    background: #fff;
+}
+ 
+.kb-summary-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+ 
+.summary-btn {
+    padding: 10px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    background: #0078d4;
+    color: #fff;
+}
+ 
+#summaryLoading {
+    margin-top: 15px;
+}
+ 
+#summaryResult {
+    margin-top: 20px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+} */
+ .ai-summary-card{
+    border:1px solid rgba(0, 0, 0, 0.23);
+    border-radius:12px;
+    padding:20px;
+    margin:25px 0;
+    background:#fff;
+}
+ 
+.ai-summary-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+ 
+.ai-summary-title{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:20px;
+    font-weight:600;
+}
+ 
+.ai-icon{
+    font-size:18px;
+}
+ 
+.ai-summary-actions{
+    display:flex;
+    align-items:center;
+    gap:12px;
+}
+ 
+.icon-btn{
+    border:none;
+    background:none;
+    cursor:pointer;
+    padding:0;
+    color:#323130;
+}
+ 
+.icon-btn:hover{
+    opacity:0.8;
+}
+ 
+#summaryResult{
+    margin-top:15px;
+    line-height:1.7;
+     font-weight:400 !important;
+      white-space: pre-line;
+      font-family: 'NotoSans';
+}
+ 
+.summary-footer{
+    margin-top:15px;
+    font-size:12px;
+    color:#666;
+}
+#chevronIcon{
+    transition:transform .25s ease;
+}
+ 
+
+.chevron-collapsed {
+    transform: rotate(0deg);
+    transition: transform 200ms ease;
+}
+
+.chevron-expanded {
+    transform: rotate(180deg);
+    transition: transform 200ms ease;
+}
+
+
+#copiedMessage{
+    font-size:12px;
+    color:#605e5c;
+    margin-left:8px;
+}
+ 
+ 
+ 
+
+            @media (max-width: 768px) {
+              .kb-grid {
+                grid-template-columns: 1fr !important;
+                width: 100% !important;
+              }
+
+              .kb-card {
+                width: 96vw !important;
+                max-width: 96vw !important;
+                margin-left: -16px !important;
+                margin-right: -16px !important;
+              }
+
+              .kb-wrapper,
+.kb-grid,
+.kb-card{
+                max-width: 100% !important;
+                margin-left: 2px;
+                margin-right: 2px;
+              }
+
+          
+              .row.sectionBlockLayout{
+                margin-bottom:50px !important;
+              }
+
+
+            }
+    </style>
+  </div>
+
+  <!-- Knowledge Article Feedback Popup -->
+  <div id="currentArticle" data-articleid="{{ knowledgearticle.knowledgearticleid }}"></div>
+
+  <div id="kb-feedbackOverlay" class="kb-feedback-overlay"></div>
+  <div id="kb-feedbackPopup" class="kb-feedback-popup" aria-hidden="true">
+    <div class="kb-feedback-header">
+      <span class="kb-feedback-title">{{ snippets['Cat Give Feedback title'] }}</span>
+      <button type="button" class="kb-feedback-close" aria-label="Close" onclick="closekbFeedbackPopup()">×</button>
+    </div>
+
+       <div class="kb-feedback-body">
+      <div id="kbFeedbackLoader" class="kb-feedback-loader" role="status" aria-live="polite">
+        <span class="kb-feedback-spinner"></span>
+      </div>
+      <iframe id="kbFeedbackFrame" src="/CAT-Knowledge-Feedback" title="Website Feedback" frameborder="0" scrolling="no"> </iframe>
+    </div>
+ 
+  </div>
+  <div id="kb-customSuccessMessage" class="kb-custom-alert">
+    <img src="CAT_Success.png" alt="Success" class="kb-success-icon" />
+
+    <div class="kb-alert-text">Form Submitted! Thank you for your feedback!</div>
+
+    <button class="kb-close-btn" onclick="kbcloseAlert()">×</button>
+  </div>
+
+  <script>
+
+likeBtn.addEventListener("click", function () {
+
+    $(".kb-feedback-popup").css(
+        "height",
+        "298px"
+    );
+
+        $(".kb-feedback-body iframe").css(
+        "min-height",
+        "343px"
+    );
+    
+    //checkAndTriggerPopup();
+});
+
+dislikeBtn.addEventListener("click", function () {
+
+    $(".kb-feedback-popup").css(
+        "height",
+        "375px"
+    );
+
+        $(".kb-feedback-body iframe").css(
+        "min-height",
+        "419px"
+    );
+    
+    //checkAndTriggerPopup();
+});
+ 
+
+function openkbFeedbackPopup() {
+      const popup = document.getElementById("kb-feedbackPopup");
+      const overlay = document.getElementById("kb-feedbackOverlay");
+      const iframe = popup.querySelector("iframe");
+
+      // ✅ IMMEDIATE hard reset (no flicker)
+      /*const src = iframe.getAttribute("src");
+      iframe.setAttribute("src", "about:blank");
+      iframe.setAttribute("src", src);*/
+
+      popup.style.display = "block";
+      overlay.style.display = "block";
+      document.body.classList.add("modal-open");
+
+          const articleId =
+          new URLSearchParams(
+          window.location.search
+          ).get("articleId");
+          console.log(
+          "Article for storage:",
+          articleId
+          );
+          if (articleId) {
+
+                  
+            localStorage.setItem(
+                "currentArticleId",
+                articleId
+            );
+                
+
+          const isLiked =
+          document
+          .getElementById("likeBtn")
+          ?.classList
+          ?.contains("kb-active");
+          const feedbackData = {
+          articleId: articleId,
+          cat_ratings:
+          isLiked
+          ? 100000000
+          : 100000001,
+          title:
+          isLiked
+          ? "Liked Feedback"
+          : "Disliked Feedback"
+
+
+              };
+
+              localStorage.setItem(
+
+                  "kbFeedbackData",
+
+                  JSON.stringify(feedbackData)
+
+              );
+
+              console.log(
+
+                  "KB DATA SAVED:",
+
+                  feedbackData
+
+              );
+
+          }
+            // Wait until iframe fully loads
+      iframe.onload = function () {
+        const articleId =
+            new URLSearchParams(
+                window.location.search
+            ).get(
+                "articleId"
+            );
+        console.log(
+            "Sending article:",
+            articleId
+        );
+        if (
+            articleId &&
+            iframe.contentWindow
+        ) {
+            iframe.contentWindow.postMessage(
+                {
+                    type: "ARTICLE_ID",
+                    articleId: articleId
+                },
+                "*"
+            );
+            console.log(
+                "Message sent"
+            );
+        }
+      };
+      // ✅ Set lookup field (hidden field) value
+      document.getElementById("kb-customSuccessMessage").style.display = "none";
+    }
+
+    function closekbFeedbackPopup() {
+      document.getElementById("kb-feedbackPopup").style.display = "none";
+      document.getElementById("kb-feedbackOverlay").style.display = "none";
+      document.body.classList.remove("modal-open");
+
+    // ⭐ Reset thumbs when popup is closed WITHOUT submitting
+    likeBtn.classList.remove("kb-active", "kb-disabled", "kb-final");
+    dislikeBtn.classList.remove("kb-active", "kb-disabled", "kb-final");
+
+    liked = false;
+    disliked = false;
+    }
+
+    function kbcloseAlert() {
+        document.getElementById("kb-customSuccessMessage").style.display = "none";
+    }
+    
+    window.addEventListener("message", function (event) {
+   if (event.data == "feedbackSubmitted") {
+       console.log("Feedback submitted");
+      
+       // Close popup
+       document.getElementById("kb-feedbackPopup").style.display = "none";
+       document.getElementById("kb-feedbackOverlay").style.display = "none";
+       document.body.classList.remove("modal-open");
+       
+       // Show success message
+       const alertBox =
+           document.getElementById("kb-customSuccessMessage");
+       alertBox.style.display = "flex";
+       setTimeout(function () {
+           alertBox.style.display = "none";
+       }, 5000);
+       // Refresh ONLY the feedback form
+       setTimeout(function () {
+           const iframe =
+               document.getElementById("kbFeedbackFrame");
+           if (iframe) {
+               const currentSrc =
+                   iframe.getAttribute("src");
+               if (currentSrc) {
+                   iframe.setAttribute("src", currentSrc);
+                   console.log("Feedback form refreshed");
+               }
+           }
+       }, 2000);
+   }
+});
+
+    /*window.addEventListener("message", function (event) {
+
+        if (event.data === "feedbackSubmitted") {
+            document.getElementById("kb-feedbackPopup").style.display = "none";
+            document.getElementById("kb-feedbackOverlay").style.display = "none";
+
+            const alertBox = document.getElementById("kb-customSuccessMessage");
+            alertBox.style.display = "flex";
+            // Auto hide after 5 sec
+            setTimeout(function () {
+                alertBox.style.display = "none";
+            }, 5000);
+        }
+
+    });*/
+
+    // function closePopupImmediately() {
+    //   document.getElementById("kb-feedbackPopup").style.display = "none";
+    //   document.getElementById("kb-feedbackOverlay").style.display = "none";
+    //   document.body.classList.remove("modal-open");
+    // }
+    function closePopupImmediately() {
+  const popup = document.getElementById("kb-feedbackPopup");
+
+  popup.style.display = "none";
+  document.getElementById("kb-feedbackOverlay").style.display = "none";
+  document.body.classList.remove("modal-open");
+
+  // ✅ Reset popup content (forces refresh)
+  popup.innerHTML = popup.innerHTML;
+}
+
+// Feedback form loader
+var kbFeedbackLoaderTimer = null;
+ 
+function showKbFeedbackLoader() {
+    var loader = document.getElementById("kbFeedbackLoader");
+    if (!loader) return;
+    loader.style.display = "flex";
+    clearTimeout(kbFeedbackLoaderTimer);
+    // Safety: hide loader after 10 sec even if load event doesn't fire
+    kbFeedbackLoaderTimer = setTimeout(hideKbFeedbackLoader, 10000);
+}
+ 
+function hideKbFeedbackLoader() {
+    var loader = document.getElementById("kbFeedbackLoader");
+    if (!loader) return;
+    clearTimeout(kbFeedbackLoaderTimer);
+    loader.style.display = "none";
+}
+ 
+// Hide loader once the actual form (type=like / type=dislike) has loaded
+document.getElementById("kbFeedbackFrame").addEventListener("load", function () {
+    setTimeout(hideKbFeedbackLoader, 300);
+});
+//feedback loader ends
+ 
+
+      document.getElementById("likeBtn").onclick = function () {
+    if (this.classList.contains("kb-active")) return;
+    const iframe = document.getElementById("kbFeedbackFrame");
+    showKbFeedbackLoader();
+    iframe.src = "/CAT-Knowledge-Feedback?type=like";
+    openkbFeedbackPopup(); // ✅ use your existing function
+};
+    document.getElementById("dislikeBtn").onclick = function () {
+    if (this.classList.contains("kb-active")) return;
+    const iframe = document.getElementById("kbFeedbackFrame");
+    showKbFeedbackLoader();
+    iframe.src = "/CAT-Knowledge-Feedback?type=dislike";
+    openkbFeedbackPopup(); // ✅ use your existing function
+    
+};
+ 
+
+// document.getElementById("likeBtn").onclick = function () {
+
+//     if (this.classList.contains("kb-active")) return;
+
+//     // --- INSTANT UPDATE FOR LIKE COUNT ---
+
+//     var likeSpan = document.getElementById("likeCount");
+
+//     if (likeSpan) {
+
+//         var currentLikes = parseInt(likeSpan.innerText) || 0;
+
+//         likeSpan.innerText = currentLikes + 1;
+
+//     }
+
+//     // -------------------------------------
+
+//     const iframe = document.getElementById("kbFeedbackFrame");
+
+//     iframe.src = "/CAT-Knowledge-Feedback?type=like";
+
+//     openkbFeedbackPopup(); // use your existing function
+
+// };
+
+// document.getElementById("dislikeBtn").onclick = function () {
+
+//     if (this.classList.contains("kb-active")) return;
+
+//     // --- INSTANT UPDATE FOR DISLIKE COUNT ---
+
+//     // Ensure your dislike span id matches "dislikeCount" exactly in your HTML
+
+//     var dislikeSpan = document.getElementById("dislikeCount");
+
+//     if (dislikeSpan) {
+
+//         var currentDislikes = parseInt(dislikeSpan.innerText) || 0;
+
+//         dislikeSpan.innerText = currentDislikes + 1;
+
+//     }
+
+//     // ----------------------------------------
+
+//     const iframe = document.getElementById("kbFeedbackFrame");
+
+//     iframe.src = "/CAT-Knowledge-Feedback?type=dislike";
+
+//     openkbFeedbackPopup(); // use your existing function
+
+// };
+ 
+
+
+//feedback per article
+async function hasFeedbackToday(articleId, userId) {
+
+    const now = new Date();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    articleId = articleId.replace(/[{}]/g, "");
+    userId = userId.replace(/[{}]/g, "");
+
+    const query = `/api/data/v9.2/new_articlefeedbacks?$filter=` +
+        `_new_article_value eq ${articleId} ` +
+        `and _new_user_value eq ${userId} ` +
+        `and createdon ge ${today.toISOString()}`;
+
+    const response = await fetch(query, {
+        method: "GET",
+        headers: {
+            "Accept": "application/json",
+            "OData-Version": "4.0"
+        },
+        credentials: "include"
+    });
+
+    const data = await response.json();
+    return data.value.length > 0;
+}
+//ai
+// $(document).ready(function () {
+//         generateSummary();
+   
+ 
+// });
+ 
+// function generateSummary() {
+ 
+//     var articleId = $("#articleId").val();
+ 
+//     if (!articleId) {
+//         alert("Article Id not found");
+//         return;
+//     }
+ 
+//     $("#summaryLoading").show();
+//     $("#summaryResult").hide();
+ 
+//     webapi.safeAjax({
+ 
+//         type: "POST",
+ 
+//         url: "/_api/summarization/data/v1.0/knowledgearticles(" +
+//               articleId +
+//               ")?$select=title,description,content",
+ 
+//         contentType: "application/json",
+ 
+//         data: JSON.stringify({
+//             InstructionIdentifier:
+//                 "Summarization/prompt/article_summary"
+//         })
+ 
+//     })
+ 
+//     .done(function (response) {
+ 
+//         $("#summaryLoading").hide();
+ 
+//         $("#summaryResult")
+//             .show()
+//             .html(response.Summary || response.summary);
+
+//             $("#copySummaryBtn").show();
+ 
+//     })
+ 
+//     .fail(function (xhr) {
+ 
+//         $("#summaryLoading").hide();
+ 
+//         $("#summaryResult")
+//             .show()
+//             .html("Unable to generate summary.");
+ 
+//         console.log(xhr);
+ 
+//     });
+ 
+// }
+// //new 
+// $(document).ready(function () {
+ 
+//    $("#toggleSummaryBtn").on("click", function () {
+ 
+//     $("#summaryContentWrapper").slideToggle(200);
+ 
+//     $("#chevronIcon").toggleClass(
+//         "chevron-expanded chevron-collapsed"
+//     );
+ 
+//     if ($("#summaryContentWrapper").is(":visible")) {
+//         $("#copySummaryBtn").show();
+//     } else {
+//         $("#copySummaryBtn").hide();
+//     }
+ 
+// });
+ 
+ 
+//     $("#copySummaryBtn").on("click", function () {
+ 
+//     navigator.clipboard.writeText($("#summaryResult").text());
+ 
+//     $("#copiedMessage")
+//         .stop(true,true)
+//         .fadeIn(200);
+ 
+//     setTimeout(function () {
+//         $("#copiedMessage").fadeOut(200);
+//     }, 1500);
+ 
+// });
+ 
+ 
+// });
+ 
+ 
+let summaryRequestStarted = false;
+let summaryGenerated = false;
+
+$(document).ready(function () {
+    const $summaryWrapper = $("#summaryContentWrapper");
+    const $toggleButton = $("#toggleSummaryBtn");
+    const $copyButton = $("#copySummaryBtn");
+    const $chevron = $("#chevronIcon");
+
+    // Start with the AI summary collapsed.
+    $summaryWrapper.hide();
+    $copyButton.hide();
+    $("#summaryLoading").hide();
+
+    $chevron
+        .removeClass("chevron-expanded")
+        .addClass("chevron-collapsed");
+
+    $toggleButton.attr({
+        "aria-expanded": "false",
+        "aria-controls": "summaryContentWrapper",
+        "title": "Expand AI summary"
+    });
+
+    $toggleButton.on("click", function () {
+        const isCurrentlyExpanded =
+            $toggleButton.attr("aria-expanded") === "true";
+
+        if (isCurrentlyExpanded) {
+            // Collapse the summary.
+            $summaryWrapper
+                .stop(true, true)
+                .slideUp(200);
+
+            $chevron
+                .removeClass("chevron-expanded")
+                .addClass("chevron-collapsed");
+
+            $toggleButton.attr({
+                "aria-expanded": "false",
+                "title": "Expand AI summary"
+            });
+
+            $copyButton.hide();
+            return;
+        }
+
+        // Expand the summary.
+        $summaryWrapper
+            .stop(true, true)
+            .slideDown(200);
+
+        $chevron
+            .removeClass("chevron-collapsed")
+            .addClass("chevron-expanded");
+
+        $toggleButton.attr({
+            "aria-expanded": "true",
+            "title": "Collapse AI summary"
+        });
+
+        // Generate the summary only on the first expand click.
+        if (!summaryRequestStarted) {
+            summaryRequestStarted = true;
+            generateSummary();
+        } else if (summaryGenerated) {
+            // Reuse the previously generated summary.
+            $copyButton.show();
+        }
+    });
+
+    $copyButton.on("click", function () {
+        const summaryText = $("#summaryResult").text().trim();
+
+        if (!summaryText) {
+            return;
+        }
+
+        navigator.clipboard
+            .writeText(summaryText)
+            .then(function () {
+                $("#copiedMessage")
+                    .stop(true, true)
+                    .fadeIn(200);
+
+                setTimeout(function () {
+                    $("#copiedMessage").fadeOut(200);
+                }, 1500);
+            })
+            .catch(function (error) {
+                console.error("Unable to copy summary:", error);
+            });
+    });
+});
+
+function generateSummary() {
+    const articleId = $("#articleId").val();
+
+    if (!articleId) {
+        $("#summaryLoading").hide();
+
+        $("#summaryResult")
+            .text("Article ID not found.")
+            .show();
+
+        // Allow another attempt if the article ID becomes available later.
+        summaryRequestStarted = false;
+        summaryGenerated = false;
+
+        return;
+    }
+
+    $("#summaryLoading").show();
+
+    $("#summaryResult")
+        .hide()
+        .empty();
+
+    $("#copySummaryBtn").hide();
+
+    webapi.safeAjax({
+        type: "POST",
+
+        url:
+            "/_api/summarization/data/v1.0/knowledgearticles(" +
+            encodeURIComponent(articleId) +
+            ")?$select=title,description,content",
+
+        contentType: "application/json",
+
+        data: JSON.stringify({
+            InstructionIdentifier:
+                "Summarization/prompt/article_summary"
+        })
+    })
+    .done(function (response) {
+        $("#summaryLoading").hide();
+
+        console.log("Summarization API response:", response);
+
+        const summary =
+            response.Summary ||
+            response.summary ||
+            response.Text ||
+            response.text ||
+            response.value ||
+            "{{ snippets['CAT_Error_NoSummary'] }}";
+
+        summaryGenerated = true;
+
+        // Use text() to safely display the API response.
+        $("#summaryResult")
+            .text(String(summary))
+            .show();
+
+        const isExpanded =
+            $("#toggleSummaryBtn").attr("aria-expanded") === "true";
+
+        // Show the copy button only when the summary is expanded.
+        if (isExpanded) {
+            $("#copySummaryBtn").show();
+        }
+    })
+    .fail(function (xhr, textStatus, errorThrown) {
+        $("#summaryLoading").hide();
+
+        summaryGenerated = false;
+
+        // $("#summaryResult")
+        //     .text("Unable to generate summary.")
+        //     .show();
+        $("#summaryResult")
+          .text("{{ snippets['CAT_Error_UnableSummary'] }}")
+          .show();
+
+        console.error("Summary API status:", xhr.status);
+        console.error("Summary API textStatus:", textStatus);
+        console.error("Summary API error:", errorThrown);
+        console.error("Summary API response:", xhr.responseText);
+    });
+} 
+
+  </script>
+
+  <style>
+    .kb-disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+     .kb-feedback-popup {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 448px;
+      max-width: 680px;
+      height: 368px;
+      max-height: 80vh;
+      background: white;
+      backdrop-filter: none;
+      border-radius: 8px;
+      box-shadow: 0 12px 30px rgba(0,0,0,.25);
+      display: none;
+      padding-top: 15px;
+      padding-bottom: 10px;
+      z-index: 9999;
+    }
+
+    .kb-feedback-header {
+      display: flex;
+      justify-content: space-between;
+      padding: 0px 2px 0px 16px;
+      font-weight: 600;
+      padding-bottom: 0px;
+      height: 28px;
+    }
+
+    .kb-feedback-title {
+      font-size: 16px;
+    }
+    .kb-feedback-body {
+      width: 100%;
+      flex-direction: column;
+      display: flex;
+      padding: 0 10px 0px;
+      /* height: auto; */
+      flex: 1;
+      box-sizing: border-box;
+    }
+    .kb-feedback-body p{
+      color: black;
+    }
+
+    .kb-feedback-close {
+      background: none;
+      border: none;
+      font-size: 22px;
+      cursor: pointer;
+    }
+
+    .kb-feedback-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      backdrop-filter: none;
+      display: none;
+      z-index: 9998;
+    }
+    body.modal-open {
+      overflow: hidden;
+      height: 100vh;
+    }
+
+    .kb-custom-alert {
+        position: fixed;
+        top: 70px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100%;
+        max-width: 628px;
+        min-height: 56px;
+        padding: 16px;
+        display: none;
+        align-items: center;
+        gap: 8px;
+        background: var(--bg-utility-success, #E6F3E5);
+        border-top: 1px solid var(--border-utility-success, #0F992F);
+        border-right: 1px solid var(--border-utility-success, #0F992F);
+        border-bottom: 1px solid var(--border-utility-success, #0F992F);
+        border-left: 4px solid var(--border-utility-success, #0F992F);
+
+        border-radius: 6px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        box-sizing: border-box;
+    }
+    .kb-success-icon {
+        width: 16px;
+        height: 16px;
+        flex-shrink: 0;
+        display: flex;
+    align-items: center;
+    }
+    .kb-alert-text {
+        color: var(--content-default, #3F3F3F);
+        font-family: var(--Label-Default-Family, "NotoSans");
+        font-size: var(--Label-Default-Size, 14px);
+        font-style: normal;
+        font-weight: 600;
+        line-height: var(--Label-Default-Line-Hieght, 20px);
+        flex: 1;
+    }
+    .kb-custom-alert .kb-close-btn {
+      background: none;
+      border: none;
+      width: 12px;
+      height: 12px;
+      justify-content: center;
+      align-items: center;
+      outline: none;
+      box-shadow: none;
+      padding: 0;
+      margin-left: 12px;
+      font-size: 20px;
+      font-weight: normal;
+      cursor: pointer;
+      line-height: 1;
+      margin-bottom: auto;
+
+    }
+
+    .kb-feedback-body iframe {
+      width: 100%;
+      border: 0;
+      min-height: 410px;
+      flex-grow: 1;
+      display: block;
+      padding-bottom: 100px;
+
+    }
+        /* Loader shown until the actual feedback form loads */
+    .kb-feedback-loader {
+      position: absolute;
+      top: 43px;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: #FFF;
+      border-radius: 0 0 8px 8px;
+      z-index: 2;
+    }
+ 
+    .kb-feedback-spinner {
+      width: 36px;
+      height: 36px;
+      border: 4px solid #E1E1E1;
+      border-top-color: #F2C300;
+      border-radius: 50%;
+      animation: kbFeedbackSpin 0.8s linear infinite;
+    }
+ 
+    @keyframes kbFeedbackSpin {
+      to { transform: rotate(360deg); }
+    }
+ 
+    .kb-feedback-title {
+      color: var(--Content-Strong, #000);
+    font-family: var(--Title-Small-Family, "RobotoCondensed");
+    font-size: var(--Title-Small-Size, 20px);
+    font-style: normal;
+    font-weight: 700;
+    line-height: var(--Title-Small-Line-Height, 28px);
+    }
+
+    /* MOBILE RESPONSIVE FIX */
+    @media (max-width: 768px) {
+
+      .kb-feedback-popup {
+        width: 94vw;
+        max-width: 375px;
+        height: auto;
+      }
+
+      .kb-feedback-body iframe {
+        width: 343px;
+      }
+
+     .kb-feedback-overlay {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+      }
+      .kb-custom-alert {
+        position: fixed;
+        top: 70px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100%;
+        max-width: 343px;
+        min-height: 72px;
+        padding: 16px;
+        display: none;
+        align-items: center;
+        gap: 8px;
+
+        background: var(--bg-utility-success, #E6F3E5);
+
+        border-top: 1px solid var(--border-utility-success, #0F992F);
+        border-right: 1px solid var(--border-utility-success, #0F992F);
+        border-bottom: 1px solid var(--border-utility-success, #0F992F);
+        border-left: 4px solid var(--border-utility-success, #0F992F);
+
+        border-radius: 6px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        box-sizing: border-box;
+    }
+    .kb-success-icon {
+        width: 16px;
+        height: 16px;
+        flex-shrink: 0;
+    }
+    .kb-alert-text {
+        color: var(--content-default, #3F3F3F);
+
+        font-family: var(--Label-Default-Family, "NotoSans");
+        font-size: var(--Label-Default-Size, 14px);
+        font-style: normal;
+        font-weight: 600;
+        line-height: var(--Label-Default-Line-Hieght, 20px);
+
+        flex: 1;
+    }
+    .kb-custom-alert .kb-close-btn {
+        background: none;
+        border: none;
+        font-size: 18px;
+        cursor: pointer;
+        color: #3F3F3F;
+        padding: 0;
+        line-height: 1;
+    }
+    }
+  </style>
+ 
+  {% endif %} {% else %}
+
+  <script>
+    window.location.replace ( "/");
+  </script>
+  {% endif %}
+  <div class="row sectionBlockLayout text-start" style="display: flex; flex-wrap: wrap; margin: 0px; min-height: auto; padding: 8px;">
+    <div class="container" style="padding: 0px; display: flex; flex-wrap: wrap;"><div class="col-lg-12 columnBlockLayout" style="flex-grow: 1; display: flex; flex-direction: column; min-width: 250px;"></div></div>
+  </div>
+</div>
