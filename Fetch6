@@ -1,0 +1,75 @@
+const PARTY_TYPES = {
+    contact:    { bind: "partyid_contact@odata.bind",    set: "contacts" },
+    account:    { bind: "partyid_account@odata.bind",    set: "accounts" },
+    queue:      { bind: "partyid_queue@odata.bind",      set: "queues" },
+    systemuser: { bind: "partyid_systemuser@odata.bind", set: "systemusers" }
+};
+
+function buildReplyAllParties(email) {
+    const ourQueue = String(queueId).replace(/[{}]/g, "").toLowerCase();
+    const seen = new Set(), out = [];
+
+    (email.email_activity_parties || []).forEach(function (p) {
+        const mask = p.participationtypemask === 3 ? 3 :
+            (p.participationtypemask === 1 || p.participationtypemask === 2) ? 2 : null;
+        if (!mask) return;
+
+        const id = (p._partyid_value || "").toLowerCase();
+        const type = p["_partyid_value@Microsoft.Dynamics.CRM.lookuplogicalname"];
+        if (type === "queue" && id === ourQueue) return;   // skip own queue
+
+        const key = id || (p.addressused || "").toLowerCase();
+        if (!key || seen.has(key)) return;
+        seen.add(key);
+
+        if (id && PARTY_TYPES[type]) {
+            const party = { participationtypemask: mask };
+            party[PARTY_TYPES[type].bind] = "/" + PARTY_TYPES[type].set + "(" + id + ")";
+            out.push(party);
+        } else if (p.addressused) {
+            out.push({ addressused: p.addressused, participationtypemask: mask });
+        }
+    });
+    return out;
+}
+
+
+
+
+
+headers:{
+    "Accept":"application/json",
+    "Prefer":'odata.include-annotations="Microsoft.Dynamics.CRM.lookuplogicalname"'
+},
+
+
+
+
+const recipientEmail = (email.torecipients || "").split(";")[0].trim();
+loadRecipientContact(recipientEmail);
+
+
+
+
+
+const recipientParties = buildReplyAllParties(originalEmail);
+
+if (!recipientParties.length) {
+    showNotification("No valid recipients found for this reply.", "error");
+    setParentSendButtonState(false);
+    return;
+}
+
+const emailPayload = {
+    subject: replySubject,
+    description: replyHtml,
+    email_activity_parties: [
+        { "partyid_queue@odata.bind": `/queues(${queueId})`, participationtypemask: 1 }
+    ].concat(recipientParties),
+    "regardingobjectid_incident@odata.bind": "/incidents(" + currentCaseId + ")"
+};
+
+
+
+
+
