@@ -1,0 +1,128 @@
+    width:50vw;
+    max-width:50vw;
+    min-width:680px;
+    height:100%;
+    box-sizing:border-box;
+    overflow:hidden;
+
+
+
+#emailFeedContent{
+    flex:1;
+    min-width:0;
+    overflow-y:auto;
+    overflow-x:hidden;
+    padding:16px 20px;
+    box-sizing:border-box;
+}
+
+#emailFeedContent > table{
+    width:100%;
+    max-width:100%;
+    table-layout:fixed;
+    border-collapse:collapse;
+    margin-bottom:0;
+}
+
+#emailFeedContent thead th{
+    color:#444;
+    font-size:14px;
+    font-weight:600;
+    padding:12px 8px;
+    border-bottom:2px solid #d9d9d9;
+    text-align:left;
+    font-family:"NotoSans", sans-serif;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+
+#emailFeedContent tbody td{
+    padding:12px 8px;
+    border-bottom:1px solid #ececec;
+    vertical-align:middle;
+    font-size:14px;
+    font-family:"NotoSans", sans-serif;
+    overflow:hidden;
+    overflow-wrap:anywhere;
+}
+
+.email-feed-subject,
+.email-feed-address{
+    display:block;
+    width:100%;
+    max-width:100%;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+
+.email-feed-date{
+    white-space:normal;
+    word-break:normal;
+    overflow-wrap:normal;
+}
+
+.reply-all-btn{
+    width:100%;
+    max-width:110px;
+    min-width:0;
+    height:36px;
+    padding:0 6px;
+    background:#fff;
+    border:1px solid #222;
+    border-radius:6px;
+    color:#111;
+    font-weight:700;
+    font-size:14px;
+    white-space:nowrap;
+    cursor:pointer;
+    transition:.2s;
+}
+
+
+
+
+
+#emailFeedContent > table > thead > tr > th:nth-child(1){ width:14%; } /* Action  */
+#emailFeedContent > table > thead > tr > th:nth-child(2){ width:24%; } /* Subject */
+#emailFeedContent > table > thead > tr > th:nth-child(3){ width:6%;  } /* File    */
+#emailFeedContent > table > thead > tr > th:nth-child(4){ width:17%; } /* From    */
+#emailFeedContent > table > thead > tr > th:nth-child(5){ width:17%; } /* To      */
+#emailFeedContent > table > thead > tr > th:nth-child(6){ width:10%; } /* Status  */
+#emailFeedContent > table > thead > tr > th:nth-child(7){ width:12%; } /* Date    */
+
+#emailFeedContent > table > tbody > tr > td:nth-child(3){ text-align:center; }
+
+.email-expanded-row td{ max-width:0; }
+
+.email-expanded-content,
+.email-description-box{
+    max-width:100%;
+    overflow-x:hidden;
+    overflow-wrap:anywhere;
+    word-break:break-word;
+    box-sizing:border-box;
+}
+.email-description-box img,
+.email-description-box table{
+    max-width:100% !important;
+    height:auto;
+}
+.email-description-box pre{ white-space:pre-wrap; }
+
+.email-attachment-table td,
+.email-attachment-table th{ overflow-wrap:anywhere; }
+
+@media (max-width: 1100px){
+    .email-feed-drawer{
+        width:90vw;
+        max-width:90vw;
+        min-width:0;
+    }
+}
+
+
+
+
+
