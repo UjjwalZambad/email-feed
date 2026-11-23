@@ -1,0 +1,103 @@
+<div>
+   <label>Contact Name</label>
+   <p id="rfFullName">Loading...</p>
+</div>
+<div>
+   <label>Persona</label>
+   <p id="rfPersona">Loading...</p>
+</div>
+<div>
+   <label>Account Name</label>
+   <p id="rfAccountName">Loading...</p>
+</div>
+<div>
+   <label>Subject</label>
+   <p>${data.title || "-"}</p>
+</div>
+<div>
+   <label>First Name</label>
+   <p id="rfFirstName">Loading...</p>
+</div>
+<div>
+   <label>Description</label>
+   <p class="case-description-value"></p>
+</div>
+<div>
+   <label>Last Name</label>
+   <p id="rfLastName">Loading...</p>
+</div>
+<div>
+   <label>Email</label>
+   <p id="rfEmail">Loading...</p>
+</div>
+<div>
+   <label>Phone</label>
+   <p id="rfPhone">Loading...</p>
+</div>
+<div>
+   <label>Product Technology</label>
+   <p>${data["_productid_value@OData.Community.Display.V1.FormattedValue"] || "-"}</p>
+</div>
+<div>
+   <label>Additional Applications</label>
+   <p>${data["_cat_additionalapplications_value@OData.Community.Display.V1.FormattedValue"] || "-"}</p>
+</div>
+<div>
+   <label>Secondary Product Technology</label>
+   <p>${data["_cat_secondaryproducttechnology_id_value@OData.Community.Display.V1.FormattedValue"] || "-"}</p>
+</div>
+<div>
+   <label>Support Type</label>
+   <p>${data["_cat_supporttype_id_value@OData.Community.Display.V1.FormattedValue"] || "-"}</p>
+</div>
+<div>
+   <label>Secondary Support Type</label>
+   <p>${data["_cat_secondarysupporttype_id_value@OData.Community.Display.V1.FormattedValue"] || "-"}</p>
+</div>
+<div>
+   <label>Tertiary Support Type</label>
+   <p>${data["_cat_tertiarysupporttype_value@OData.Community.Display.V1.FormattedValue"] || "-"}</p>
+</div>
+<div>
+   <label>Asset Administration</label>
+   <p>${data.cat_asset || "-"}</p>
+</div>
+<div>
+   <label>Channel</label>
+   <p>${data["caseorigincode@OData.Community.Display.V1.FormattedValue"] || "-"}</p>
+</div>
+<div>
+   <label>Language</label>
+   <p>${data["cat_language@OData.Community.Display.V1.FormattedValue"] || "-"}</p>
+</div>
+<div>
+   <label>Additional Email 1</label>
+   <p>${data.cat_additionalemail1 || "-"}</p>
+</div>
+<div>
+   <label>Additional Email 2</label>
+   <p>${data.cat_additionalemail2 || "-"}</p>
+</div>
+
+
+
+           // Description (same cleanup as All Cases)
+           var cdDesc = $("#details").find(".case-description-value");
+           cdDesc.html(data.description || "-");
+           cdDesc.find("style, script").remove();
+           cdDesc.find("*").removeAttr("style").removeAttr("face").removeAttr("size").removeAttr("class");
+
+           getContactDetails(data._cat_requestedfrom_value, function (contactDetails) {
+                $("#rfPersona").text(contactDetails.personaLabel);
+                $("#rfFullName").text(contactDetails.fullname);
+                $("#rfAccountName").text(contactDetails.accountName);
+                $("#rfFirstName").text(contactDetails.firstname);
+                $("#rfLastName").text(contactDetails.lastname);
+                $("#rfEmail").text(contactDetails.email);
+                $("#rfPhone").text(contactDetails.phone);
+            });
+
+
+
+
+
