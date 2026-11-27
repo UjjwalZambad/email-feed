@@ -1,0 +1,369 @@
+  const CASE_ATTACHMENT_FORMATTED = "OData.Community.Display.V1.FormattedValue";
+  const CASE_EMAIL_ATTACHMENT_CHUNK = 15;
+
+  const CASE_ENTITY_ATTACHMENT_API = {
+      entitySetName: "msdyn_entityattachments",
+      fileColumn: "msdyn_fileblob"
+  };
+
+  function loadCaseAttachments(caseId, panel) {
+      const tbody = panel.find(".case-attachments-table tbody");
+      const summary = panel.find(".case-attachments-summary");
+      const cleanCaseId = cleanGuid(caseId);
+
+      // Only the latest request may render
+      const requestToken = String(Date.now()) + Math.random();
+      panel.attr("data-attachments-request", requestToken);
+
+      panel.find(".case-attachment-message").removeClass("error success info").text("");
+      summary.text("Attachments");
+      tbody.html(`<tr><td colspan="5">Loading...</td></tr>`);
+
+      $.when(
+          getCaseNoteAttachments(cleanCaseId),
+          getCaseEmailAttachments(cleanCaseId),
+          getCaseEntityAttachments(cleanCaseId)
+      ).then(
+          function (noteRows, emailRows, entityRows) {
+              if (panel.attr("data-attachments-request") !== requestToken) return;
+
+              const allRows = (noteRows || []).concat(emailRows || []).concat(entityRows || []);
+              allRows.sort(function (a, b) { return (b.sortDate || 0) - (a.sortDate || 0); });
+
+              renderCaseAttachmentRows(allRows, panel);
+          },
+          function (xhr) {
+              if (panel.attr("data-attachments-request") !== requestToken) return;
+
+              console.error("Attachment load failed", xhr && xhr.status, xhr && xhr.responseText);
+              summary.text("Attachments");
+              tbody.html(`<tr><td colspan="5" class="case-attachments-empty">Unable to load attachments</td></tr>`);
+              showCaseAttachmentMessage(panel, "error",
+                  "{{ snippets['CAT_Error_UnableToLoad'] }}" + " " + (xhr ? xhr.status : ""));
+          }
+      );
+  }
+
+  // ---------- Source 1: Notes (annotation) ----------
+  function getCaseNoteAttachments(cleanCaseId) {
+      const result = $.Deferred();
+
+      safeAjax({
+          type: "GET",
+          url: "/_api/annotations" +
+              "?$select=annotationid,subject,notetext,filename,filesize,modifiedon,mimetype,_ownerid_value" +
+              "&$filter=_objectid_value eq " + cleanCaseId + " and isdocument eq true" +
+              "&$orderby=modifiedon desc",
+          contentType: "application/json",
+          headers: {
+              "Accept": "application/json",
+              "Prefer": 'odata.include-annotations="' + CASE_ATTACHMENT_FORMATTED + '"'
+          }
+      })
+      .done(function (response) {
+          result.resolve((response.value || []).map(function (item) {
+              let owner = getPortalUploadedByName(item.notetext) ||
+                  item["_ownerid_value@" + CASE_ATTACHMENT_FORMATTED] || "-";
+
+              if (owner.indexOf("PPMI-") >= 0 || owner.indexOf("powerpagesmanagedidentity") >= 0) {
+                  owner = (window.portalCurrentContact && window.portalCurrentContact.name) || "-";
+              }
+
+              return {
+                  id: item.annotationid,
+                  source: "note",
+                  filename: item.filename,
+                  title: item.subject || removeCaseAttachmentExtension(item.filename) || item.filename || "-",
+                  owner: owner,
+                  dateLabel: item["modifiedon@" + CASE_ATTACHMENT_FORMATTED] || formatCaseAttachmentDate(item.modifiedon),
+                  sortDate: item.modifiedon ? new Date(item.modifiedon).getTime() : 0,
+                  filesize: item.filesize
+              };
+          }));
+      })
+      .fail(function (xhr) { result.reject(xhr); });
+
+      return result.promise();
+  }
+
+  // ---------- Source 2: Email attachments (activitymimeattachment) ----------
+  function getCaseEmailAttachments(cleanCaseId) {
+      const result = $.Deferred();
+
+      safeAjax({
+          type: "GET",
+          url: "/_api/emails?$select=activityid,subject,sender,createdon" +
+              "&$filter=_regardingobjectid_value eq " + cleanCaseId,
+          contentType: "application/json",
+          headers: { "Accept": "application/json" }
+      })
+      .done(function (emailResponse) {
+          const emails = emailResponse.value || [];
+          if (!emails.length) { result.resolve([]); return; }
+
+          const emailById = {};
+          emails.forEach(function (email) { emailById[normalizeGuid(email.activityid)] = email; });
+
+          const emailIds = Object.keys(emailById);
+          const calls = [];
+
+          for (let i = 0; i < emailIds.length; i += CASE_EMAIL_ATTACHMENT_CHUNK) {
+              const filter = emailIds.slice(i, i + CASE_EMAIL_ATTACHMENT_CHUNK)
+                  .map(function (id) { return "_objectid_value eq " + id; })
+                  .join(" or ");
+
+              calls.push(safeAjax({
+                  type: "GET",
+                  url: "/_api/activitymimeattachments" +
+                      "?$select=activitymimeattachmentid,filename,filesize,mimetype,_objectid_value" +
+                      "&$filter=" + encodeURIComponent(filter),
+                  contentType: "application/json",
+                  headers: { "Accept": "application/json" }
+              }));
+          }
+
+          $.when.apply($, calls)
+              .done(function () {
+                  const responses = calls.length === 1
+                      ? [arguments[0]]
+                      : Array.prototype.map.call(arguments, function (args) { return args[0]; });
+
+                  const rows = [];
+                  responses.forEach(function (response) {
+                      ((response && response.value) || []).forEach(function (att) {
+                          const email = emailById[normalizeGuid(att._objectid_value)] || {};
+                          rows.push({
+                              id: att.activitymimeattachmentid,
+                              source: "email",
+                              filename: att.filename,
+                              title: removeCaseAttachmentExtension(att.filename) || att.filename || "-",
+                              emailSubject: email.subject || "",
+                              owner: email.sender || "-",
+                              dateLabel: formatCaseAttachmentDate(email.createdon),
+                              sortDate: email.createdon ? new Date(email.createdon).getTime() : 0,
+                              filesize: att.filesize
+                          });
+                      });
+                  });
+                  result.resolve(rows);
+              })
+              .fail(function (xhr) {
+                  console.warn("Email attachments could not be loaded:", xhr && xhr.status);
+                  result.resolve([]);
+              });
+      })
+      .fail(function (xhr) {
+          console.warn("Emails could not be loaded:", xhr && xhr.status);
+          result.resolve([]);
+      });
+
+      return result.promise();
+  }
+
+  // ---------- Source 3: Direct uploads (msdyn_entityattachment) ----------
+  function getCaseEntityAttachments(cleanCaseId) {
+      const result = $.Deferred();
+
+      safeAjax({
+          type: "GET",
+          url: "/_api/" + CASE_ENTITY_ATTACHMENT_API.entitySetName +
+              "?$select=msdyn_entityattachmentid,msdyn_name,msdyn_fileblob_name,createdon,_createdby_value" +
+              "&$filter=_msdyn_relatedentity_value eq " + cleanCaseId + " and statecode eq 0" +
+              "&$orderby=createdon desc",
+          contentType: "application/json",
+          headers: {
+              "Accept": "application/json",
+              "Prefer": 'odata.include-annotations="' + CASE_ATTACHMENT_FORMATTED + '"'
+          }
+      })
+      .done(function (response) {
+          result.resolve((response.value || []).map(function (item) {
+              const fileName = item.msdyn_fileblob_name || item.msdyn_name || "attachment";
+              return {
+                  id: item.msdyn_entityattachmentid,
+                  source: "entity",
+                  filename: fileName,
+                  title: removeCaseAttachmentExtension(fileName) || fileName,
+                  owner: item["_createdby_value@" + CASE_ATTACHMENT_FORMATTED] || "-",
+                  dateLabel: item["createdon@" + CASE_ATTACHMENT_FORMATTED] || formatCaseAttachmentDate(item.createdon),
+                  sortDate: item.createdon ? new Date(item.createdon).getTime() : 0,
+                  filesize: null   // this table has no size column
+              };
+          }));
+      })
+      .fail(function (xhr) {
+          console.warn("Direct uploads could not be loaded:", xhr && xhr.status, xhr && xhr.responseText);
+          result.resolve([]);
+      });
+
+      return result.promise();
+  }
+
+
+
+
+
+  function renderCaseAttachmentRows(records, panel) {
+      const tbody = panel.find(".case-attachments-table tbody");
+      const summary = panel.find(".case-attachments-summary");
+
+      if (!records || records.length === 0) {
+          summary.text("0 files");
+          tbody.html(`<tr><td colspan="5" class="case-attachments-empty">No attachments found</td></tr>`);
+          return;
+      }
+
+      const totalSize = records.reduce(function (sum, item) { return sum + Number(item.filesize || 0); }, 0);
+
+      summary.text(records.length + " file" + (records.length === 1 ? "" : "s") +
+          " | Total size: " + formatCaseAttachmentSize(totalSize));
+
+      let html = "";
+
+      records.forEach(function (item) {
+          let sourceBadge = "";
+          if (item.source === "email") {
+              sourceBadge = `<span class="case-file-source" title="${escapeAttribute(item.emailSubject ? "From email: " + item.emailSubject : "From email")}">Email</span>`;
+          } else if (item.source === "entity") {
+              sourceBadge = `<span class="case-file-source">Direct upload</span>`;
+          }
+
+          html += `
+              <tr>
+                  <td>
+                      <span class="case-file-icon">${escapeHtml(getCaseAttachmentExtensionLabel(item.filename))}</span>
+                      <span class="case-file-title">${escapeHtml(item.title)}</span>
+                      ${sourceBadge}
+                  </td>
+                  <td>${escapeHtml(item.owner)}</td>
+                  <td>${escapeHtml(item.dateLabel)}</td>
+                  <td>${item.filesize == null ? "-" : escapeHtml(formatCaseAttachmentSize(item.filesize))}</td>
+                  <td>
+                      <button type="button" class="case-download-attachment-btn" title="Download"
+                          data-attachment-id="${escapeAttribute(item.id)}"
+                          data-source="${escapeAttribute(item.source)}"
+                          data-filename="${escapeAttribute(item.filename || "")}">
+                          <span class="download-icon-svg" aria-hidden="true">
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                                  <path d="M12 3V15" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                                  <path d="M7 10L12 15L17 10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+                                  <path d="M5 20H19" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                              </svg>
+                          </span>
+                      </button>
+                  </td>
+              </tr>`;
+      });
+
+      tbody.html(html);
+  }
+
+
+
+
+
+
+
+  // ==================== DOWNLOAD (Notes, Email attachments, Direct uploads) ====================
+
+  $(document).on("click", ".case-download-attachment-btn", function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const id = $(this).attr("data-attachment-id");
+      const source = $(this).attr("data-source") || "note";
+      const fileName = $(this).attr("data-filename") || "";
+
+      if (!id) return;
+      downloadCaseAttachment(id, source, fileName);
+  });
+
+  function triggerCaseAttachmentDownload(blob, fileName) {
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = fileName || "attachment";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(function () { URL.revokeObjectURL(blobUrl); }, 1000);
+  }
+
+  // Direct upload: file column -> /_api/msdyn_entityattachments(<id>)/msdyn_fileblob/$value
+  function downloadCaseEntityAttachment(id, fileName) {
+      const url = "/_api/" + CASE_ENTITY_ATTACHMENT_API.entitySetName +
+          "(" + cleanGuid(id) + ")/" + CASE_ENTITY_ATTACHMENT_API.fileColumn + "/$value";
+
+      shell.getTokenDeferred()
+          .done(function (token) {
+              fetch(url, {
+                  method: "GET",
+                  credentials: "same-origin",
+                  headers: { "__RequestVerificationToken": token }
+              })
+              .then(function (response) {
+                  if (!response.ok) {
+                      return response.text().then(function (t) { throw new Error("HTTP " + response.status + " " + t); });
+                  }
+                  return response.blob();
+              })
+              .then(function (blob) {
+                  if (!blob || blob.size === 0) {
+                      alert("{{ snippets['CAT_Error_FileNotFound'] }}");
+                      return;
+                  }
+                  triggerCaseAttachmentDownload(blob, fileName);
+              })
+              .catch(function (error) {
+                  console.error("Direct-upload download failed:", error);
+                  alert("{{ snippets['CAT_Error_UnableDownload'] }}");
+              });
+          })
+          .fail(function () {
+              alert("{{ snippets['CAT_Error_UnableDownload'] }}");
+          });
+  }
+
+  function downloadCaseAttachment(id, source, fileName) {
+      if (source === "entity") {
+          downloadCaseEntityAttachment(id, fileName);
+          return;
+      }
+
+      const isEmail = source === "email";
+      const url = isEmail
+          ? "/_api/activitymimeattachments(" + cleanGuid(id) + ")?$select=body,filename,mimetype"
+          : "/_api/annotations(" + cleanGuid(id) + ")?$select=documentbody,filename,mimetype";
+
+      safeAjax({
+          type: "GET",
+          url: url,
+          contentType: "application/json",
+          headers: { "Accept": "application/json" },
+          success: function (record) {
+              const content = record && (isEmail ? record.body : record.documentbody);
+              if (!content) {
+                  alert("{{ snippets['CAT_Error_FileNotFound'] }}");
+                  return;
+              }
+              const blob = base64ToCaseAttachmentBlob(content, record.mimetype || "application/octet-stream");
+              triggerCaseAttachmentDownload(blob, record.filename || fileName);
+          },
+          error: function (xhr) {
+              console.error("Attachment download failed:", xhr);
+              alert("{{ snippets['CAT_Error_UnableDownload'] }}");
+          }
+      });
+  }
+
+
+
+  .case-file-source {
+      display: inline-block;
+      margin-left: 8px;
+      padding: 1px 6px;
+      font-size: 11px;
+      border-radius: 4px;
+      background: #f3f2f1;
+      color: #605e5c;
+  }
